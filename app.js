@@ -30,7 +30,7 @@ const btnExportCsv = document.getElementById('btn-export-csv');
 
 const tbodyUtama = document.getElementById('tbody-utama');
 const tbodyAksesoris = document.getElementById('tbody-aksesoris');
-const tbodyGradeb = document.getElementById('tbody-gradeb'); // FIX: Diubah ke huruf b kecil agar sinkron
+const tbodyGradeb = document.getElementById('tbody-gradeb'); 
 const tbodyMasterList = document.getElementById('tbody-master-list');
 const masterSkuCount = document.getElementById('master-sku-count');
 const btnSyncCloud = document.getElementById('btn-sync-cloud');
@@ -79,7 +79,7 @@ function fetchMasterSkusFromCloud() {
 
     fetch(GOOGLE_SHEET_URL)
         .then(response => {
-            if (!response.ok) throw new Error("Jaringan bermasalah");
+            if (!response.ok) throw new Error("Gagal mengambil data dari URL Google Sheets. Periksa status publish.");
             return response.arrayBuffer();
         })
         .then(buffer => {
@@ -113,8 +113,9 @@ function fetchMasterSkusFromCloud() {
         })
         .catch(err => {
             console.error(err);
-            updateStatusMessage("Gagal menyinkronkan data dari Google Sheets.");
-            tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #dc2626;">Gagal memuat database cloud. Cek koneksi internet atau setelan share spreadsheet.</td></tr>`;
+            updateStatusMessage("Gagal menyinkronkan data.");
+            // MENAMPILKAN EROR ASLI LANGSUNG DI LAYAR UNTUK MEMUDAHKAN ANALISIS
+            tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #dc2626; font-weight: bold; padding: 20px;">⚠️ SISTEM EROR: ${err.message}<br><span style="font-size: 12px; font-weight: normal; color: #64748b; display: block; margin-top: 5px;">Silakan tekan CTRL + F5. Jika pesan ini tetap muncul, laporkan teks eror di atas.</span></td></tr>`;
         });
 }
 
@@ -255,7 +256,7 @@ function renderSingleTable(dataKategori, tbodyElement) {
 function refreshAllTables() {
     renderSingleTable(globalDataKategori.utama, tbodyUtama);
     renderSingleTable(globalDataKategori.aksesoris, tbodyAksesoris);
-    renderSingleTable(globalDataKategori.gradeb, tbodyGradeb); // FIX: Memanggil variabel huruf b kecil dengan benar
+    renderSingleTable(globalDataKategori.gradeb, tbodyGradeb); 
 }
 
 function updateDashboardMetrics(skuAktifCount) {
