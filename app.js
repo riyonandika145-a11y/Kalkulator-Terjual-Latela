@@ -9,6 +9,10 @@ const contentViews = document.querySelectorAll('.content-view');
 const subTabs = document.querySelectorAll('.sub-tab');
 const subTablePanels = document.querySelectorAll('.sub-table-panel');
 
+// --- SELEKTOR TOGGLE SIDEBAR BARU ---
+const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+const sidebarElement = document.querySelector('.sidebar');
+
 const btnAddFile = document.getElementById('btn-add-file');
 const fileInput = document.getElementById('file-input');
 const btnFileReset = document.getElementById('btn-file-reset');
@@ -20,7 +24,6 @@ const btnFilterReset = document.getElementById('btn-filter-reset');
 const btnSaveHistory = document.getElementById('btn-save-history');
 const btnCopyQty = document.getElementById('btn-copy-qty');
 
-// --- DROPDOWN SELECTORS ---
 const btnExportToggle = document.getElementById('btn-export-toggle');
 const exportMenuItems = document.getElementById('export-menu-items');
 const btnExportXlsx = document.getElementById('btn-export-xlsx');
@@ -46,7 +49,27 @@ let historyLogs = [];
 
 // --- INITIAL BOOTSTRAP SINKRONISASI CLOUD ---
 window.addEventListener('DOMContentLoaded', () => {
+    // Muat preferensi ingatan posisi sidebar dari memori browser
+    const savedSidebarState = localStorage.getItem('sidebarState');
+    if (savedSidebarState === 'collapsed') {
+        sidebarElement.classList.add('collapsed');
+        btnToggleSidebar.innerText = "❯";
+    }
+
     fetchMasterSkusFromCloud();
+});
+
+// EVENT LOGIKA TOGGLE SIDEBAR (MENYEMATKAN KE KIRI)
+btnToggleSidebar.addEventListener('click', () => {
+    sidebarElement.classList.toggle('collapsed');
+    
+    if (sidebarElement.classList.contains('collapsed')) {
+        btnToggleSidebar.innerText = "❯";
+        localStorage.setItem('sidebarState', 'collapsed');
+    } else {
+        btnToggleSidebar.innerText = "☰";
+        localStorage.setItem('sidebarState', 'expanded');
+    }
 });
 
 btnSyncCloud.addEventListener('click', () => {
@@ -188,7 +211,6 @@ function ekstrakDanHitungPenjualan(data) {
         if (sku) {
             const skuClean = sku.toString().trim();
             
-            // CHECK WHITELIST GOOGLE SHEETS MATCH
             if (masterSkus[skuClean]) {
                 const kategori = masterSkus[skuClean].kategori;
                 if (globalDataKategori[kategori] && globalDataKategori[kategori][skuClean]) {
@@ -274,7 +296,6 @@ btnSaveHistory.addEventListener('click', () => {
     historyLogs.push({ waktu: new Date().toLocaleString('id-ID'), total, files: totalMasterFiles });
     updateStatusMessage('History tersimpan.');
 
-    // Update Tampilan History View Halaman
     const historyBox = document.getElementById('history-list-container');
     historyBox.className = "";
     historyBox.innerHTML = '<div class="table-responsive"><table><thead><tr><th>Waktu Simpan</th><th>Files Terproses</th><th>Total Qty Item</th></tr></thead><tbody id="tbody-history"></tbody></table></div>';
@@ -287,10 +308,7 @@ btnSaveHistory.addEventListener('click', () => {
     });
 });
 
-// =========================================================================
-// DROPDOWN ENGINE CONTROLLER & EXPORT SYSTEM LOGIC
-// =========================================================================
-
+// --- DROPDOWN ENGINE CONTROLLER & EXPORT SYSTEM LOGIC ---
 btnExportToggle.addEventListener('click', (e) => {
     e.stopPropagation();
     exportMenuItems.classList.toggle('show');
