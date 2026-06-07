@@ -117,7 +117,6 @@ body {
     padding: 60px 10px 20px 10px;
 }
 
-/* PERBAIKAN: Sembunyikan total area brand section termasuk teks logo rusak hantu */
 .sidebar.collapsed .brand-section {
     display: none;
 }
@@ -300,7 +299,8 @@ table { width: 100%; border-collapse: collapse; }
 th, td { padding: 12px 20px; border-bottom: 1px solid #e2e8f0; font-size: 13px; text-align: left; }
 th { background-color: #f1f5f9; font-weight: 600; color: #334155; border-bottom: 2px solid var(--border-color); }
 
-td:last-child { text-align: right; font-weight: 700; color: var(--pink-main); padding-right: 25px; }
+/* Penanganan Khusus untuk Qty Kolom Terakhir di Tabel Utama Kalkulator */
+.sub-table-panel table td:last-child { text-align: right; font-weight: 700; color: var(--pink-main); padding-right: 25px; }
 
 .sku-list-card { background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; }
 .sku-list-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 15px; color: var(--text-main); }
