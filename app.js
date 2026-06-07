@@ -114,7 +114,6 @@ function fetchMasterSkusFromCloud() {
         .catch(err => {
             console.error(err);
             updateStatusMessage("Gagal menyinkronkan data.");
-            // MENAMPILKAN EROR ASLI LANGSUNG DI LAYAR UNTUK MEMUDAHKAN ANALISIS
             tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #dc2626; font-weight: bold; padding: 20px;">⚠️ SISTEM EROR: ${err.message}<br><span style="font-size: 12px; font-weight: normal; color: #64748b; display: block; margin-top: 5px;">Silakan tekan CTRL + F5. Jika pesan ini tetap muncul, laporkan teks eror di atas.</span></td></tr>`;
         });
 }
@@ -268,11 +267,15 @@ function updateDashboardMetrics(skuAktifCount) {
     dashFileCount.innerText = totalMasterFiles;
 }
 
+// MODIFIKASI FITUR: Sekarang dropdown menampilkan nama produk & tipenya agar scannable
 function populateFilterDropdown() {
     dropdownFilter.innerHTML = '<option value="all">-- Tampilkan Semua --</option>';
     Object.keys(masterSkus).sort().forEach(sku => {
         const opt = document.createElement('option');
-        opt.value = sku; opt.innerText = sku;
+        opt.value = sku; // Value di balik layar tetap SKU agar filter tidak patah
+        
+        // Menggabungkan SKU - Nama (Type) untuk teks pilihan admin
+        opt.innerText = `${sku} - ${masterSkus[sku].nama} (${masterSkus[sku].type})`;
         dropdownFilter.appendChild(opt);
     });
 }
