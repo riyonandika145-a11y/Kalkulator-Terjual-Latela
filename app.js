@@ -30,7 +30,7 @@ const btnExportCsv = document.getElementById('btn-export-csv');
 
 const tbodyUtama = document.getElementById('tbody-utama');
 const tbodyAksesoris = document.getElementById('tbody-aksesoris');
-const tbodyGradeB = document.getElementById('tbody-gradeb');
+const tbodyGradeb = document.getElementById('tbody-gradeb'); // FIX: Diubah ke huruf b kecil agar sinkron
 const tbodyMasterList = document.getElementById('tbody-master-list');
 const masterSkuCount = document.getElementById('master-sku-count');
 const btnSyncCloud = document.getElementById('btn-sync-cloud');
@@ -72,7 +72,7 @@ btnSyncCloud.addEventListener('click', () => {
     fetchMasterSkusFromCloud();
 });
 
-// 1. ENGINE AMBIL DATA TERPUSAT DARI GOOGLE SHEETS (DENGAN UPDATE KOLOM BARU)
+// 1. ENGINE AMBIL DATA TERPUSAT DARI GOOGLE SHEETS
 function fetchMasterSkusFromCloud() {
     updateStatusMessage("Menghubungkan ke Google Sheets Cloud Database...");
     tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; font-style: italic;">Sinkronisasi data terpusat...</td></tr>`;
@@ -241,7 +241,6 @@ function renderSingleTable(dataKategori, tbodyElement) {
         if (activeFilterText !== "all" && sku !== activeFilterText) return;
         
         const tr = document.createElement('tr');
-        // UPDATE RENDER TABEL: Menambahkan data kolom Type dan Warna
         tr.innerHTML = `
             <td>${sku}</td>
             <td>${dataKategori[sku].nama}</td>
@@ -256,7 +255,7 @@ function renderSingleTable(dataKategori, tbodyElement) {
 function refreshAllTables() {
     renderSingleTable(globalDataKategori.utama, tbodyUtama);
     renderSingleTable(globalDataKategori.aksesoris, tbodyAksesoris);
-    renderSingleTable(globalDataKategori.gradeb, tbodyGradeb);
+    renderSingleTable(globalDataKategori.gradeb, tbodyGradeb); // FIX: Memanggil variabel huruf b kecil dengan benar
 }
 
 function updateDashboardMetrics(skuAktifCount) {
@@ -292,7 +291,6 @@ btnFileReset.addEventListener('click', () => {
 
 function updateStatusMessage(msg) { statusBar.innerText = msg; }
 
-// UPDATE COPY FUNCTION: Ikut menyalin data Type dan Warna ke clipboard
 btnCopyQty.addEventListener('click', () => {
     const cat = document.querySelector('.sub-tab.active').getAttribute('data-category');
     const data = globalDataKategori[cat];
@@ -322,7 +320,6 @@ btnSaveHistory.addEventListener('click', () => {
     });
 });
 
-// UPDATE EXPORT MATRIX GENERATION: Menambahkan kolom Type dan Warna di laporan Excel/CSV
 function generateMasterArrayFormat() {
     let outputMatrix = [["Kategori", "SKU", "Nama Produk", "Type", "Warna", "Kuantitas (Qty)"]];
     
