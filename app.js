@@ -238,7 +238,8 @@ function renderSingleTable(dataKategori, tbodyElement) {
     const sortedKeys = Object.keys(dataKategori).sort();
 
     sortedKeys.forEach(sku => {
-        if (activeFilterText !== "all" && sku !== activeFilterText) return;
+        // PERBAIKAN FITUR: Sekarang filter menyaring berdasarkan "Nama Produk", bukan lagi kode SKU unik
+        if (activeFilterText !== "all" && dataKategori[sku].nama !== activeFilterText) return;
         
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -267,15 +268,26 @@ function updateDashboardMetrics(skuAktifCount) {
     dashFileCount.innerText = totalMasterFiles;
 }
 
-// MODIFIKASI FITUR: Sekarang dropdown menampilkan nama produk & tipenya agar scannable
+// PERBAIKAN FITUR: Mengelompokkan pilihan dropdown agar HANYA menampilkan Nama Produk Unik (Mewakili 1 nama saja)
 function populateFilterDropdown() {
-    dropdownFilter.innerHTML = '<option value="all">-- Tampilkan Semua --</option>';
-    Object.keys(masterSkus).sort().forEach(sku => {
+    dropdownFilter.innerHTML = '<option value="all">-- Tampilkan Semua Produk --</option>';
+    
+    // Ambil semua daftar nama produk dan eliminasi duplikat menggunakan Set
+    let namaProdukUnikSet = new Set();
+    Object.values(masterSkus).forEach(item => {
+        if (item.nama) {
+            namaProdukUnikSet.add(item.nama.trim().toUpperCase());
+        }
+    });
+
+    // Urutkan nama produk dari A ke Z
+    const sortedNamaProduk = Array.from(namaProdukUnikSet).sort();
+
+    // Masukkan ke dalam elemen HTML dropdown select
+    sortedNamaProduk.forEach(nama => {
         const opt = document.createElement('option');
-        opt.value = sku; // Value di balik layar tetap SKU agar filter tidak patah
-        
-        // Menggabungkan SKU - Nama (Type) untuk teks pilihan admin
-        opt.innerText = `${sku} - ${masterSkus[sku].nama} (${masterSkus[sku].type})`;
+        opt.value = nama; // Menyimpan Nama Produk sebagai acuan filter
+        opt.innerText = nama; // Menampilkan Nama Produk saja tanpa embel-embel SKU/Type
         dropdownFilter.appendChild(opt);
     });
 }
@@ -300,9 +312,10 @@ btnCopyQty.addEventListener('click', () => {
     const data = globalDataKategori[cat];
     let txt = "SKU\tNama\tType\tWarna\tQty\n";
     Object.keys(data).sort().forEach(k => { 
+        if (activeFilterText !== "all" && data[k].nama !== activeFilterText) return; // Ikuti filter aktif saat di-copy
         txt += `${k}\t${data[k].nama}\t${data[k].type}\t${data[k].warna}\t${data[k].qty}\n`; 
     });
-    navigator.clipboard.writeText(txt).then(() => updateStatusMessage('Berhasil copy Qty lengkap ke clipboard.'));
+    navigator.clipboard.writeText(txt).then(() => updateStatusMessage('Berhasil copy Qty sesuai filter ke clipboard.'));
 });
 
 btnSaveHistory.addEventListener('click', () => {
