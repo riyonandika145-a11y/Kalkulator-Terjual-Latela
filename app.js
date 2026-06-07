@@ -3,6 +3,9 @@
 // =========================================================================
 const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRx0w6ouZ_PYXUTdbqqT_CCslwLR-hdY3c311M7jAzPlskawLg2ewiGPQ_gLZ1K4EjQPI_7_qfp3pzb/pub?gid=0&single=true&output=csv";
 
+// Link Web App Google Apps Script milikmu sudah terpasang rapi di sini:
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzXnbhhSGl1bzapSXEsUWa4p-RpVKGVLe2nJUVCT6cjC1Y-rH_DKC__DTB8BiV2QWI/exec";
+
 // --- DOM SELEKTORS ---
 const menuItems = document.querySelectorAll('.menu-item');
 const contentViews = document.querySelectorAll('.content-view');
@@ -44,7 +47,6 @@ let masterSkus = {};
 let globalDataKategori = { utama: {}, aksesoris: {}, gradeb: {} };
 let totalMasterFiles = 0;
 let activeFilterText = "all";
-let historyLogs = [];
 
 // --- INITIAL BOOTSTRAP SINKRONISASI CLOUD ---
 window.addEventListener('DOMContentLoaded', () => {
@@ -54,6 +56,7 @@ window.addEventListener('DOMContentLoaded', () => {
         btnToggleSidebar.innerText = "❯";
     }
     fetchMasterSkusFromCloud();
+    fetchHistoryFromCloud(); // Ambil riwayat cloud otomatis saat web dibuka
 });
 
 // EVENT LOGIKA TOGGLE SIDEBAR
@@ -238,7 +241,6 @@ function renderSingleTable(dataKategori, tbodyElement) {
     const sortedKeys = Object.keys(dataKategori).sort();
 
     sortedKeys.forEach(sku => {
-        // PERBAIKAN FITUR: Sekarang filter menyaring berdasarkan "Nama Produk", bukan lagi kode SKU unik
         if (activeFilterText !== "all" && dataKategori[sku].nama !== activeFilterText) return;
         
         const tr = document.createElement('tr');
@@ -268,26 +270,16 @@ function updateDashboardMetrics(skuAktifCount) {
     dashFileCount.innerText = totalMasterFiles;
 }
 
-// PERBAIKAN FITUR: Mengelompokkan pilihan dropdown agar HANYA menampilkan Nama Produk Unik (Mewakili 1 nama saja)
 function populateFilterDropdown() {
     dropdownFilter.innerHTML = '<option value="all">-- Tampilkan Semua Produk --</option>';
-    
-    // Ambil semua daftar nama produk dan eliminasi duplikat menggunakan Set
     let namaProdukUnikSet = new Set();
     Object.values(masterSkus).forEach(item => {
-        if (item.nama) {
-            namaProdukUnikSet.add(item.nama.trim().toUpperCase());
-        }
+        if (item.nama) namaProdukUnikSet.add(item.nama.trim().toUpperCase());
     });
-
-    // Urutkan nama produk dari A ke Z
     const sortedNamaProduk = Array.from(namaProdukUnikSet).sort();
-
-    // Masukkan ke dalam elemen HTML dropdown select
     sortedNamaProduk.forEach(nama => {
         const opt = document.createElement('option');
-        opt.value = nama; // Menyimpan Nama Produk sebagai acuan filter
-        opt.innerText = nama; // Menampilkan Nama Produk saja tanpa embel-embel SKU/Type
+        opt.value = nama; opt.innerText = nama;
         dropdownFilter.appendChild(opt);
     });
 }
@@ -312,58 +304,95 @@ btnCopyQty.addEventListener('click', () => {
     const data = globalDataKategori[cat];
     let txt = "SKU\tNama\tType\tWarna\tQty\n";
     Object.keys(data).sort().forEach(k => { 
-        if (activeFilterText !== "all" && data[k].nama !== activeFilterText) return; // Ikuti filter aktif saat di-copy
+        if (activeFilterText !== "all" && data[k].nama !== activeFilterText) return;
         txt += `${k}\t${data[k].nama}\t${data[k].type}\t${data[k].warna}\t${data[k].qty}\n`; 
     });
     navigator.clipboard.writeText(txt).then(() => updateStatusMessage('Berhasil copy Qty sesuai filter ke clipboard.'));
 });
 
+// 2. MENYIMPAN HISTORY LOG KE GOOGLE SPREADSHEET PUSAT
 btnSaveHistory.addEventListener('click', () => {
     const sumQty = (obj) => Object.values(obj).reduce((s, i) => s + i.qty, 0);
     const total = sumQty(globalDataKategori.utama) + sumQty(globalDataKategori.aksesoris) + sumQty(globalDataKategori.gradeb);
-    if (total === 0) return;
-    historyLogs.push({ waktu: new Date().toLocaleString('id-ID'), total, files: totalMasterFiles });
-    updateStatusMessage('History tersimpan.');
-
-    const historyBox = document.getElementById('history-list-container');
-    historyBox.className = "";
-    historyBox.innerHTML = '<div class="table-responsive"><table><thead><tr><th>Waktu Simpan</th><th>Files Terproses</th><th>Total Qty Item</th></tr></thead><tbody id="tbody-history"></tbody></table></div>';
     
-    const tbodyHist = document.getElementById('tbody-history');
-    historyLogs.forEach(log => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${log.waktu}</td><td>${log.files} Berkas</td><td style="color: #ec4899; font-weight: bold; text-align: right; padding-right: 25px;">${log.total} pcs</td>`;
-        tbodyHist.appendChild(tr);
-    });
+    if (total === 0) {
+        updateStatusMessage("Gagal menyimpan: Tidak ada data Qty penjualan.");
+        return;
+    }
+
+    updateStatusMessage("Sedang mengirim data riwayat ke Google Spreadsheet Cloud...");
+    const waktuSkrg = new Date().toLocaleString('id-ID');
+
+    const urlKirim = `${GOOGLE_SCRIPT_URL}?action=save&waktu=${encodeURIComponent(waktuSkrg)}&files=${totalMasterFiles}&total=${total}`;
+
+    fetch(urlKirim)
+        .then(res => res.json())
+        .then(result => {
+            if(result.status === "success") {
+                updateStatusMessage(`Sukses! Data penjualan (${total} pcs) berhasil dikunci ke cloud.`);
+                fetchHistoryFromCloud(); 
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            updateStatusMessage("Gagal menyimpan ke server spreadsheet. Periksa koneksi internet.");
+        });
 });
+
+// 3. MENARIK HISTORY DARI GOOGLE SHEET UNTUK DITAMPILKAN DI WEBSITE
+function fetchHistoryFromCloud() {
+    const historyBox = document.getElementById('history-list-container');
+    if (!historyBox) return;
+
+    fetch(`${GOOGLE_SCRIPT_URL}?action=fetch`)
+        .then(res => res.json())
+        .then(logs => {
+            if (logs.length === 0) {
+                historyBox.className = "empty-state-card";
+                historyBox.innerHTML = "<p>Belum ada riwayat pemrosesan log data penjualan yang disimpan di Google Sheets.</p>";
+                return;
+            }
+
+            historyBox.className = "";
+            historyBox.innerHTML = '<div class="table-responsive"><table><thead><tr><th>Waktu Simpan</th><th>Files Terproses</th><th style="text-align: right; padding-right: 25px;">Total Qty Item</th></tr></thead><tbody id="tbody-history"></tbody></table></div>';
+            
+            const tbodyHist = document.getElementById('tbody-history');
+            
+            logs.reverse().forEach(log => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${log.waktu}</td>
+                    <td><span class="badge-file-status" style="height:22px; font-size:11px;">${log.files}</span></td>
+                    <td style="color: #ec4899; font-weight: bold; text-align: right; padding-right: 25px;">${log.total}</td>
+                `;
+                tbodyHist.appendChild(tr);
+            });
+        })
+        .catch(err => {
+            console.error(err);
+            historyBox.innerHTML = "<p style='color: red; text-align:center;'>Gagal memuat log riwayat dari spreadsheet cloud.</p>";
+        });
+}
 
 function generateMasterArrayFormat() {
     let outputMatrix = [["Kategori", "SKU", "Nama Produk", "Type", "Warna", "Kuantitas (Qty)"]];
-    
     const insertRows = (namaKategori, dataObjek) => {
         Object.keys(dataObjek).sort().forEach(sku => {
             outputMatrix.push([namaKategori, sku, dataObjek[sku].nama, dataObjek[sku].type, dataObjek[sku].warna, dataObjek[sku].qty]);
         });
     };
-
     insertRows("PRODUK UTAMA", globalDataKategori.utama);
     insertRows("AKSESORIS", globalDataKategori.aksesoris);
     insertRows("GRADE B", globalDataKategori.gradeb);
-    
     return outputMatrix;
 }
 
 btnExportXlsx.addEventListener('click', () => {
     const matrixData = generateMasterArrayFormat();
-    if (matrixData.length === 1) {
-        updateStatusMessage("Gagal Export: Data tabel kalkulator kosong.");
-        return;
-    }
-
+    if (matrixData.length === 1) { updateStatusMessage("Gagal Export: Data tabel kalkulator kosong."); return; }
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(matrixData);
     XLSX.utils.book_append_sheet(wb, ws, "Rangkuman Terjual");
-    
     const tanggalFormat = new Date().toISOString().slice(0,10);
     XLSX.writeFile(wb, `Latela_Rangkuman_Penjualan_${tanggalFormat}.xlsx`);
     updateStatusMessage("Sukses mengunduh laporan berkas Excel (.xlsx).");
@@ -371,18 +400,12 @@ btnExportXlsx.addEventListener('click', () => {
 
 btnExportCsv.addEventListener('click', () => {
     const matrixData = generateMasterArrayFormat();
-    if (matrixData.length === 1) {
-        updateStatusMessage("Gagal Export: Data tabel kalkulator kosong.");
-        return;
-    }
-
+    if (matrixData.length === 1) { updateStatusMessage("Gagal Export: Data tabel kalkulator kosong."); return; }
     const ws = XLSX.utils.aoa_to_sheet(matrixData);
     const csvContent = XLSX.utils.sheet_to_csv(ws);
-    
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const tanggalFormat = new Date().toISOString().slice(0,10);
-    
     link.href = URL.createObjectURL(blob);
     link.setAttribute("download", `Latela_Rangkuman_Penjualan_${tanggalFormat}.csv`);
     document.body.appendChild(link);
