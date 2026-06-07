@@ -42,24 +42,52 @@ body {
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
+    position: relative;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s ease;
 }
 
 .brand-section {
     text-align: center;
     margin-bottom: 35px;
+    transition: opacity 0.15s ease;
 }
 
-/* MODIFIKASI: Ukuran logo diperbesar agar terlihat jelas */
 .brand-logo {
     width: 120px;
     height: 120px;
     margin-bottom: 12px;
     object-fit: contain;
+    transition: width 0.25s ease, height 0.25s ease;
 }
 
 .brand-title { font-size: 20px; font-weight: 800; color: var(--text-main); letter-spacing: 0.5px; }
 .app-subtitle { font-size: 15px; font-weight: 700; color: var(--pink-main); margin-top: 4px; }
 .dept-tag { font-size: 11px; color: var(--text-muted); display: block; margin-top: 2px; }
+
+/* STYLING TOMBOL TOGGLE SIDEBAR */
+.btn-toggle {
+    background: #f1f5f9;
+    border: 1px solid var(--border-color);
+    font-size: 14px;
+    color: var(--text-main);
+    cursor: pointer;
+    position: absolute;
+    top: 12px;
+    right: -14px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99;
+    transition: background-color 0.2s, color 0.2s;
+}
+.btn-toggle:hover {
+    background-color: var(--pink-main);
+    color: #ffffff;
+    border-color: var(--pink-main);
+}
 
 .menu-container { display: flex; flex-direction: column; gap: 6px; }
 .menu-label { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; margin-bottom: 4px; padding-left: 8px; }
@@ -78,9 +106,41 @@ body {
     color: var(--text-muted);
     cursor: pointer;
     border-radius: 6px;
+    transition: background-color 0.15s, justify-content 0.25s ease;
 }
 .menu-item:hover { background-color: #f1f5f9; color: var(--text-main); }
 .menu-item.active { background-color: #fdf2f8; color: var(--pink-main); }
+
+/* CONFIGURATION STATE: SIDEBAR SAAT DISEMATKAN (COLLAPSED) */
+.sidebar.collapsed {
+    width: 70px;
+    padding: 60px 10px 20px 10px;
+}
+
+/* PERBAIKAN: Sembunyikan total area brand section termasuk teks logo rusak hantu */
+.sidebar.collapsed .brand-section {
+    display: none;
+}
+
+.sidebar.collapsed .menu-label,
+.sidebar.collapsed .menu-text {
+    display: none;
+}
+
+.sidebar.collapsed .menu-item {
+    justify-content: center;
+    padding: 12px 0;
+    gap: 0;
+}
+
+.sidebar.collapsed .menu-icon {
+    font-size: 18px;
+}
+
+.sidebar.collapsed .btn-toggle {
+    right: 20px;
+    top: 15px;
+}
 
 /* MAIN WRAPPER WITH INTEGRATED FOOTER */
 .main-content-wrapper {
