@@ -24,7 +24,7 @@ body {
     background-color: var(--bg-app);
     color: var(--text-main);
     height: 100vh;
-    overflow: hidden;
+    overflow: hidden; /* Matikan scrollbar utama browser */
 }
 
 .app-container {
@@ -111,7 +111,7 @@ body {
 .menu-item:hover { background-color: #f1f5f9; color: var(--text-main); }
 .menu-item.active { background-color: #fdf2f8; color: var(--pink-main); }
 
-/* CONFIGURATION STATE: SIDEBAR SAAT DISEMATKAN (COLLAPSED) */
+/* STATE SIDEBAR SEMBUNYI KE KIRI (COLLAPSED) */
 .sidebar.collapsed {
     width: 70px;
     padding: 60px 10px 20px 10px;
@@ -141,7 +141,7 @@ body {
     top: 15px;
 }
 
-/* MAIN WRAPPER WITH INTEGRATED FOOTER */
+/* MAIN WRAPPER LAYER */
 .main-content-wrapper {
     flex: 1;
     display: flex;
@@ -152,11 +152,19 @@ body {
 
 .main-content {
     flex: 1;
-    padding: 25px 30px;
-    overflow-y: auto;
+    padding: 25px 30px 10px 30px;
+    overflow: hidden; /* PERBAIKAN: Mengunci halaman utama agar tidak ikut bergeser naik */
 }
 
 .page-title { font-size: 24px; font-weight: 700; color: #0f172a; margin-bottom: 20px; }
+
+/* KENDALI SCROLLBAR KHUSUS VIEW NON-TABEL (Dashboard & History) */
+#view-dashboard, #view-history {
+    overflow-y: auto;
+    height: calc(100vh - 80px);
+    padding-bottom: 40px;
+}
+
 .content-view { display: none; }
 .content-view.active { display: block; }
 
@@ -233,7 +241,7 @@ select {
     background-color: #ffffff;
     min-width: 140px;
     box-shadow: 0px 8px 16px 0px rgba(15, 23, 42, 0.15);
-    z-index: 50;
+    z-index: 999;
     border: 1px solid var(--border-color);
     border-radius: 4px;
     margin-top: 4px;
@@ -241,9 +249,7 @@ select {
     animation: fadeInDropdown 0.15s ease-in-out;
 }
 
-.export-dropdown-menu.show {
-    display: block;
-}
+.export-dropdown-menu.show { display: block; }
 
 .export-dropdown-menu button {
     display: block;
@@ -272,61 +278,4 @@ select {
     padding: 8px 20px;
     background-color: #e2e8f0;
     border: 1px solid var(--border-color);
-    border-bottom: none;
-    font-size: 12px;
-    font-weight: 600;
-    color: #475569;
-    cursor: pointer;
-    border-top-left-radius: 3px;
-    border-top-right-radius: 3px;
-}
-
-.sub-tab.active {
-    background-color: #ffffff;
-    color: var(--text-main);
-    font-weight: 700;
-    padding-bottom: 9px;
-    margin-bottom: -1px;
-    position: relative;
-    z-index: 2;
-}
-
-.table-frame-box { background-color: #ffffff; border: 1px solid var(--border-color); min-height: 420px; width: 100%; }
-.sub-table-panel { display: none; }
-.sub-table-panel.active { display: block; }
-
-table { width: 100%; border-collapse: collapse; }
-th, td { padding: 12px 20px; border-bottom: 1px solid #e2e8f0; font-size: 13px; text-align: left; }
-th { background-color: #f1f5f9; font-weight: 600; color: #334155; border-bottom: 2px solid var(--border-color); }
-
-/* Penanganan Khusus untuk Qty Kolom Terakhir di Tabel Utama Kalkulator */
-.sub-table-panel table td:last-child { text-align: right; font-weight: 700; color: var(--pink-main); padding-right: 25px; }
-
-.sku-list-card { background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; }
-.sku-list-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 15px; color: var(--text-main); }
-
-#tbody-master-list td:last-child { text-align: left; font-weight: 600; color: var(--pink-main); }
-
-/* DASHBOARD COMPONENTS */
-.cards-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px; }
-.card { background-color: #fff; border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 4px; }
-.card-label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
-.card-value { font-size: 36px; font-weight: 700; }
-.card-pink .card-value { color: var(--pink-main); }
-.card-blue .card-value { color: var(--blue-main); }
-.card-green .card-value { color: var(--green-main); }
-.chart-placeholder-card { background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; height: 320px; position: relative; }
-.legend-container { position: absolute; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 6px; }
-.legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; }
-.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-.dot-pink { background-color: var(--pink-main); }
-.dot-blue { background-color: var(--blue-main); }
-.dot-orange { background-color: #f59e0b; }
-.empty-state-card { background: white; padding: 30px; text-align: center; border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-muted); font-size: 14px; }
-
-.status-footer { background-color: #f1f5f9; border-top: 1px solid var(--border-color); padding: 6px 15px; font-size: 12px; color: #475569; font-weight: 500; }
-
-@keyframes fadeInDropdown {
-    from { opacity: 0; transform: translateY(-5px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+    border-
