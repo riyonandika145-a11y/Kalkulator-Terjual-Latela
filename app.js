@@ -9,7 +9,6 @@ const contentViews = document.querySelectorAll('.content-view');
 const subTabs = document.querySelectorAll('.sub-tab');
 const subTablePanels = document.querySelectorAll('.sub-table-panel');
 
-// --- SELEKTOR TOGGLE SIDEBAR BARU ---
 const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
 const sidebarElement = document.querySelector('.sidebar');
 
@@ -49,20 +48,17 @@ let historyLogs = [];
 
 // --- INITIAL BOOTSTRAP SINKRONISASI CLOUD ---
 window.addEventListener('DOMContentLoaded', () => {
-    // Muat preferensi ingatan posisi sidebar dari memori browser
     const savedSidebarState = localStorage.getItem('sidebarState');
     if (savedSidebarState === 'collapsed') {
         sidebarElement.classList.add('collapsed');
         btnToggleSidebar.innerText = "❯";
     }
-
     fetchMasterSkusFromCloud();
 });
 
-// EVENT LOGIKA TOGGLE SIDEBAR (MENYEMATKAN KE KIRI)
+// EVENT LOGIKA TOGGLE SIDEBAR
 btnToggleSidebar.addEventListener('click', () => {
     sidebarElement.classList.toggle('collapsed');
-    
     if (sidebarElement.classList.contains('collapsed')) {
         btnToggleSidebar.innerText = "❯";
         localStorage.setItem('sidebarState', 'collapsed');
@@ -76,10 +72,10 @@ btnSyncCloud.addEventListener('click', () => {
     fetchMasterSkusFromCloud();
 });
 
-// 1. ENGINE AMBIL DATA TERPUSAT DARI GOOGLE SHEETS
+// 1. ENGINE AMBIL DATA TERPUSAT DARI GOOGLE SHEETS (DENGAN UPDATE KOLOM BARU)
 function fetchMasterSkusFromCloud() {
     updateStatusMessage("Menghubungkan ke Google Sheets Cloud Database...");
-    tbodyMasterList.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #94a3b8; font-style: italic;">Sinkronisasi data terpusat...</td></tr>`;
+    tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; font-style: italic;">Sinkronisasi data terpusat...</td></tr>`;
 
     fetch(GOOGLE_SHEET_URL)
         .then(response => {
@@ -97,11 +93,15 @@ function fetchMasterSkusFromCloud() {
             jsonData.forEach(row => {
                 const skuCode = row['SKU'] || row['sku'] || row['Code'];
                 const namaResmi = row['Nama'] || row['nama'] || row['Product'];
+                const typeProduk = row['Type'] || row['type'] || '-';
+                const warnaProduk = row['Warna'] || row['warna'] || '-';
                 const kategoriLogistik = row['Kategori'] || row['kategori'] || 'utama';
 
                 if (skuCode) {
                     masterSkus[skuCode.toString().trim()] = {
                         nama: namaResmi ? namaResmi.toString().trim().toUpperCase() : "TANPA NAMA",
+                        type: typeProduk.toString().trim(),
+                        warna: warnaProduk.toString().trim(),
                         kategori: kategoriLogistik.toString().trim().toLowerCase()
                     };
                 }
@@ -114,7 +114,7 @@ function fetchMasterSkusFromCloud() {
         .catch(err => {
             console.error(err);
             updateStatusMessage("Gagal menyinkronkan data dari Google Sheets.");
-            tbodyMasterList.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #dc2626;">Gagal memuat database cloud.</td></tr>`;
+            tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #dc2626;">Gagal memuat database cloud. Cek koneksi internet atau setelan share spreadsheet.</td></tr>`;
         });
 }
 
@@ -144,7 +144,7 @@ function renderMasterSkuDatabaseView() {
     masterSkuCount.innerText = sortedKeys.length;
 
     if (sortedKeys.length === 0) {
-        tbodyMasterList.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #94a3b8; font-style: italic;">Google Sheet terbaca, tapi data kosong.</td></tr>`;
+        tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; font-style: italic;">Google Sheet terbaca, tapi data kosong.</td></tr>`;
         return;
     }
 
@@ -153,6 +153,8 @@ function renderMasterSkuDatabaseView() {
         tr.innerHTML = `
             <td><code>${sku}</code></td>
             <td><strong>${masterSkus[sku].nama}</strong></td>
+            <td>${masterSkus[sku].type}</td>
+            <td>${masterSkus[sku].warna}</td>
             <td style="text-transform: uppercase; font-size:12px;">${masterSkus[sku].kategori}</td>
         `;
         tbodyMasterList.appendChild(tr);
@@ -168,6 +170,8 @@ function resetKalkulatorDataState() {
         if (globalDataKategori[kat]) {
             globalDataKategori[kat][sku] = {
                 nama: masterSkus[sku].nama,
+                type: masterSkus[sku].type,
+                warna: masterSkus[sku].warna,
                 qty: 0
             };
         }
@@ -237,7 +241,14 @@ function renderSingleTable(dataKategori, tbodyElement) {
         if (activeFilterText !== "all" && sku !== activeFilterText) return;
         
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${sku}</td><td>${dataKategori[sku].nama}</td><td>${dataKategori[sku].qty}</td>`;
+        // UPDATE RENDER TABEL: Menambahkan data kolom Type dan Warna
+        tr.innerHTML = `
+            <td>${sku}</td>
+            <td>${dataKategori[sku].nama}</td>
+            <td>${dataKategori[sku].type}</td>
+            <td>${dataKategori[sku].warna}</td>
+            <td>${dataKategori[sku].qty}</td>
+        `;
         tbodyElement.appendChild(tr);
     });
 }
@@ -281,12 +292,15 @@ btnFileReset.addEventListener('click', () => {
 
 function updateStatusMessage(msg) { statusBar.innerText = msg; }
 
+// UPDATE COPY FUNCTION: Ikut menyalin data Type dan Warna ke clipboard
 btnCopyQty.addEventListener('click', () => {
     const cat = document.querySelector('.sub-tab.active').getAttribute('data-category');
     const data = globalDataKategori[cat];
-    let txt = "SKU\tNama\tQty\n";
-    Object.keys(data).sort().forEach(k => { txt += `${k}\t${data[k].nama}\t${data[k].qty}\n`; });
-    navigator.clipboard.writeText(txt).then(() => updateStatusMessage('Berhasil copy Qty ke clipboard.'));
+    let txt = "SKU\tNama\tType\tWarna\tQty\n";
+    Object.keys(data).sort().forEach(k => { 
+        txt += `${k}\t${data[k].nama}\t${data[k].type}\t${data[k].warna}\t${data[k].qty}\n`; 
+    });
+    navigator.clipboard.writeText(txt).then(() => updateStatusMessage('Berhasil copy Qty lengkap ke clipboard.'));
 });
 
 btnSaveHistory.addEventListener('click', () => {
@@ -308,22 +322,13 @@ btnSaveHistory.addEventListener('click', () => {
     });
 });
 
-// --- DROPDOWN ENGINE CONTROLLER & EXPORT SYSTEM LOGIC ---
-btnExportToggle.addEventListener('click', (e) => {
-    e.stopPropagation();
-    exportMenuItems.classList.toggle('show');
-});
-
-window.addEventListener('click', () => {
-    exportMenuItems.classList.remove('show');
-});
-
+// UPDATE EXPORT MATRIX GENERATION: Menambahkan kolom Type dan Warna di laporan Excel/CSV
 function generateMasterArrayFormat() {
-    let outputMatrix = [["Kategori", "SKU", "Nama Produk", "Kuantitas (Qty)"]];
+    let outputMatrix = [["Kategori", "SKU", "Nama Produk", "Type", "Warna", "Kuantitas (Qty)"]];
     
     const insertRows = (namaKategori, dataObjek) => {
         Object.keys(dataObjek).sort().forEach(sku => {
-            outputMatrix.push([namaKategori, sku, dataObjek[sku].nama, dataObjek[sku].qty]);
+            outputMatrix.push([namaKategori, sku, dataObjek[sku].nama, dataObjek[sku].type, dataObjek[sku].warna, dataObjek[sku].qty]);
         });
     };
 
