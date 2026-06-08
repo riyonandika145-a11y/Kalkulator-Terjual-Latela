@@ -71,13 +71,12 @@ btnToggleSidebar.addEventListener('click', () => {
     }
 });
 
-// PERBAIKAN SAKTI: LOGIKA PEMBUKA & PENUTUP DROPDOWN EXPORT BUTTON
+// LOGIKA PEMBUKA & PENUTUP DROPDOWN EXPORT BUTTON
 btnExportToggle.addEventListener('click', (e) => {
-    e.stopPropagation(); // Biar event klik gak tembus ke document bawah
+    e.stopPropagation(); 
     exportMenuItems.classList.toggle('show');
 });
 
-// Otomatis tutup menu export jika admin klik di mana saja luar tombol
 document.addEventListener('click', () => {
     exportMenuItems.classList.remove('show');
 });
@@ -385,6 +384,7 @@ function fetchHistoryFromCloud() {
         });
 }
 
+// FORMAT MATRIKS DATA LAMA (KHUSUS UNTUK METODE EXPORT .CSV)
 function generateMasterArrayFormat() {
     let outputMatrix = [["Kategori", "SKU", "Nama Produk", "Type", "Warna", "Kuantitas (Qty)"]];
     const insertRows = (namaKategori, dataObjek) => {
@@ -398,17 +398,52 @@ function generateMasterArrayFormat() {
     return outputMatrix;
 }
 
+// MODIFIKASI PREMIUM: EXPORT EXCEL SEKARANG TERBAGI OTOMATIS MENJADI 3 TAB SEPARATE
 btnExportXlsx.addEventListener('click', () => {
-    const matrixData = generateMasterArrayFormat();
-    if (matrixData.length === 1) { updateStatusMessage("Gagal Export: Data tabel kalkulator kosong."); return; }
+    if (Object.keys(masterSkus).length === 0) {
+        updateStatusMessage("Gagal Export: Data Master SKU dari cloud kosong.");
+        return;
+    }
+
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(matrixData);
-    XLSX.utils.book_append_sheet(wb, ws, "Rangkuman Terjual");
+
+    // Fungsi pembantu untuk membungkus object data kategori menjadi baris tabel Excel
+    const bentukMatriksLembarKerja = (dataKategori) => {
+        let matriks = [["SKU", "Nama Produk", "Type", "Warna", "Kuantitas (Qty)"]];
+        Object.keys(dataKategori).sort().forEach(sku => {
+            matriks.push([
+                sku, 
+                dataKategori[sku].nama, 
+                dataKategori[sku].type, 
+                dataKategori[sku].warna, 
+                dataKategori[sku].qty
+            ]);
+        });
+        return matriks;
+    };
+
+    // 1. Memasukkan Tab ke-1: PRODUK UTAMA
+    const matriksUtama = bentukMatriksLembarKerja(globalDataKategori.utama);
+    const wsUtama = XLSX.utils.aoa_to_sheet(matriksUtama);
+    XLSX.utils.book_append_sheet(wb, wsUtama, "Produk Utama");
+
+    // 2. Memasukkan Tab ke-2: AKSESORIS
+    const matriksAksesoris = bentukMatriksLembarKerja(globalDataKategori.aksesoris);
+    const wsAksesoris = XLSX.utils.aoa_to_sheet(matriksAksesoris);
+    XLSX.utils.book_append_sheet(wb, wsAksesoris, "Aksesoris");
+
+    // 3. Memasukkan Tab ke-3: GRADE B
+    const matriksGradeB = bentukMatriksLembarKerja(globalDataKategori.gradeb);
+    const wsGradeB = XLSX.utils.aoa_to_sheet(matriksGradeB);
+    XLSX.utils.book_append_sheet(wb, wsGradeB, "Grade B");
+
+    // Generate proses unduhan file .xlsx ke komputer
     const tanggalFormat = new Date().toISOString().slice(0,10);
-    XLSX.writeFile(wb, `Latela_Rangkuman_Penjualan_${tanggalFormat}.xlsx`);
-    updateStatusMessage("Sukses mengunduh laporan berkas Excel (.xlsx).");
+    XLSX.writeFile(wb, `Latela_Laporan_Penjualan_Tabs_${tanggalFormat}.xlsx`);
+    updateStatusMessage("Sukses mengunduh Excel mewah terpisah 3 tab kategori!");
 });
 
+// Export .CSV tetap flat satu lembar karena aturan bawaan format ekstensi .csv
 btnExportCsv.addEventListener('click', () => {
     const matrixData = generateMasterArrayFormat();
     if (matrixData.length === 1) { updateStatusMessage("Gagal Export: Data tabel kalkulator kosong."); return; }
