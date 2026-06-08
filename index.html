@@ -5,15 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KALKULATOR TERJUAL - Latela System</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Load SheetJS via CDN untuk membaca & menulis Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
     <div class="app-container">
+        <!-- SIDEBAR -->
         <aside class="sidebar">
+            <!-- Tombol Toggle Menyematkan Sidebar -->
             <button id="btn-toggle-sidebar" class="btn-toggle">☰</button>
 
             <div class="brand-section">
+                <!-- LOGO MENGGUNAKAN FILE JPEG -->
                 <img src="logo.jpeg" class="brand-logo" alt="Logo Latela" style="object-fit: contain;">
                 <h1 class="brand-title">LATELA</h1>
                 <h2 class="app-subtitle">KALKULATOR TERJUAL</h2>
@@ -35,15 +39,18 @@
                     <span class="menu-icon">⏳</span> <span class="menu-text">History</span>
                 </button>
                 
-                <a href="https://docs.google.com/spreadsheets/d/1vRx0w6ouZ_PYXUTdbqqT_CCslwLR-hdY3c311M7jAzPlskawLg2ewiGPQ_gLZ1K4EjQPI_7_qfp3pzb/edit" target="_blank" class="menu-item-external">
+                <!-- ⚠️ ATENSI: Ganti teks di dalam href di bawah ini dengan Link Asli saat kamu membuka Google Sheets database kamu! -->
+                <a href="KLIK_DAN_GANTI_DENGAN_URL_ASLI_SPREADSHEET_KAMU" target="_blank" class="menu-item-external">
                     <span class="menu-icon">🔗</span> <span class="menu-text">Extension</span>
                 </a>
             </nav>
         </aside>
 
+        <!-- MAIN CONTENT AREA -->
         <main class="main-content-wrapper">
             <div class="main-content">
                 
+                <!-- VIEW: DASHBOARD -->
                 <section id="view-dashboard" class="content-view">
                     <h2 class="page-title">Dashboard Overview</h2>
                     
@@ -71,9 +78,12 @@
                     </div>
                 </section>
 
+                <!-- VIEW: KALKULATOR TERJUAL -->
                 <section id="view-kalkulator" class="content-view active">
                     
+                    <!-- TOP CONTROL BAR ACTION -->
                     <div class="top-controls-bar">
+                        <!-- Filter Produk -->
                         <div class="control-group">
                             <span class="group-label">Filter Produk:</span>
                             <div class="group-inputs">
@@ -84,6 +94,7 @@
                             </div>
                         </div>
 
+                        <!-- File Management -->
                         <div class="control-group">
                             <span class="group-label">File Management:</span>
                             <div class="group-inputs">
@@ -94,11 +105,13 @@
                             </div>
                         </div>
 
+                        <!-- Data Actions -->
                         <div class="control-group">
                             <span class="group-label">Data Actions:</span>
                             <div class="group-inputs">
                                 <button id="btn-save-history" class="btn-action btn-purple-solid">Save History</button>
                                 
+                                <!-- DROPDOWN EXPORT BUTTON -->
                                 <div class="export-dropdown-wrapper">
                                     <button id="btn-export-toggle" class="btn-action btn-blue-solid">Export ▾</button>
                                     <div id="export-menu-items" class="export-dropdown-menu">
@@ -112,6 +125,7 @@
                         </div>
                     </div>
 
+                    <!-- WORKSPACE CONTAINER UTAMA -->
                     <div class="workspace-panel">
                         <div class="sub-tabs-container">
                             <button class="sub-tab active" data-category="utama">PRODUK UTAMA</button>
@@ -120,6 +134,7 @@
                         </div>
 
                         <div class="table-frame-box">
+                            <!-- Panel Tabel 1: Produk Utama -->
                             <div id="panel-utama" class="sub-table-panel active">
                                 <table>
                                     <thead>
@@ -135,6 +150,7 @@
                                 </table>
                             </div>
 
+                            <!-- Panel Tabel 2: Aksesoris -->
                             <div id="panel-aksesoris" class="sub-table-panel">
                                 <table>
                                     <thead>
@@ -150,6 +166,7 @@
                                 </table>
                             </div>
 
+                            <!-- Panel Tabel 3: Grade B -->
                             <div id="panel-gradeb" class="sub-table-panel">
                                 <table>
                                     <thead>
@@ -168,6 +185,7 @@
                     </div>
                 </section>
 
+                <!-- VIEW: MASTER SKU CLOUD VIEW -->
                 <section id="view-mastersku" class="content-view">
                     <h2 class="page-title">Master Data SKU Cloud Database</h2>
                     <p class="section-desc">Data di bawah disinkronisasikan secara otomatis dan terpusat langsung dari Google Sheets internal.</p>
@@ -198,6 +216,7 @@
                     </div>
                 </section>
 
+                <!-- VIEW: HISTORY -->
                 <section id="view-history" class="content-view">
                     <h2 class="page-title">History Log</h2>
                     <div id="history-list-container" class="empty-state-card">
@@ -206,6 +225,7 @@
                 </section>
 
             </div>
+            <!-- FOOTER STATUS BAR -->
             <footer class="status-footer" id="status-bar">Memuat sistem...</footer>
         </main>
     </div>
