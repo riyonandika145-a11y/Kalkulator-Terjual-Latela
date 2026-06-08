@@ -83,14 +83,14 @@ document.addEventListener('click', () => {
     exportMenuItems.classList.remove('show');
 });
 
-// PERBAIKAN PROTEKSI: CEGAT AKSES EXTENSION JIKA PASSWORD SALAH
+// PROTEKSI SECURITY: CEGAT AKSES JIKA PASSWORDNYA SALAH
 if (menuExtension) {
     menuExtension.addEventListener('click', (e) => {
-        e.preventDefault(); // Tahan dulu link jangan langsung dibuka
+        e.preventDefault(); // Kunci perpindahan halaman otomatis
         
         const inputPassword = prompt("🔐 SECURITY ALERT:\nMasukkan password otorisasi untuk mengakses database Sheets:");
         
-        // GANTI DI SINI JIKA INGIN MENGUBAH PASSWORDNYA
+        // JIKA MAU UBAH PASSWORD TINGGAL GANTI TEKS DI BAWAH INI
         if (inputPassword === "latela2026") { 
             window.open(menuExtension.href, '_blank');
             updateStatusMessage("Akses ke database terpusat diizinkan.");
