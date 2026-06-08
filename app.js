@@ -148,6 +148,13 @@ subTabs.forEach(tab => {
         tab.classList.add('active');
         subTablePanels.forEach(p => p.classList.remove('active'));
         document.getElementById(`panel-${tab.getAttribute('data-category')}`).classList.add('active');
+        
+        // PERBAIKAN FITUR: Reset filter pilihan ke "all" tiap kali pindah tab kategori
+        activeFilterText = "all";
+        
+        // PERBAIKAN FITUR: Paksa dropdown filter memperbarui isinya berdasarkan tab baru yang aktif
+        populateFilterDropdown();
+        refreshAllTables();
     });
 });
 
@@ -280,18 +287,36 @@ function updateDashboardMetrics(skuAktifCount) {
     dashFileCount.innerText = totalMasterFiles;
 }
 
+// PERBAIKAN UTAMA: Mengelompokkan pilihan dropdown dinamis HANYA dari produk di tab yang sedang aktif
 function populateFilterDropdown() {
     dropdownFilter.innerHTML = '<option value="all">-- Tampilkan Semua Produk --</option>';
+    
+    // 1. Deteksi tab sub-kategori mana yang saat ini sedang aktif di layar
+    const activeTab = document.querySelector('.sub-tab.active');
+    const currentCategory = activeTab ? activeTab.getAttribute('data-category') : 'utama';
+
     let namaProdukUnikSet = new Set();
-    Object.values(masterSkus).forEach(item => {
-        if (item.nama) namaProdukUnikSet.add(item.nama.trim().toUpperCase());
-    });
+
+    // 2. Hanya ambil & saring nama produk yang terdaftar di dalam rumpun kategori tab tersebut
+    if (globalDataKategori[currentCategory]) {
+        Object.values(globalDataKategori[currentCategory]).forEach(item => {
+            if (item.nama) {
+                namaProdukUnikSet.add(item.nama.trim().toUpperCase());
+            }
+        });
+    }
+
+    // 3. Urutkan nama produk dari A ke Z lalu masukkan ke elemen HTML select dropdown
     const sortedNamaProduk = Array.from(namaProdukUnikSet).sort();
     sortedNamaProduk.forEach(nama => {
         const opt = document.createElement('option');
-        opt.value = nama; opt.innerText = nama;
+        opt.value = nama; 
+        opt.innerText = nama;
         dropdownFilter.appendChild(opt);
     });
+
+    // Kembalikan ke posisi state filter aktif saat ini
+    dropdownFilter.value = activeFilterText;
 }
 
 dropdownFilter.addEventListener('change', (e) => { activeFilterText = e.target.value; refreshAllTables(); });
@@ -320,7 +345,7 @@ btnCopyQty.addEventListener('click', () => {
     navigator.clipboard.writeText(txt).then(() => updateStatusMessage('Berhasil copy Qty sesuai filter ke clipboard.'));
 });
 
-// 2. MENYIMPAN HISTORY LOG KE GOOGLE SPREADSHEET PUSAT
+// MENYIMPAN HISTORY LOG KE GOOGLE SPREADSHEET PUSAT
 btnSaveHistory.addEventListener('click', () => {
     const sumQty = (obj) => Object.values(obj).reduce((s, i) => s + i.qty, 0);
     const total = sumQty(globalDataKategori.utama) + sumQty(globalDataKategori.aksesoris) + sumQty(globalDataKategori.gradeb);
@@ -349,7 +374,7 @@ btnSaveHistory.addEventListener('click', () => {
         });
 });
 
-// 3. MENARIK HISTORY DARI GOOGLE SHEET UNTUK DITAMPILKAN DI WEBSITE
+// MENARIK HISTORY DARI GOOGLE SHEET UNTUK DITAMPILKAN DI WEBSITE
 function fetchHistoryFromCloud() {
     const historyBox = document.getElementById('history-list-container');
     if (!historyBox) return;
@@ -384,7 +409,6 @@ function fetchHistoryFromCloud() {
         });
 }
 
-// FORMAT MATRIKS DATA LAMA (KHUSUS UNTUK METODE EXPORT .CSV)
 function generateMasterArrayFormat() {
     let outputMatrix = [["Kategori", "SKU", "Nama Produk", "Type", "Warna", "Kuantitas (Qty)"]];
     const insertRows = (namaKategori, dataObjek) => {
@@ -398,7 +422,7 @@ function generateMasterArrayFormat() {
     return outputMatrix;
 }
 
-// MODIFIKASI PREMIUM: EXPORT EXCEL SEKARANG TERBAGI OTOMATIS MENJADI 3 TAB SEPARATE
+// MULTI-TAB EXPORT EXCEL MATRIX GENERATION
 btnExportXlsx.addEventListener('click', () => {
     if (Object.keys(masterSkus).length === 0) {
         updateStatusMessage("Gagal Export: Data Master SKU dari cloud kosong.");
@@ -407,7 +431,6 @@ btnExportXlsx.addEventListener('click', () => {
 
     const wb = XLSX.utils.book_new();
 
-    // Fungsi pembantu untuk membungkus object data kategori menjadi baris tabel Excel
     const bentukMatriksLembarKerja = (dataKategori) => {
         let matriks = [["SKU", "Nama Produk", "Type", "Warna", "Kuantitas (Qty)"]];
         Object.keys(dataKategori).sort().forEach(sku => {
@@ -422,28 +445,23 @@ btnExportXlsx.addEventListener('click', () => {
         return matriks;
     };
 
-    // 1. Memasukkan Tab ke-1: PRODUK UTAMA
     const matriksUtama = bentukMatriksLembarKerja(globalDataKategori.utama);
     const wsUtama = XLSX.utils.aoa_to_sheet(matriksUtama);
     XLSX.utils.book_append_sheet(wb, wsUtama, "Produk Utama");
 
-    // 2. Memasukkan Tab ke-2: AKSESORIS
     const matriksAksesoris = bentukMatriksLembarKerja(globalDataKategori.aksesoris);
     const wsAksesoris = XLSX.utils.aoa_to_sheet(matriksAksesoris);
     XLSX.utils.book_append_sheet(wb, wsAksesoris, "Aksesoris");
 
-    // 3. Memasukkan Tab ke-3: GRADE B
     const matriksGradeB = bentukMatriksLembarKerja(globalDataKategori.gradeb);
     const wsGradeB = XLSX.utils.aoa_to_sheet(matriksGradeB);
     XLSX.utils.book_append_sheet(wb, wsGradeB, "Grade B");
 
-    // Generate proses unduhan file .xlsx ke komputer
     const tanggalFormat = new Date().toISOString().slice(0,10);
     XLSX.writeFile(wb, `Latela_Laporan_Penjualan_Tabs_${tanggalFormat}.xlsx`);
     updateStatusMessage("Sukses mengunduh Excel mewah terpisah 3 tab kategori!");
 });
 
-// Export .CSV tetap flat satu lembar karena aturan bawaan format ekstensi .csv
 btnExportCsv.addEventListener('click', () => {
     const matrixData = generateMasterArrayFormat();
     if (matrixData.length === 1) { updateStatusMessage("Gagal Export: Data tabel kalkulator kosong."); return; }
