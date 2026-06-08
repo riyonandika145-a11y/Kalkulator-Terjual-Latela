@@ -38,6 +38,8 @@ const tbodyMasterList = document.getElementById('tbody-master-list');
 const masterSkuCount = document.getElementById('master-sku-count');
 const btnSyncCloud = document.getElementById('btn-sync-cloud');
 
+const menuExtension = document.getElementById('menu-extension');
+
 const dashTotalTerjual = document.getElementById('dash-total-terjual');
 const dashSkuAktif = document.getElementById('dash-sku-aktif');
 const dashFileCount = document.getElementById('dash-file-count');
@@ -80,6 +82,24 @@ btnExportToggle.addEventListener('click', (e) => {
 document.addEventListener('click', () => {
     exportMenuItems.classList.remove('show');
 });
+
+// PERBAIKAN PROTEKSI: CEGAT AKSES EXTENSION JIKA PASSWORD SALAH
+if (menuExtension) {
+    menuExtension.addEventListener('click', (e) => {
+        e.preventDefault(); // Tahan dulu link jangan langsung dibuka
+        
+        const inputPassword = prompt("🔐 SECURITY ALERT:\nMasukkan password otorisasi untuk mengakses database Sheets:");
+        
+        // GANTI DI SINI JIKA INGIN MENGUBAH PASSWORDNYA
+        if (inputPassword === "latela2026") { 
+            window.open(menuExtension.href, '_blank');
+            updateStatusMessage("Akses ke database terpusat diizinkan.");
+        } else if (inputPassword !== null) {
+            alert("❌ PASSWORD SALAH!\nAkses ke Google Sheets ditolak sistem.");
+            updateStatusMessage("Akses ditolak: Percobaan masuk ilegal.");
+        }
+    });
+}
 
 btnSyncCloud.addEventListener('click', () => {
     fetchMasterSkusFromCloud();
