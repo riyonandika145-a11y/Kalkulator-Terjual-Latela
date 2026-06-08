@@ -71,6 +71,17 @@ btnToggleSidebar.addEventListener('click', () => {
     }
 });
 
+// PERBAIKAN SAKTI: LOGIKA PEMBUKA & PENUTUP DROPDOWN EXPORT BUTTON
+btnExportToggle.addEventListener('click', (e) => {
+    e.stopPropagation(); // Biar event klik gak tembus ke document bawah
+    exportMenuItems.classList.toggle('show');
+});
+
+// Otomatis tutup menu export jika admin klik di mana saja luar tombol
+document.addEventListener('click', () => {
+    exportMenuItems.classList.remove('show');
+});
+
 btnSyncCloud.addEventListener('click', () => {
     fetchMasterSkusFromCloud();
 });
