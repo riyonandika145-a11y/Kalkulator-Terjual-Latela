@@ -40,7 +40,7 @@ const btnSyncCloud = document.getElementById('btn-sync-cloud');
 
 const menuExtension = document.getElementById('menu-extension');
 
-// SELEKTOR BARU: CUSTOM SECURE MODAL POP-UP DOM
+// SECURE MODAL POP-UP DOM
 const passwordModal = document.getElementById('password-modal');
 const inputExtPassword = document.getElementById('input-ext-password');
 const modalErrorMsg = document.getElementById('modal-error-msg');
@@ -90,22 +90,21 @@ document.addEventListener('click', () => {
     exportMenuItems.classList.remove('show');
 });
 
-// LOGIKA BARU: INTERCEPT MENU EXTENSION DENGAN CUSTOM IN-APP MODAL (ANTI-BLOCK BROWSER)
+// INTERCEPT MENU EXTENSION DENGAN CUSTOM IN-APP MODAL
 if (menuExtension) {
     menuExtension.addEventListener('click', (e) => {
-        e.preventDefault(); // Cegah browser langsung lompat link
-        modalErrorMsg.innerText = ""; // Reset teks eror lama
-        inputExtPassword.value = ""; // Bersihkan kolom ketik
-        passwordModal.classList.add('show'); // Nyalakan pop-up modal
-        setTimeout(() => inputExtPassword.focus(), 100); // Auto-focus cursor ke kolom input
+        e.preventDefault(); 
+        modalErrorMsg.innerText = ""; 
+        inputExtPassword.value = ""; 
+        passwordModal.classList.add('show'); 
+        setTimeout(() => inputExtPassword.focus(), 100); 
     });
 }
 
 function eksekusiVerifikasiPasswordModal() {
-    // JIKA MAU UPDATE PASSWORD, GANTI TEKS DI BAWAH INI
     if (inputExtPassword.value === "latela2026") { 
-        passwordModal.classList.remove('show'); // Tutup modal
-        window.open(menuExtension.href, '_blank'); // Buka link spreadsheet aman di tab baru
+        passwordModal.classList.remove('show'); 
+        window.open(menuExtension.href, '_blank'); 
         updateStatusMessage("Otorisasi sukses. Database utama berhasil dibuka.");
     } else {
         modalErrorMsg.innerText = "⚠️ Password salah! Akses ditolak sistem.";
@@ -113,14 +112,12 @@ function eksekusiVerifikasiPasswordModal() {
     }
 }
 
-// Event handler klik tombol di dalam modal
 btnModalSubmit.addEventListener('click', eksekusiVerifikasiPasswordModal);
 btnModalCancel.addEventListener('click', () => {
     passwordModal.classList.remove('show');
     updateStatusMessage("Otorisasi dibatalkan oleh user.");
 });
 
-// Tambahan support: Bisa tekan tombol "Enter" di keyboard langsung untuk login sat-set
 inputExtPassword.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         eksekusiVerifikasiPasswordModal();
@@ -330,7 +327,7 @@ function updateDashboardMetrics(skuAktifCount) {
     dashFileCount.innerText = totalMasterFiles;
 }
 
-// DROPDOWN DINAMIS BERDASARKAN TAB AKTIF (NAMA PRODUK UNIK)
+// DROPDOWN DINAMIS BERDASARKAN TAB AKTIF
 function populateFilterDropdown() {
     dropdownFilter.innerHTML = '<option value="all">-- Tampilkan Semua Produk --</option>';
     
