@@ -116,6 +116,13 @@ body {
 .sidebar.collapsed .menu-icon { font-size: 18px; }
 .sidebar.collapsed .btn-toggle { right: 20px; top: 15px; }
 
+/* 🔒 MODIFIKASI TERBARU: MENGUNCI MENU TOTAL SAAT SIDEBAR DIKECILKAN */
+.sidebar.collapsed .menu-item,
+.sidebar.collapsed .menu-item-external {
+    pointer-events: none; /* Menghapus fungsi klik & efek hover total */
+    opacity: 0.4;        /* Membuat ikon pudar sebagai tanda visual sedang terkunci */
+}
+
 /* CONTENT LAYER CONTAINER */
 .main-content-wrapper {
     flex: 1;
@@ -376,7 +383,7 @@ table thead th {
 .status-footer { background-color: #f1f5f9; border-top: 1px solid var(--border-color); padding: 5px 12px; font-size: 11px; color: #475569; font-weight: 500; }
 
 /* IN-APP PREMIUM SECURE MODAL STYLES */
-.modal-overlay {
+.password-modal, .modal-overlay {
     display: none; 
     position: fixed;
     top: 0; left: 0;
