@@ -210,6 +210,24 @@
         </main>
     </div>
 
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span class="modal-icon">🔐</span>
+                <h3>Security Authentication</h3>
+            </div>
+            <div class="modal-body">
+                <p>Masukkan password otorisasi untuk mengakses database master Sheets:</p>
+                <input type="password" id="input-ext-password" placeholder="Ketik password di sini...">
+                <span id="modal-error-msg" class="modal-error"></span>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-modal-cancel" class="btn-action btn-gray-outline">Batal</button>
+                <button id="btn-modal-submit" class="btn-action btn-purple-solid">Masuk</button>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>
