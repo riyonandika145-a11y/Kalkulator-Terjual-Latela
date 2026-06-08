@@ -135,10 +135,8 @@ body {
 
 .page-title { font-size: 22px; font-weight: 700; color: #0f172a; margin-bottom: 15px; flex-shrink: 0; }
 
-/* KENDALI LAYOUT VIEW UTAMA */
 .content-view { display: none; height: 100%; }
 
-/* Khusus view kalkulator & master SKU dikunci menggunakan flex agar tinggi tabelnya dinamis */
 #view-kalkulator.active, #view-mastersku.active { 
     display: flex; 
     flex-direction: column; 
@@ -150,19 +148,19 @@ body {
     padding-bottom: 40px;
 }
 
-/* PERBAIKAN UTAMA: Top bar control mendukung bungkusan otomatis (WRAP) secara rapi */
+/* TOP BAR CONTROL COMPACT - AUTO WRAP METHOD */
 .top-controls-bar {
     display: flex;
     flex-direction: row;
-    flex-wrap: wrap; /* Izinkan tombol turun ke bawah menjadi baris baru jika ruang menyempit */
+    flex-wrap: wrap; 
     align-items: center;
     justify-content: flex-start;
-    gap: 15px 25px; /* Jarak antar tombol (kanan-kiri & atas-bawah) */
+    gap: 15px 25px; 
     background-color: var(--bg-app);
     padding-bottom: 15px;
     border-bottom: 1px solid #e2e8f0;
     margin-bottom: 15px;
-    flex-shrink: 0; /* Cegah top bar menyusut tingginya */
+    flex-shrink: 0; 
 }
 
 .control-group { 
@@ -251,10 +249,10 @@ select {
 /* WORKSPACE DATA GRID TABEL LIST */
 .workspace-panel { 
     margin-top: 0px; 
-    flex: 1; /* Mengisi seluruh sisa ruang vertikal secara elastis */
+    flex: 1; 
     display: flex;
     flex-direction: column;
-    min-height: 0; /* Penting agar scrollbar internal bisa menyala */
+    min-height: 0; 
 }
 
 .sub-tabs-container { display: flex; gap: 2px; padding-left: 2px; flex-shrink: 0; }
@@ -282,12 +280,12 @@ select {
     z-index: 2;
 }
 
-/* TINGGI TABEL OTOMATIS MENYESUAIKAN MAKSIMAL (DYNAMIC FILL) */
+/* TINGGI TABEL OTOMATIS MENYESUAIKAN ELASTIS */
 .table-frame-box { 
     background-color: #ffffff; 
     border: 1px solid var(--border-color); 
     width: 100%; 
-    flex: 1; /* TABEL AKAN OTOMATIS MEMBESAR/MENGECIL MENGIKUTI POSISI TOMBOL DI ATAS */
+    flex: 1; 
     overflow-y: auto; 
     position: relative;
 }
@@ -334,6 +332,29 @@ table thead th {
 }
 
 #tbody-master-list td:last-child { text-align: left; font-weight: 600; color: var(--pink-main); }
+
+/* STYLE MENU EXTERNAL LINK (EXTENSION) */
+.menu-item-external {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: none;
+    border: none;
+    padding: 12px 14px;
+    width: 100%;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 6px;
+    text-decoration: none; 
+    transition: background-color 0.15s, color 0.15s;
+}
+.menu-item-external:hover { background-color: #f1f5f9; color: var(--text-main); }
+
+.sidebar.collapsed .menu-item-external { justify-content: center; padding: 12px 0; gap: 0; }
+.sidebar.collapsed .menu-item-external .menu-text { display: none; }
 
 /* DASHBOARD COMPONENTS */
 .cards-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px; }
