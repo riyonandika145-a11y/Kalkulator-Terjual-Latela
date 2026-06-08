@@ -3,7 +3,7 @@
 // =========================================================================
 const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRx0w6ouZ_PYXUTdbqqT_CCslwLR-hdY3c311M7jAzPlskawLg2ewiGPQ_gLZ1K4EjQPI_7_qfp3pzb/pub?gid=0&single=true&output=csv";
 
-// Link Web App Google Apps Script milikmu sudah terpasang rapi di sini:
+// Link Web App Google Apps Script milikmu terpasang rapi di sini:
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzXnbhhSGl1bzapSXEsUWa4p-RpVKGVLe2nJUVCT6cjC1Y-rH_DKC__DTB8BiV2QWI/exec";
 
 // --- DOM SELEKTORS ---
@@ -56,7 +56,7 @@ window.addEventListener('DOMContentLoaded', () => {
         btnToggleSidebar.innerText = "❯";
     }
     fetchMasterSkusFromCloud();
-    fetchHistoryFromCloud(); // Ambil riwayat cloud otomatis saat web dibuka
+    fetchHistoryFromCloud(); 
 });
 
 // EVENT LOGIKA TOGGLE SIDEBAR
@@ -149,10 +149,7 @@ subTabs.forEach(tab => {
         subTablePanels.forEach(p => p.classList.remove('active'));
         document.getElementById(`panel-${tab.getAttribute('data-category')}`).classList.add('active');
         
-        // PERBAIKAN FITUR: Reset filter pilihan ke "all" tiap kali pindah tab kategori
         activeFilterText = "all";
-        
-        // PERBAIKAN FITUR: Paksa dropdown filter memperbarui isinya berdasarkan tab baru yang aktif
         populateFilterDropdown();
         refreshAllTables();
     });
@@ -287,17 +284,15 @@ function updateDashboardMetrics(skuAktifCount) {
     dashFileCount.innerText = totalMasterFiles;
 }
 
-// PERBAIKAN UTAMA: Mengelompokkan pilihan dropdown dinamis HANYA dari produk di tab yang sedang aktif
+// DROPDOWN DINAMIS BERDASARKAN TAB AKTIF (NAMA PRODUK UNIK)
 function populateFilterDropdown() {
     dropdownFilter.innerHTML = '<option value="all">-- Tampilkan Semua Produk --</option>';
     
-    // 1. Deteksi tab sub-kategori mana yang saat ini sedang aktif di layar
     const activeTab = document.querySelector('.sub-tab.active');
     const currentCategory = activeTab ? activeTab.getAttribute('data-category') : 'utama';
 
     let namaProdukUnikSet = new Set();
 
-    // 2. Hanya ambil & saring nama produk yang terdaftar di dalam rumpun kategori tab tersebut
     if (globalDataKategori[currentCategory]) {
         Object.values(globalDataKategori[currentCategory]).forEach(item => {
             if (item.nama) {
@@ -306,16 +301,13 @@ function populateFilterDropdown() {
         });
     }
 
-    // 3. Urutkan nama produk dari A ke Z lalu masukkan ke elemen HTML select dropdown
     const sortedNamaProduk = Array.from(namaProdukUnikSet).sort();
     sortedNamaProduk.forEach(nama => {
         const opt = document.createElement('option');
-        opt.value = nama; 
-        opt.innerText = nama;
+        opt.value = nama; opt.innerText = nama;
         dropdownFilter.appendChild(opt);
     });
 
-    // Kembalikan ke posisi state filter aktif saat ini
     dropdownFilter.value = activeFilterText;
 }
 
@@ -422,7 +414,7 @@ function generateMasterArrayFormat() {
     return outputMatrix;
 }
 
-// MULTI-TAB EXPORT EXCEL MATRIX GENERATION
+// MULTI-TAB EXPORT EXCEL (.XLSX)
 btnExportXlsx.addEventListener('click', () => {
     if (Object.keys(masterSkus).length === 0) {
         updateStatusMessage("Gagal Export: Data Master SKU dari cloud kosong.");
