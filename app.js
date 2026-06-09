@@ -50,14 +50,18 @@ const btnModalSubmit = document.getElementById('btn-modal-submit');
 const dashTotalTerjual = document.getElementById('dash-total-terjual');
 const dashSkuAktif = document.getElementById('dash-sku-aktif');
 const dashFileCount = document.getElementById('dash-file-count');
-const dashFilterDropdown = document.getElementById('dash-filter-dropdown'); // Dropdown Dashboard Baru
+const dashFilterDropdown = document.getElementById('dash-filter-dropdown');
 
 // --- STATE MANAGEMENT ---
 let masterSkus = {}; 
 let globalDataKategori = { utama: {}, aksesoris: {}, gradeb: {} };
 let totalMasterFiles = 0;
 let activeFilterText = "all";
+
+// ARSIP INSTANSI GRAFIK CHART.JS
 let salesChartInstance = null; 
+let trendChartInstance = null;      // Grafik Baru 1 (Line)
+let topProductsChartInstance = null; // Grafik Baru 2 (Horizontal Bar)
 
 // --- INITIAL BOOTSTRAP SINKRONISASI CLOUD ---
 window.addEventListener('DOMContentLoaded', () => {
@@ -168,7 +172,7 @@ function fetchMasterSkusFromCloud() {
 
             updateStatusMessage("Master SKU berhasil disinkronisasi dari Google Sheets.");
             renderMasterSkuDatabaseView();
-            populateDashboardDropdown(); // Isi list dropdown semua produk di dashboard
+            populateDashboardDropdown(); 
             resetKalkulatorDataState();
         })
         .catch(err => {
@@ -290,7 +294,7 @@ function ekstrakDanHitungPenjualan(data) {
     fileBadge.innerText = `${totalMasterFiles} File Terupload`;
     
     refreshAllTables();
-    updateDashboardMetrics(); // Render ulang dashboard
+    updateDashboardMetrics(); 
     updateStatusMessage('Rangkuman data penjualan berhasil diperbarui berdasarkan master cloud Google.');
 }
 
@@ -319,7 +323,7 @@ function refreshAllTables() {
     renderSingleTable(globalDataKategori.gradeb, tbodyGradeb); 
 }
 
-// MODIFIKASI TERBARU: HITUNG METRIKS & GRAFIK RESPONSAL SESUAI PILIHAN FILTER SPREAD
+// METRIKS & GRAFIK RESPONSAL SESUAI PILIHAN FILTER SPREAD
 function updateDashboardMetrics() {
     const targetProduct = dashFilterDropdown ? dashFilterDropdown.value : "all";
     
@@ -328,25 +332,29 @@ function updateDashboardMetrics() {
     let qtyGradeB = 0;
     let skuAktifCount = 0;
 
-    // Loop data filter otomatis per Kategori
-    Object.values(globalDataKategori.utama).forEach(item => {
-        if (targetProduct === "all" || item.nama === targetProduct) {
-            qtyUtama += item.qty;
-            if (item.qty > 0) skuAktifCount++;
-        }
-    });
-    Object.values(globalDataKategori.aksesoris).forEach(item => {
-        if (targetProduct === "all" || item.nama === targetProduct) {
-            qtyAksesoris += item.qty;
-            if (item.qty > 0) skuAktifCount++;
-        }
-    });
-    Object.values(globalDataKategori.gradeb).forEach(item => {
-        if (targetProduct === "all" || item.nama === targetProduct) {
-            qtyGradeB += item.qty;
-            if (item.qty > 0) skuAktifCount++;
-        }
-    });
+    // Object untuk menampung per-product ranking harian
+    let productSalesGroup = {};
+
+    const hitungDanKelompokkan = (dataKategori) => {
+        Object.values(dataKategori).forEach(item => {
+            if (targetProduct === "all" || item.nama === targetProduct) {
+                if (item.qty > 0) {
+                    skuAktifCount++;
+                    // Akumulasi ranking berdasarkan nama produk unik dasar harian
+                    let namaProd = item.nama.trim().toUpperCase();
+                    productSalesGroup[namaProd] = (productSalesGroup[namaProd] || 0) + item.qty;
+                }
+                // Akumulasi split kategori chart
+                if (item.kategori === 'utama') qtyUtama += item.qty;
+                if (item.kategori === 'aksesoris') qtyAksesoris += item.qty;
+                if (item.kategori === 'gradeb') qtyGradeB += item.qty;
+            }
+        });
+    };
+
+    hitungDanKelompokkan(globalDataKategori.utama);
+    hitungDanKelompokkan(globalDataKategori.aksesoris);
+    hitungDanKelompokkan(globalDataKategori.gradeb);
 
     const grandTotal = qtyUtama + qtyAksesoris + qtyGradeB;
 
@@ -355,14 +363,34 @@ function updateDashboardMetrics() {
     dashSkuAktif.innerText = skuAktifCount;
     dashFileCount.innerText = totalMasterFiles;
 
-    // Update data array Chart.js secara dinamis
+    // 1. Update Grafik Utama (Kategori Bar Chart)
     if (salesChartInstance) {
         salesChartInstance.data.datasets[0].data = [qtyUtama, qtyAksesoris, qtyGradeB];
         salesChartInstance.update(); 
     }
+
+    // 2. Update Grafik Baru 2: Peringkat Top 5 Produk Terlaris secara Real-Time
+    if (topProductsChartInstance) {
+        // Matangkan pengurutan data array descending
+        let sortedTopArray = Object.keys(productSalesGroup).map(name => {
+            return { name: name, qty: productSalesGroup[name] };
+        }).sort((a, b) => b.qty - a.qty).slice(0, 5); // Ambil peringkat 5 teratas saja
+
+        let labelPeringkat = sortedTopArray.map(item => item.name);
+        let dataPeringkat = sortedTopArray.map(item => item.qty);
+
+        // Jika data kosong, tampilkan placeholder kosong agar chart tidak rusak
+        if (sortedTopArray.length === 0) {
+            labelPeringkat = ["Belum Ada Data"];
+            dataPeringkat = [0];
+        }
+
+        topProductsChartInstance.data.labels = labelPeringkat;
+        topProductsChartInstance.data.datasets[0].data = dataPeringkat;
+        topProductsChartInstance.update();
+    }
 }
 
-// BARU: Fungsi pengisi list dropdown khusus halaman dashboard (Isinya SEMUA nama produk terdaftar)
 function populateDashboardDropdown() {
     if (!dashFilterDropdown) return;
     dashFilterDropdown.innerHTML = '<option value="all">-- Semua Produk --</option>';
@@ -380,63 +408,84 @@ function populateDashboardDropdown() {
     });
 }
 
-// Event listener pendeteksi klik ganti filter produk di dashboard
 if (dashFilterDropdown) {
     dashFilterDropdown.addEventListener('change', () => {
         updateDashboardMetrics();
     });
 }
 
-// ENGINE PEMBENTUK GRAFIK AWAL (EMPTY STATE)
+// ENGINE BOOTSTRAP INISIALISASI 3 STRUKTUR GRAFIK SEKALIGUS
 function initDashboardEmptyChart() {
-    const ctx = document.getElementById('salesChart').getContext('2d');
-    
-    salesChartInstance = new Chart(ctx, {
+    // [GRAFIK 1]: Proporsi Kategori (Vertical Bar Chart)
+    const ctxSales = document.getElementById('salesChart').getContext('2d');
+    salesChartInstance = new Chart(ctxSales, {
         type: 'bar', 
         data: {
             labels: ['Produk Utama', 'Aksesoris', 'Grade B'],
             datasets: [{
                 label: 'Kuantitas Terjual (pcs)',
                 data: [0, 0, 0], 
-                backgroundColor: [
-                    '#ec4899', 
-                    '#2563eb', 
-                    '#f59e0b'  
-                ],
+                backgroundColor: ['#ec4899', '#2563eb', '#f59e0b'],
+                borderWidth: 0, borderRadius: 5, barPercentage: 0.4
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+        }
+    });
+
+    // [GRAFIK 2 BUMI BARU]: Tren Penjualan Historis Cloud (Line Chart)
+    const ctxTrend = document.getElementById('trendChart').getContext('2d');
+    trendChartInstance = new Chart(ctxTrend, {
+        type: 'line',
+        data: {
+            labels: ['Mulai'],
+            datasets: [{
+                label: 'Total Terjual (pcs)',
+                data: [0],
+                borderColor: '#8b5cf6', // Warna Ungu Premium
+                backgroundColor: 'rgba(139, 92, 246, 0.08)',
+                borderWidth: 3,
+                tension: 0.3, // Membuat garis melengkung dinamis (Smooth Wave)
+                fill: true,
+                pointRadius: 4,
+                pointBackgroundColor: '#8b5cf6'
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { 
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, 
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } } 
+            }
+        }
+    });
+
+    // [GRAFIK 3 BUMI BARU]: Peringkat Top 5 Produk Terlaris (Horizontal Bar Chart)
+    const ctxTop = document.getElementById('topProductsChart').getContext('2d');
+    topProductsChartInstance = new Chart(ctxTop, {
+        type: 'bar',
+        data: {
+            labels: ['Menunggu Berkas...'],
+            datasets: [{
+                label: 'Item Terjual (pcs)',
+                data: [0],
+                backgroundColor: '#10b981', // Hijau Sukses
+                borderRadius: 4,
                 borderWidth: 0,
-                borderRadius: 6, 
                 barPercentage: 0.5
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }, 
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return ` ${context.parsed.y.toLocaleString('id-ID')} pcs`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { color: '#f1f5f9' },
-                    ticks: {
-                        font: { size: 11, weight: '600' },
-                        color: '#64748b'
-                    }
-                },
-                x: {
-                    grid: { display: false },
-                    ticks: {
-                        font: { size: 12, weight: '700' },
-                        color: '#1e293b'
-                    }
-                }
+            indexAxis: 'y', // Merubah arah sumbu koordinat menjadi Horizontal Bar
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { 
+                x: { beginAtZero: true, grid: { color: '#f1f5f9' } }, 
+                y: { grid: { display: false }, ticks: { font: { size: 11, weight: '700' } } } 
             }
         }
     });
@@ -477,15 +526,13 @@ btnFileReset.addEventListener('click', () => {
     fileBadge.innerText = '0 File Terupload';
     resetKalkulatorDataState();
     
-    if (dashFilterDropdown) dashFilterDropdown.value = "all"; // Kembalikan filter ke posisi awal
+    if (dashFilterDropdown) dashFilterDropdown.value = "all"; 
     dashTotalTerjual.innerText = '0';
     dashSkuAktif.innerText = '0';
     dashFileCount.innerText = '0';
     
-    if (salesChartInstance) {
-        salesChartInstance.data.datasets[0].data = [0, 0, 0];
-        salesChartInstance.update();
-    }
+    if (salesChartInstance) { salesChartInstance.data.datasets[0].data = [0, 0, 0]; salesChartInstance.update(); }
+    if (topProductsChartInstance) { topProductsChartInstance.data.labels = ["Kosong"]; topProductsChartInstance.data.datasets[0].data = [0]; topProductsChartInstance.update(); }
     updateStatusMessage('Siap.');
 });
 
@@ -531,7 +578,7 @@ btnSaveHistory.addEventListener('click', () => {
         });
 });
 
-// MENARIK HISTORY DARI GOOGLE SHEET UNTUK DITAMPILKAN DI WEBSITE
+// MENARIK HISTORY DARI GOOGLE SHEET UNTUK DITAMPILKAN DI WEBSITE & GRAFIK TREND TREN
 function fetchHistoryFromCloud() {
     const historyBox = document.getElementById('history-list-container');
     if (!historyBox) return;
@@ -545,12 +592,14 @@ function fetchHistoryFromCloud() {
                 return;
             }
 
+            // 1. Render data ke dalam tabel list menu History harian
             historyBox.className = "";
             historyBox.innerHTML = '<div class="table-responsive"><table><thead><tr><th>Waktu Simpan</th><th>Files Terproses</th><th style="text-align: right; padding-right: 25px;">Total Qty Item</th></tr></thead><tbody id="tbody-history"></tbody></table></div>';
             
             const tbodyHist = document.getElementById('tbody-history');
             
-            logs.reverse().forEach(log => {
+            // Render tabel list terbalik (Paling baru di atas)
+            [...logs].reverse().forEach(log => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${log.waktu}</td>
@@ -559,6 +608,25 @@ function fetchHistoryFromCloud() {
                 `;
                 tbodyHist.appendChild(tr);
             });
+
+            // 2. UPDATE GRAFIK TREN HISTORIS CLOUD (Urutan kronologis dari lama ke baru)
+            if (trendChartInstance && logs.length > 0) {
+                // Ambil maksimal 8 data riwayat terakhir agar grafik tidak menumpuk sempit
+                let dataPembatasTrend = logs.slice(-8);
+
+                let labelSumbuX = dataPembatasTrend.map(item => {
+                    // Potong tanggal/waktu pendek agar muat rapi di grafik
+                    return item.waktu.split(',')[0]; 
+                });
+                
+                let dataSumbuY = dataPembatasTrend.map(item => {
+                    return parseInt(item.total.toString().replace(/[^0-9]/g, ""), 10) || 0;
+                });
+
+                trendChartInstance.data.labels = labelSumbuX;
+                trendChartInstance.data.datasets[0].data = dataSumbuY;
+                trendChartInstance.update();
+            }
         })
         .catch(err => {
             console.error(err);
