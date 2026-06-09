@@ -5,58 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KALKULATOR TERJUAL - Latela System</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Load SheetJS via CDN untuk membaca & menulis Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- 📊 LOAD CHART.JS VIA CDN UNTUK GRAFIK DASHBOARD -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
     <div class="app-container">
-        <!-- SIDEBAR -->
         <aside class="sidebar">
-            <!-- Tombol Toggle Menyematkan Sidebar -->
             <button id="btn-toggle-sidebar" class="btn-toggle">☰</button>
 
             <div class="brand-section">
-                <!-- LOGO MENGGUNAKAN FILE JPEG -->
                 <img src="logo.jpeg" class="brand-logo" alt="Logo Latela" style="object-fit: contain;">
                 <h1 class="brand-title">LATELA</h1>
                 <h2 class="app-subtitle">KALKULATOR TERJUAL</h2>
-                <span class="dept-tag">OSCM Arsa</span>
             </div>
 
             <nav class="menu-container">
                 <span class="menu-label">MAIN MENU</span>
                 <button class="menu-item" data-target="dashboard">
-                    <span class="menu-icon">📊</span> <span class="menu-text">Dashboard</span>
+                    <span class="menu-text">Dashboard</span>
                 </button>
                 <button class="menu-item active" data-target="kalkulator">
-                    <span class="menu-icon">🧮</span> <span class="menu-text">Kalkulator Terjual</span>
+                    <span class="menu-text">Kalkulator Terjual</span>
                 </button>
                 <button class="menu-item" data-target="mastersku">
-                    <span class="menu-icon">📦</span> <span class="menu-text">Master SKU</span>
+                    <span class="menu-text">Master SKU</span>
                 </button>
                 <button class="menu-item" data-target="history">
-                    <span class="menu-icon">⏳</span> <span class="menu-text">History</span>
+                    <span class="menu-text">History</span>
                 </button>
                 
-                <!-- LINK SPREADSHEET UTAMA CV ARSA -->
                 <a href="https://docs.google.com/spreadsheets/d/1b67HBw0kqhxMR8gaFTvLcuhOuFrTCdD-6md0N1PiXkU/edit?gid=0#gid=0" target="_blank" class="menu-item-external" id="menu-extension">
-                    <span class="menu-icon">🔗</span> <span class="menu-text">Extension</span>
+                    <span class="menu-text">Extension</span>
                 </a>
             </nav>
         </aside>
 
-        <!-- MAIN CONTENT AREA -->
         <main class="main-content-wrapper">
             <div class="main-content">
                 
-                <!-- VIEW: DASHBOARD -->
                 <section id="view-dashboard" class="content-view">
                     <h2 class="page-title">Dashboard Overview</h2>
                     
-                    <!-- 📊 DROPDOWN FILTER UNTUK GRAFIK DASHBOARD BARU -->
                     <div class="control-group" style="margin-bottom: 20px; background: #ffffff; padding: 12px 15px; border-radius: 6px; border: 1px solid var(--border-color); display: inline-flex;">
                         <span class="group-label">Filter Produk Dashboard:</span>
                         <div class="group-inputs">
@@ -81,18 +71,33 @@
                         </div>
                     </div>
 
-                    <!-- KOTAK GRAFIK REAL-TIME TERPASANG DI SINI -->
-                    <div class="chart-container-card">
-                        <canvas id="salesChart"></canvas>
+                    <div class="chart-container-card" style="margin-bottom: 20px;">
+                        <h3 class="chart-card-title">Proporsi Penjualan per Kategori</h3>
+                        <div class="chart-canvas-wrapper">
+                            <canvas id="salesChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-double-row">
+                        <div class="chart-container-card">
+                            <h3 class="chart-card-title">Tren Volume Penjualan Historis Cloud</h3>
+                            <div class="chart-canvas-wrapper">
+                                <canvas id="trendChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="chart-container-card">
+                            <h3 class="chart-card-title">Peringkat 5 Produk Teratas Terlaris</h3>
+                            <div class="chart-canvas-wrapper">
+                                <canvas id="topProductsChart"></canvas>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
-                <!-- VIEW: KALKULATOR TERJUAL -->
                 <section id="view-kalkulator" class="content-view active">
                     
-                    <!-- TOP CONTROL BAR ACTION -->
                     <div class="top-controls-bar">
-                        <!-- Filter Produk -->
                         <div class="control-group">
                             <span class="group-label">Filter Produk:</span>
                             <div class="group-inputs">
@@ -103,7 +108,6 @@
                             </div>
                         </div>
 
-                        <!-- File Management -->
                         <div class="control-group">
                             <span class="group-label">File Management:</span>
                             <div class="group-inputs">
@@ -114,13 +118,11 @@
                             </div>
                         </div>
 
-                        <!-- Data Actions -->
                         <div class="control-group">
                             <span class="group-label">Data Actions:</span>
                             <div class="group-inputs">
                                 <button id="btn-save-history" class="btn-action btn-purple-solid">Save History</button>
                                 
-                                <!-- DROPDOWN EXPORT BUTTON -->
                                 <div class="export-dropdown-wrapper">
                                     <button id="btn-export-toggle" class="btn-action btn-blue-solid">Export ▾</button>
                                     <div id="export-menu-items" class="export-dropdown-menu">
@@ -134,7 +136,6 @@
                         </div>
                     </div>
 
-                    <!-- WORKSPACE CONTAINER UTAMA -->
                     <div class="workspace-panel">
                         <div class="sub-tabs-container">
                             <button class="sub-tab active" data-category="utama">PRODUK UTAMA</button>
@@ -143,7 +144,6 @@
                         </div>
 
                         <div class="table-frame-box">
-                            <!-- Panel Tabel 1: Produk Utama -->
                             <div id="panel-utama" class="sub-table-panel active">
                                 <table>
                                     <thead>
@@ -159,7 +159,6 @@
                                 </table>
                             </div>
 
-                            <!-- Panel Tabel 2: Aksesoris -->
                             <div id="panel-aksesoris" class="sub-table-panel">
                                 <table>
                                     <thead>
@@ -175,7 +174,6 @@
                                 </table>
                             </div>
 
-                            <!-- Panel Tabel 3: Grade B -->
                             <div id="panel-gradeb" class="sub-table-panel">
                                 <table>
                                     <thead>
@@ -194,7 +192,6 @@
                     </div>
                 </section>
 
-                <!-- VIEW: MASTER SKU CLOUD VIEW -->
                 <section id="view-mastersku" class="content-view">
                     <h2 class="page-title">Master Data SKU Cloud Database</h2>
                     <p class="section-desc">Data di bawah disinkronisasikan secara otomatis dan terpusat langsung dari Google Sheets internal.</p>
@@ -225,7 +222,6 @@
                     </div>
                 </section>
 
-                <!-- VIEW: HISTORY -->
                 <section id="view-history" class="content-view">
                     <h2 class="page-title">History Log</h2>
                     <div id="history-list-container" class="empty-state-card">
@@ -234,12 +230,10 @@
                 </section>
 
             </div>
-            <!-- FOOTER STATUS BAR -->
             <footer class="status-footer" id="status-bar">Memuat sistem...</footer>
         </main>
     </div>
 
-    <!-- IN-APP CUSTOM MODAL SECURE PASSWORD CONTAINER -->
     <div id="password-modal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
