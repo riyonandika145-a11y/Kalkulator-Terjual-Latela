@@ -50,12 +50,14 @@ const btnModalSubmit = document.getElementById('btn-modal-submit');
 const dashTotalTerjual = document.getElementById('dash-total-terjual');
 const dashSkuAktif = document.getElementById('dash-sku-aktif');
 const dashFileCount = document.getElementById('dash-file-count');
+const dashFilterDropdown = document.getElementById('dash-filter-dropdown'); // Dropdown Dashboard Baru
 
 // --- STATE MANAGEMENT ---
 let masterSkus = {}; 
 let globalDataKategori = { utama: {}, aksesoris: {}, gradeb: {} };
 let totalMasterFiles = 0;
 let activeFilterText = "all";
+let salesChartInstance = null; 
 
 // --- INITIAL BOOTSTRAP SINKRONISASI CLOUD ---
 window.addEventListener('DOMContentLoaded', () => {
@@ -66,6 +68,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     fetchMasterSkusFromCloud();
     fetchHistoryFromCloud(); 
+    initDashboardEmptyChart(); 
 });
 
 // EVENT LOGIKA TOGGLE SIDEBAR
@@ -165,6 +168,7 @@ function fetchMasterSkusFromCloud() {
 
             updateStatusMessage("Master SKU berhasil disinkronisasi dari Google Sheets.");
             renderMasterSkuDatabaseView();
+            populateDashboardDropdown(); // Isi list dropdown semua produk di dashboard
             resetKalkulatorDataState();
         })
         .catch(err => {
@@ -266,8 +270,6 @@ function processExcelEngine(file) {
 }
 
 function ekstrakDanHitungPenjualan(data) {
-    let skuTerdeteksiDiManifest = new Set();
-
     data.forEach(row => {
         const sku = row['Nomor SKU'] || row['Seller SKU'] || row['Kode SKU'] || row['SKU Penjual'] || row['SKU Induk'] || row['SKU'];
         const qty = parseInt(row['Jumlah'] || row['Quantity'] || row['Kuantitas'] || row['Qty'] || 0, 10);
@@ -279,7 +281,6 @@ function ekstrakDanHitungPenjualan(data) {
                 const kategori = masterSkus[skuClean].kategori;
                 if (globalDataKategori[kategori] && globalDataKategori[kategori][skuClean]) {
                     globalDataKategori[kategori][skuClean].qty += qty;
-                    skuTerdeteksiDiManifest.add(skuClean);
                 }
             }
         }
@@ -289,7 +290,7 @@ function ekstrakDanHitungPenjualan(data) {
     fileBadge.innerText = `${totalMasterFiles} File Terupload`;
     
     refreshAllTables();
-    updateDashboardMetrics(skuTerdeteksiDiManifest.size);
+    updateDashboardMetrics(); // Render ulang dashboard
     updateStatusMessage('Rangkuman data penjualan berhasil diperbarui berdasarkan master cloud Google.');
 }
 
@@ -318,13 +319,127 @@ function refreshAllTables() {
     renderSingleTable(globalDataKategori.gradeb, tbodyGradeb); 
 }
 
-function updateDashboardMetrics(skuAktifCount) {
-    const sumQty = (obj) => Object.values(obj).reduce((s, i) => s + i.qty, 0);
-    const grandTotal = sumQty(globalDataKategori.utama) + sumQty(globalDataKategori.aksesoris) + sumQty(globalDataKategori.gradeb);
+// MODIFIKASI TERBARU: HITUNG METRIKS & GRAFIK RESPONSAL SESUAI PILIHAN FILTER SPREAD
+function updateDashboardMetrics() {
+    const targetProduct = dashFilterDropdown ? dashFilterDropdown.value : "all";
+    
+    let qtyUtama = 0;
+    let qtyAksesoris = 0;
+    let qtyGradeB = 0;
+    let skuAktifCount = 0;
 
+    // Loop data filter otomatis per Kategori
+    Object.values(globalDataKategori.utama).forEach(item => {
+        if (targetProduct === "all" || item.nama === targetProduct) {
+            qtyUtama += item.qty;
+            if (item.qty > 0) skuAktifCount++;
+        }
+    });
+    Object.values(globalDataKategori.aksesoris).forEach(item => {
+        if (targetProduct === "all" || item.nama === targetProduct) {
+            qtyAksesoris += item.qty;
+            if (item.qty > 0) skuAktifCount++;
+        }
+    });
+    Object.values(globalDataKategori.gradeb).forEach(item => {
+        if (targetProduct === "all" || item.nama === targetProduct) {
+            qtyGradeB += item.qty;
+            if (item.qty > 0) skuAktifCount++;
+        }
+    });
+
+    const grandTotal = qtyUtama + qtyAksesoris + qtyGradeB;
+
+    // Tembak angka ke komponen HTML
     dashTotalTerjual.innerText = grandTotal.toLocaleString('id-ID');
     dashSkuAktif.innerText = skuAktifCount;
     dashFileCount.innerText = totalMasterFiles;
+
+    // Update data array Chart.js secara dinamis
+    if (salesChartInstance) {
+        salesChartInstance.data.datasets[0].data = [qtyUtama, qtyAksesoris, qtyGradeB];
+        salesChartInstance.update(); 
+    }
+}
+
+// BARU: Fungsi pengisi list dropdown khusus halaman dashboard (Isinya SEMUA nama produk terdaftar)
+function populateDashboardDropdown() {
+    if (!dashFilterDropdown) return;
+    dashFilterDropdown.innerHTML = '<option value="all">-- Semua Produk --</option>';
+    
+    let allProductNames = new Set();
+    Object.values(masterSkus).forEach(item => {
+        if (item.nama) allProductNames.add(item.nama.trim().toUpperCase());
+    });
+
+    const sortedNames = Array.from(allProductNames).sort();
+    sortedNames.forEach(nama => {
+        const opt = document.createElement('option');
+        opt.value = nama; opt.innerText = nama;
+        dashFilterDropdown.appendChild(opt);
+    });
+}
+
+// Event listener pendeteksi klik ganti filter produk di dashboard
+if (dashFilterDropdown) {
+    dashFilterDropdown.addEventListener('change', () => {
+        updateDashboardMetrics();
+    });
+}
+
+// ENGINE PEMBENTUK GRAFIK AWAL (EMPTY STATE)
+function initDashboardEmptyChart() {
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    
+    salesChartInstance = new Chart(ctx, {
+        type: 'bar', 
+        data: {
+            labels: ['Produk Utama', 'Aksesoris', 'Grade B'],
+            datasets: [{
+                label: 'Kuantitas Terjual (pcs)',
+                data: [0, 0, 0], 
+                backgroundColor: [
+                    '#ec4899', 
+                    '#2563eb', 
+                    '#f59e0b'  
+                ],
+                borderWidth: 0,
+                borderRadius: 6, 
+                barPercentage: 0.5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }, 
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return ` ${context.parsed.y.toLocaleString('id-ID')} pcs`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#f1f5f9' },
+                    ticks: {
+                        font: { size: 11, weight: '600' },
+                        color: '#64748b'
+                    }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        font: { size: 12, weight: '700' },
+                        color: '#1e293b'
+                    }
+                }
+            }
+        }
+    });
 }
 
 // DROPDOWN DINAMIS BERDASARKAN TAB AKTIF
@@ -361,9 +476,16 @@ btnFileReset.addEventListener('click', () => {
     totalMasterFiles = 0;
     fileBadge.innerText = '0 File Terupload';
     resetKalkulatorDataState();
+    
+    if (dashFilterDropdown) dashFilterDropdown.value = "all"; // Kembalikan filter ke posisi awal
     dashTotalTerjual.innerText = '0';
     dashSkuAktif.innerText = '0';
     dashFileCount.innerText = '0';
+    
+    if (salesChartInstance) {
+        salesChartInstance.data.datasets[0].data = [0, 0, 0];
+        salesChartInstance.update();
+    }
     updateStatusMessage('Siap.');
 });
 
