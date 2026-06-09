@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="style.css">
     <!-- Load SheetJS via CDN untuk membaca & menulis Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- 📊 LOAD CHART.JS VIA CDN UNTUK GRAFIK DASHBOARD -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -21,26 +23,27 @@
                 <img src="logo.jpeg" class="brand-logo" alt="Logo Latela" style="object-fit: contain;">
                 <h1 class="brand-title">LATELA</h1>
                 <h2 class="app-subtitle">KALKULATOR TERJUAL</h2>
+                <span class="dept-tag">OSCM Arsa</span>
             </div>
 
             <nav class="menu-container">
                 <span class="menu-label">MAIN MENU</span>
                 <button class="menu-item" data-target="dashboard">
-                    <span class="menu-text">Dashboard</span>
+                    <span class="menu-icon">📊</span> <span class="menu-text">Dashboard</span>
                 </button>
                 <button class="menu-item active" data-target="kalkulator">
-                    <span class="menu-text">Kalkulator Terjual</span>
+                    <span class="menu-icon">🧮</span> <span class="menu-text">Kalkulator Terjual</span>
                 </button>
                 <button class="menu-item" data-target="mastersku">
-                    <span class="menu-text">Master SKU</span>
+                    <span class="menu-icon">📦</span> <span class="menu-text">Master SKU</span>
                 </button>
                 <button class="menu-item" data-target="history">
-                    <span class="menu-text">History</span>
+                    <span class="menu-icon">⏳</span> <span class="menu-text">History</span>
                 </button>
                 
                 <!-- LINK SPREADSHEET UTAMA CV ARSA -->
                 <a href="https://docs.google.com/spreadsheets/d/1b67HBw0kqhxMR8gaFTvLcuhOuFrTCdD-6md0N1PiXkU/edit?gid=0#gid=0" target="_blank" class="menu-item-external" id="menu-extension">
-                    <span class="menu-text">Extension</span>
+                    <span class="menu-icon">🔗</span> <span class="menu-text">Extension</span>
                 </a>
             </nav>
         </aside>
@@ -52,6 +55,16 @@
                 <!-- VIEW: DASHBOARD -->
                 <section id="view-dashboard" class="content-view">
                     <h2 class="page-title">Dashboard Overview</h2>
+                    
+                    <!-- 📊 DROPDOWN FILTER UNTUK GRAFIK DASHBOARD BARU -->
+                    <div class="control-group" style="margin-bottom: 20px; background: #ffffff; padding: 12px 15px; border-radius: 6px; border: 1px solid var(--border-color); display: inline-flex;">
+                        <span class="group-label">Filter Produk Dashboard:</span>
+                        <div class="group-inputs">
+                            <select id="dash-filter-dropdown" style="min-width: 220px; font-weight: 600;">
+                                <option value="all">-- Semua Produk --</option>
+                            </select>
+                        </div>
+                    </div>
                     
                     <div class="cards-grid">
                         <div class="card card-pink">
@@ -68,12 +81,9 @@
                         </div>
                     </div>
 
-                    <div class="chart-placeholder-card">
-                        <div class="legend-container">
-                            <div class="legend-item"><span class="dot dot-pink"></span> Utama</div>
-                            <div class="legend-item"><span class="dot dot-blue"></span> Aksesoris</div>
-                            <div class="legend-item"><span class="dot dot-orange"></span> Grade B</div>
-                        </div>
+                    <!-- KOTAK GRAFIK REAL-TIME TERPASANG DI SINI -->
+                    <div class="chart-container-card">
+                        <canvas id="salesChart"></canvas>
                     </div>
                 </section>
 
@@ -219,7 +229,7 @@
                 <section id="view-history" class="content-view">
                     <h2 class="page-title">History Log</h2>
                     <div id="history-list-container" class="empty-state-card">
-                        <p>Belum ada riwayat pemrosesan log data penjualan yang disimpan.</p>
+                        <p>Belum ada riwayat pemrosesan log data penjualan yang disimpan di Google Sheets.</p>
                     </div>
                 </section>
 
