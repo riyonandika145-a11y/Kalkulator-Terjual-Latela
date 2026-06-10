@@ -60,8 +60,8 @@ let activeFilterText = "all";
 
 // ARSIP INSTANSI GRAFIK CHART.JS
 let salesChartInstance = null; 
-let trendChartInstance = null;      // Grafik Baru 1 (Line)
-let topProductsChartInstance = null; // Grafik Baru 2 (Horizontal Bar)
+let trendChartInstance = null;      
+let topProductsChartInstance = null; 
 
 // --- INITIAL BOOTSTRAP SINKRONISASI CLOUD ---
 window.addEventListener('DOMContentLoaded', () => {
@@ -160,12 +160,19 @@ function fetchMasterSkusFromCloud() {
                 const warnaProduk = row['Warna'] || row['warna'] || '-';
                 const kategoriLogistik = row['Kategori'] || row['kategori'] || 'utama';
 
+                // SMART NORMALIZER KATEGORI CLOUD SPREADSHEET
+                let rawKat = kategoriLogistik.toString().trim().toLowerCase();
+                let katClean = 'utama'; 
+                if (rawKat.includes('utama')) katClean = 'utama';
+                else if (rawKat.includes('aksesoris')) katClean = 'aksesoris';
+                else if (rawKat.includes('grade')) katClean = 'gradeb';
+
                 if (skuCode) {
                     masterSkus[skuCode.toString().trim()] = {
                         nama: namaResmi ? namaResmi.toString().trim().toUpperCase() : "TANPA NAMA",
                         type: typeProduk.toString().trim(),
                         warna: warnaProduk.toString().trim(),
-                        kategori: kategoriLogistik.toString().trim().toLowerCase()
+                        kategori: katClean
                     };
                 }
             });
@@ -273,19 +280,38 @@ function processExcelEngine(file) {
     reader.readAsArrayBuffer(file);
 }
 
+// 🔥 REVISI LOGIKA UTAMA: VALUE-FIRST LOOKUP ENGINE (ANTI GAGAL SINKRONISASI)
 function ekstrakDanHitungPenjualan(data) {
     data.forEach(row => {
-        const sku = row['Nomor SKU'] || row['Seller SKU'] || row['Kode SKU'] || row['SKU Penjual'] || row['SKU Induk'] || row['SKU'];
-        const qty = parseInt(row['Jumlah'] || row['Quantity'] || row['Kuantitas'] || row['Qty'] || 0, 10);
+        let foundSku = "";
 
-        if (sku) {
-            const skuClean = sku.toString().trim();
-            
-            if (masterSkus[skuClean]) {
-                const kategori = masterSkus[skuClean].kategori;
-                if (globalDataKategori[kategori] && globalDataKategori[kategori][skuClean]) {
-                    globalDataKategori[kategori][skuClean].qty += qty;
+        // Langkah 1: Pindai semua isi sel di baris ini, cek apakah nilainya terdaftar di masterSkus database kita
+        for (let key in row) {
+            if (row[key] !== undefined && row[key] !== null) {
+                let cellValue = row[key].toString().trim();
+                if (masterSkus[cellValue]) {
+                    foundSku = cellValue;
+                    break; // Berhenti memindai jika SKU database yang sah sudah ditemukan di baris ini
                 }
+            }
+        }
+
+        // Langkah 2: Jika nilai SKU database ditemukan, baru cari kolom kuantitas harian di baris yang sama
+        if (foundSku) {
+            let rowQty = 0;
+            for (let key in row) {
+                let keyClean = key.toString().toLowerCase().replace(/[^a-z0-9]/g, "");
+                if (keyClean === "qty" || keyClean === "quantity" || keyClean === "jumlah" || 
+                    keyClean === "kuantitas" || keyClean === "jumlahproduk" || keyClean === "kuantitaspcs" || keyClean === "jumlahpesanan") {
+                    rowQty = parseInt(row[key], 10) || 0;
+                    break; // Ambil nilai kuantitas pertama yang berhasil dicocokkan
+                }
+            }
+
+            // Langkah 3: Tambahkan angka penjualan ke state kategori aplikasi sesuai kode SKU-nya
+            const kategori = masterSkus[foundSku].kategori;
+            if (globalDataKategori[kategori] && globalDataKategori[kategori][foundSku]) {
+                globalDataKategori[kategori][foundSku].qty += rowQty;
             }
         }
     });
@@ -295,7 +321,7 @@ function ekstrakDanHitungPenjualan(data) {
     
     refreshAllTables();
     updateDashboardMetrics(); 
-    updateStatusMessage('Rangkuman data penjualan berhasil diperbarui berdasarkan master cloud Google.');
+    updateStatusMessage('Rangkuman data penjualan berhasil diperbarui berdasarkan pencocokan nilai SKU database terpusat.');
 }
 
 function renderSingleTable(dataKategori, tbodyElement) {
@@ -331,8 +357,6 @@ function updateDashboardMetrics() {
     let qtyAksesoris = 0;
     let qtyGradeB = 0;
     let skuAktifCount = 0;
-
-    // Object untuk menampung per-product ranking harian
     let productSalesGroup = {};
 
     const hitungDanKelompokkan = (dataKategori) => {
@@ -340,11 +364,9 @@ function updateDashboardMetrics() {
             if (targetProduct === "all" || item.nama === targetProduct) {
                 if (item.qty > 0) {
                     skuAktifCount++;
-                    // Akumulasi ranking berdasarkan nama produk unik dasar harian
                     let namaProd = item.nama.trim().toUpperCase();
                     productSalesGroup[namaProd] = (productSalesGroup[namaProd] || 0) + item.qty;
                 }
-                // Akumulasi split kategori chart
                 if (item.kategori === 'utama') qtyUtama += item.qty;
                 if (item.kategori === 'aksesoris') qtyAksesoris += item.qty;
                 if (item.kategori === 'gradeb') qtyGradeB += item.qty;
@@ -358,28 +380,23 @@ function updateDashboardMetrics() {
 
     const grandTotal = qtyUtama + qtyAksesoris + qtyGradeB;
 
-    // Tembak angka ke komponen HTML
     dashTotalTerjual.innerText = grandTotal.toLocaleString('id-ID');
     dashSkuAktif.innerText = skuAktifCount;
     dashFileCount.innerText = totalMasterFiles;
 
-    // 1. Update Grafik Utama (Kategori Bar Chart)
     if (salesChartInstance) {
         salesChartInstance.data.datasets[0].data = [qtyUtama, qtyAksesoris, qtyGradeB];
         salesChartInstance.update(); 
     }
 
-    // 2. Update Grafik Baru 2: Peringkat Top 5 Produk Terlaris secara Real-Time
     if (topProductsChartInstance) {
-        // Matangkan pengurutan data array descending
         let sortedTopArray = Object.keys(productSalesGroup).map(name => {
             return { name: name, qty: productSalesGroup[name] };
-        }).sort((a, b) => b.qty - a.qty).slice(0, 5); // Ambil peringkat 5 teratas saja
+        }).sort((a, b) => b.qty - a.qty).slice(0, 5); 
 
         let labelPeringkat = sortedTopArray.map(item => item.name);
         let dataPeringkat = sortedTopArray.map(item => item.qty);
 
-        // Jika data kosong, tampilkan placeholder kosong agar chart tidak rusak
         if (sortedTopArray.length === 0) {
             labelPeringkat = ["Belum Ada Data"];
             dataPeringkat = [0];
@@ -416,7 +433,6 @@ if (dashFilterDropdown) {
 
 // ENGINE BOOTSTRAP INISIALISASI 3 STRUKTUR GRAFIK SEKALIGUS
 function initDashboardEmptyChart() {
-    // [GRAFIK 1]: Proporsi Kategori (Vertical Bar Chart)
     const ctxSales = document.getElementById('salesChart').getContext('2d');
     salesChartInstance = new Chart(ctxSales, {
         type: 'bar', 
@@ -436,7 +452,6 @@ function initDashboardEmptyChart() {
         }
     });
 
-    // [GRAFIK 2 BUMI BARU]: Tren Penjualan Historis Cloud (Line Chart)
     const ctxTrend = document.getElementById('trendChart').getContext('2d');
     trendChartInstance = new Chart(ctxTrend, {
         type: 'line',
@@ -445,10 +460,10 @@ function initDashboardEmptyChart() {
             datasets: [{
                 label: 'Total Terjual (pcs)',
                 data: [0],
-                borderColor: '#8b5cf6', // Warna Ungu Premium
+                borderColor: '#8b5cf6', 
                 backgroundColor: 'rgba(139, 92, 246, 0.08)',
                 borderWidth: 3,
-                tension: 0.3, // Membuat garis melengkung dinamis (Smooth Wave)
+                tension: 0.3, 
                 fill: true,
                 pointRadius: 4,
                 pointBackgroundColor: '#8b5cf6'
@@ -464,7 +479,6 @@ function initDashboardEmptyChart() {
         }
     });
 
-    // [GRAFIK 3 BUMI BARU]: Peringkat Top 5 Produk Terlaris (Horizontal Bar Chart)
     const ctxTop = document.getElementById('topProductsChart').getContext('2d');
     topProductsChartInstance = new Chart(ctxTop, {
         type: 'bar',
@@ -473,14 +487,14 @@ function initDashboardEmptyChart() {
             datasets: [{
                 label: 'Item Terjual (pcs)',
                 data: [0],
-                backgroundColor: '#10b981', // Hijau Sukses
+                backgroundColor: '#10b981', 
                 borderRadius: 4,
                 borderWidth: 0,
                 barPercentage: 0.5
             }]
         },
         options: {
-            indexAxis: 'y', // Merubah arah sumbu koordinat menjadi Horizontal Bar
+            indexAxis: 'y', 
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: { 
@@ -592,13 +606,11 @@ function fetchHistoryFromCloud() {
                 return;
             }
 
-            // 1. Render data ke dalam tabel list menu History harian
             historyBox.className = "";
             historyBox.innerHTML = '<div class="table-responsive"><table><thead><tr><th>Waktu Simpan</th><th>Files Terproses</th><th style="text-align: right; padding-right: 25px;">Total Qty Item</th></tr></thead><tbody id="tbody-history"></tbody></table></div>';
             
             const tbodyHist = document.getElementById('tbody-history');
             
-            // Render tabel list terbalik (Paling baru di atas)
             [...logs].reverse().forEach(log => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -609,13 +621,10 @@ function fetchHistoryFromCloud() {
                 tbodyHist.appendChild(tr);
             });
 
-            // 2. UPDATE GRAFIK TREN HISTORIS CLOUD (Urutan kronologis dari lama ke baru)
             if (trendChartInstance && logs.length > 0) {
-                // Ambil maksimal 8 data riwayat terakhir agar grafik tidak menumpuk sempit
                 let dataPembatasTrend = logs.slice(-8);
 
                 let labelSumbuX = dataPembatasTrend.map(item => {
-                    // Potong tanggal/waktu pendek agar muat rapi di grafik
                     return item.waktu.split(',')[0]; 
                 });
                 
