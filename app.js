@@ -63,6 +63,9 @@ let salesChartInstance = null;
 let trendChartInstance = null;      
 let topProductsChartInstance = null; 
 
+// CACHE GLOBAL UNTUK MENAMPUNG DETAIL DATA DARI CLOUD SPREADSHEET
+let globalHistoryCloudCache = {};
+
 // --- INITIAL BOOTSTRAP SINKRONISASI CLOUD ---
 window.addEventListener('DOMContentLoaded', () => {
     const savedSidebarState = localStorage.getItem('sidebarState');
@@ -280,23 +283,21 @@ function processExcelEngine(file) {
     reader.readAsArrayBuffer(file);
 }
 
-// 🔥 REVISI LOGIKA UTAMA: VALUE-FIRST LOOKUP ENGINE (ANTI GAGAL SINKRONISASI)
+// VALUE-FIRST LOOKUP ENGINE (ANTI GAGAL SINKRONISASI)
 function ekstrakDanHitungPenjualan(data) {
     data.forEach(row => {
         let foundSku = "";
 
-        // Langkah 1: Pindai semua isi sel di baris ini, cek apakah nilainya terdaftar di masterSkus database kita
         for (let key in row) {
             if (row[key] !== undefined && row[key] !== null) {
                 let cellValue = row[key].toString().trim();
                 if (masterSkus[cellValue]) {
                     foundSku = cellValue;
-                    break; // Berhenti memindai jika SKU database yang sah sudah ditemukan di baris ini
+                    break; 
                 }
             }
         }
 
-        // Langkah 2: Jika nilai SKU database ditemukan, baru cari kolom kuantitas harian di baris yang sama
         if (foundSku) {
             let rowQty = 0;
             for (let key in row) {
@@ -304,11 +305,10 @@ function ekstrakDanHitungPenjualan(data) {
                 if (keyClean === "qty" || keyClean === "quantity" || keyClean === "jumlah" || 
                     keyClean === "kuantitas" || keyClean === "jumlahproduk" || keyClean === "kuantitaspcs" || keyClean === "jumlahpesanan") {
                     rowQty = parseInt(row[key], 10) || 0;
-                    break; // Ambil nilai kuantitas pertama yang berhasil dicocokkan
+                    break; 
                 }
             }
 
-            // Langkah 3: Tambahkan angka penjualan ke state kategori aplikasi sesuai kode SKU-nya
             const kategori = masterSkus[foundSku].kategori;
             if (globalDataKategori[kategori] && globalDataKategori[kategori][foundSku]) {
                 globalDataKategori[kategori][foundSku].qty += rowQty;
@@ -563,7 +563,7 @@ btnCopyQty.addEventListener('click', () => {
     navigator.clipboard.writeText(txt).then(() => updateStatusMessage('Berhasil copy Qty sesuai filter ke clipboard.'));
 });
 
-// MENYIMPAN HISTORY LOG KE GOOGLE SPREADSHEET PUSAT
+// 🌟 MENYIMPAN HISTORY LOG SEKALIGUS DETAIL DATA SKU KE CLOUD DATABASE VIA POST
 btnSaveHistory.addEventListener('click', () => {
     const sumQty = (obj) => Object.values(obj).reduce((s, i) => s + i.qty, 0);
     const total = sumQty(globalDataKategori.utama) + sumQty(globalDataKategori.aksesoris) + sumQty(globalDataKategori.gradeb);
@@ -573,26 +573,37 @@ btnSaveHistory.addEventListener('click', () => {
         return;
     }
 
-    updateStatusMessage("Sedang mengirim data riwayat ke Google Spreadsheet Cloud...");
+    updateStatusMessage("Sedang mengirim data riwayat lengkap ke Cloud Spreadsheet...");
     const waktuSkrg = new Date().toLocaleString('id-ID');
+    const detailSnapshotString = JSON.stringify(globalDataKategori);
 
-    const urlKirim = `${GOOGLE_SCRIPT_URL}?action=save&waktu=${encodeURIComponent(waktuSkrg)}&files=${totalMasterFiles}&total=${total}`;
+    // Kirim muatan data raksasa menggunakan x-www-form-urlencoded POST agar anti-limit URL
+    const payloadData = new URLSearchParams();
+    payloadData.append('action', 'save');
+    payloadData.append('waktu', waktuSkrg);
+    payloadData.append('files', totalMasterFiles);
+    payloadData.append('total', total);
+    payloadData.append('detail', detailSnapshotString);
 
-    fetch(urlKirim)
-        .then(res => res.json())
-        .then(result => {
-            if(result.status === "success") {
-                updateStatusMessage(`Sukses! Data penjualan (${total} pcs) berhasil dikunci ke cloud.`);
-                fetchHistoryFromCloud(); 
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            updateStatusMessage("Gagal menyimpan ke server spreadsheet. Periksa koneksi internet.");
-        });
+    fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        body: payloadData,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    })
+    .then(res => res.json())
+    .then(result => {
+        if(result.status === "success") {
+            updateStatusMessage(`Sukses! Data penjualan (${total} pcs) dan detail SKU berhasil dikunci ke cloud.`);
+            fetchHistoryFromCloud(); 
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        updateStatusMessage("Gagal menyimpan ke server spreadsheet. Periksa koneksi internet.");
+    });
 });
 
-// MENARIK HISTORY DARI GOOGLE SHEET UNTUK DITAMPILKAN DI WEBSITE & GRAFIK TREND TREN
+// 🌟 MENARIK HISTORY CLOUD & MEMASANG TOMBOL DOWNLOAD EXCEL LINTAS PERANGKAT DATA LENGKAP
 function fetchHistoryFromCloud() {
     const historyBox = document.getElementById('history-list-container');
     if (!historyBox) return;
@@ -607,18 +618,68 @@ function fetchHistoryFromCloud() {
             }
 
             historyBox.className = "";
-            historyBox.innerHTML = '<div class="table-responsive"><table><thead><tr><th>Waktu Simpan</th><th>Files Terproses</th><th style="text-align: right; padding-right: 25px;">Total Qty Item</th></tr></thead><tbody id="tbody-history"></tbody></table></div>';
+            historyBox.innerHTML = '<div class="table-responsive"><table><thead><tr><th>Waktu Simpan</th><th>Files Terproses</th><th>Total Qty Item</th><th style="text-align: center; width: 140px;">Aksi</th></tr></thead><tbody id="tbody-history"></tbody></table></div>';
             
             const tbodyHist = document.getElementById('tbody-history');
-            
-            [...logs].reverse().forEach(log => {
+            globalHistoryCloudCache = {}; // Reset cache runtime global
+
+            logs.reverse().forEach(log => {
+                // Simpan bungkusan detail ke memori browser secara live
+                globalHistoryCloudCache[log.waktu] = log.detail;
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${log.waktu}</td>
-                    <td><span class="badge-file-status" style="height:22px; font-size:11px;">${log.files}</span></td>
-                    <td style="color: #ec4899; font-weight: bold; text-align: right; padding-right: 25px;">${log.total}</td>
+                    <td><span class="badge-file-status" style="height:22px; font-size:11px;">${log.files} Berkas</span></td>
+                    <td style="color: #ec4899; font-weight: bold;">${log.total} pcs</td>
+                    <td style="text-align: center;">
+                        <button class="btn-action btn-pink-solid btn-download-history" data-waktu="${log.waktu}" style="height: 24px; font-size: 11px; padding: 0 10px; line-height: 1;">Download 📄</button>
+                    </td>
                 `;
                 tbodyHist.appendChild(tr);
+            });
+
+            // LOGIKA PEMBANGUN FILE EXCEL BERDASARKAN LOG DATA DETAIL CLOUD SPREADSHEET PUSAT
+            document.querySelectorAll('.btn-download-history').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const targetWaktu = e.target.getAttribute('data-waktu');
+                    let rawDetailData = globalHistoryCloudCache[targetWaktu];
+
+                    if (!rawDetailData) {
+                        alert("⚠️ Detail data lengkap gagal diurai dari basis data awan.");
+                        return;
+                    }
+
+                    let targetDataSnapshot = typeof rawDetailData === 'string' ? JSON.parse(rawDetailData) : rawDetailData;
+
+                    const wb = XLSX.utils.book_new();
+                    const bentukMatriksLembarKerja = (dataKategori) => {
+                        let matriks = [["SKU", "Nama Produk", "Type", "Warna", "Kuantitas (Qty)"]];
+                        Object.keys(dataKategori).sort().forEach(sku => {
+                            matriks.push([
+                                sku, 
+                                dataKategori[sku].nama, 
+                                dataKategori[sku].type, 
+                                dataKategori[sku].warna, 
+                                dataKategori[sku].qty
+                            ]);
+                        });
+                        return matriks;
+                    };
+
+                    const wsUtama = XLSX.utils.aoa_to_sheet(bentukMatriksLembarKerja(targetDataSnapshot.utama));
+                    XLSX.utils.book_append_sheet(wb, wsUtama, "Produk Utama");
+
+                    const wsAksesoris = XLSX.utils.aoa_to_sheet(bentukMatriksLembarKerja(targetDataSnapshot.aksesoris));
+                    XLSX.utils.book_append_sheet(wb, wsAksesoris, "Aksesoris");
+
+                    const wsGradeB = XLSX.utils.aoa_to_sheet(bentukMatriksLembarKerja(targetDataSnapshot.gradeb));
+                    XLSX.utils.book_append_sheet(wb, wsGradeB, "Grade B");
+
+                    let namaFileAman = targetWaktu.replace(/[^a-zA-Z0-9]/g, "_");
+                    XLSX.writeFile(wb, `Latela_Laporan_Cloud_${namaFileAman}.xlsx`);
+                    updateStatusMessage(`Sukses mengunduh detail riwayat tanggal ${targetWaktu}`);
+                });
             });
 
             if (trendChartInstance && logs.length > 0) {
@@ -632,8 +693,8 @@ function fetchHistoryFromCloud() {
                     return parseInt(item.total.toString().replace(/[^0-9]/g, ""), 10) || 0;
                 });
 
-                trendChartInstance.data.labels = labelSumbuX;
-                trendChartInstance.data.datasets[0].data = dataSumbuY;
+                trendChartInstance.data.labels = labelSumbuX.reverse();
+                trendChartInstance.data.datasets[0].data = dataSumbuY.reverse();
                 trendChartInstance.update();
             }
         })
