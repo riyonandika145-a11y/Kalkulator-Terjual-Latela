@@ -4,7 +4,7 @@
 const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRx0w6ouZ_PYXUTdbqqT_CCslwLR-hdY3c311M7jAzPlskawLg2ewiGPQ_gLZ1K4EjQPI_7_qfp3pzb/pub?gid=0&single=true&output=csv";
 
 // Link Web App Google Apps Script milikmu terpasang rapi di sini:
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzXnbhhSGl1bzapSXEsUWa4p-RpVKGVLe2nJUVCT6cjC1Y-rH_DKC__DTB8BiV2QWI/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzc-lYZGC5958wLSHfhlnTr1u0GeKP-6vEYRgIoSkrn98j1oVMhSTKJE9y4hWJsPPY/exec";
 
 // --- DOM SELEKTORS ---
 const menuItems = document.querySelectorAll('.menu-item');
@@ -563,7 +563,7 @@ btnCopyQty.addEventListener('click', () => {
     navigator.clipboard.writeText(txt).then(() => updateStatusMessage('Berhasil copy Qty sesuai filter ke clipboard.'));
 });
 
-// 🌟 MENYIMPAN HISTORY LOG SEKALIGUS DETAIL DATA SKU KE CLOUD DATABASE VIA POST
+// MENYIMPAN HISTORY LOG SEKALIGUS DETAIL DATA SKU KE CLOUD DATABASE VIA POST
 btnSaveHistory.addEventListener('click', () => {
     const sumQty = (obj) => Object.values(obj).reduce((s, i) => s + i.qty, 0);
     const total = sumQty(globalDataKategori.utama) + sumQty(globalDataKategori.aksesoris) + sumQty(globalDataKategori.gradeb);
@@ -577,7 +577,6 @@ btnSaveHistory.addEventListener('click', () => {
     const waktuSkrg = new Date().toLocaleString('id-ID');
     const detailSnapshotString = JSON.stringify(globalDataKategori);
 
-    // Kirim muatan data raksasa menggunakan x-www-form-urlencoded POST agar anti-limit URL
     const payloadData = new URLSearchParams();
     payloadData.append('action', 'save');
     payloadData.append('waktu', waktuSkrg);
@@ -603,7 +602,7 @@ btnSaveHistory.addEventListener('click', () => {
     });
 });
 
-// 🌟 MENARIK HISTORY CLOUD & MEMASANG TOMBOL DOWNLOAD EXCEL LINTAS PERANGKAT DATA LENGKAP
+// MENARIK HISTORY CLOUD & MEMASANG TOMBOL DOWNLOAD EXCEL LINTAS PERANGKAT DATA LENGKAP
 function fetchHistoryFromCloud() {
     const historyBox = document.getElementById('history-list-container');
     if (!historyBox) return;
@@ -621,10 +620,9 @@ function fetchHistoryFromCloud() {
             historyBox.innerHTML = '<div class="table-responsive"><table><thead><tr><th>Waktu Simpan</th><th>Files Terproses</th><th>Total Qty Item</th><th style="text-align: center; width: 140px;">Aksi</th></tr></thead><tbody id="tbody-history"></tbody></table></div>';
             
             const tbodyHist = document.getElementById('tbody-history');
-            globalHistoryCloudCache = {}; // Reset cache runtime global
+            globalHistoryCloudCache = {}; 
 
             logs.reverse().forEach(log => {
-                // Simpan bungkusan detail ke memori browser secara live
                 globalHistoryCloudCache[log.waktu] = log.detail;
 
                 const tr = document.createElement('tr');
@@ -639,7 +637,6 @@ function fetchHistoryFromCloud() {
                 tbodyHist.appendChild(tr);
             });
 
-            // LOGIKA PEMBANGUN FILE EXCEL BERDASARKAN LOG DATA DETAIL CLOUD SPREADSHEET PUSAT
             document.querySelectorAll('.btn-download-history').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const targetWaktu = e.target.getAttribute('data-waktu');
