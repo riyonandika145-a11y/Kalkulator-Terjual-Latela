@@ -552,15 +552,18 @@ btnFileReset.addEventListener('click', () => {
 
 function updateStatusMessage(msg) { statusBar.innerText = msg; }
 
+// 🌟 REVISI FITUR: SEKARANG HANYA MENYALIN ANGKA QTY SAJA BERURUT KE BAWAH (TEXT-FREE COLUMN MURNI)
 btnCopyQty.addEventListener('click', () => {
     const cat = document.querySelector('.sub-tab.active').getAttribute('data-category');
     const data = globalDataKategori[cat];
-    let txt = "SKU\tNama\tType\tWarna\tQty\n";
+    let txt = ""; // Kosongkan string inisial tanpa baris teks judul kolom header
+    
     Object.keys(data).sort().forEach(k => { 
         if (activeFilterText !== "all" && data[k].nama !== activeFilterText) return;
-        txt += `${k}\t${data[k].nama}\t${data[k].type}\t${data[k].warna}\t${data[k].qty}\n`; 
+        txt += `${data[k].qty}\n`; // Murni ambil angka qty dan buat baris baru di clipboard
     });
-    navigator.clipboard.writeText(txt).then(() => updateStatusMessage('Berhasil copy Qty sesuai filter ke clipboard.'));
+    
+    navigator.clipboard.writeText(txt).then(() => updateStatusMessage('Berhasil copy angka Qty saja ke clipboard.'));
 });
 
 // MENYIMPAN HISTORY LOG SEKALIGUS DETAIL DATA SKU KE CLOUD DATABASE VIA POST
