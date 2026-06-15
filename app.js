@@ -52,6 +52,13 @@ const dashSkuAktif = document.getElementById('dash-sku-aktif');
 const dashFileCount = document.getElementById('dash-file-count');
 const dashFilterDropdown = document.getElementById('dash-filter-dropdown');
 
+// 🌟 NEW SELEKTORS: SELEKTOR DOM FITUR INPUT MANUAL
+const manualNamaDropdown = document.getElementById('manual-nama-dropdown');
+const manualTypeDropdown = document.getElementById('manual-type-dropdown');
+const manualWarnaDropdown = document.getElementById('manual-warna-dropdown');
+const manualQtyInput = document.getElementById('manual-qty-input');
+const btnAddManual = document.getElementById('btn-add-manual');
+
 // --- STATE MANAGEMENT ---
 let masterSkus = {}; 
 let globalDataKategori = { utama: {}, aksesoris: {}, gradeb: {} };
@@ -60,8 +67,8 @@ let activeFilterText = "all";
 
 // ARSIP INSTANSI GRAFIK CHART.JS
 let salesChartInstance = null; 
-let trendChartInstance = null;      
-let topProductsChartInstance = null; 
+let trendChartInstance = null;      // Grafik Baru 1 (Line)
+let topProductsChartInstance = null; // Grafik Baru 2 (Horizontal Bar)
 
 // CACHE GLOBAL UNTUK MENAMPUNG DETAIL DATA DARI CLOUD SPREADSHEET
 let globalHistoryCloudCache = {};
@@ -183,6 +190,7 @@ function fetchMasterSkusFromCloud() {
             updateStatusMessage("Master SKU berhasil disinkronisasi dari Google Sheets.");
             renderMasterSkuDatabaseView();
             populateDashboardDropdown(); 
+            populateManualNamaDropdown(); // 🌟 AKTIFKAN LIST DROPDOWN MANUAL UTAMA
             resetKalkulatorDataState();
         })
         .catch(err => {
@@ -547,20 +555,26 @@ btnFileReset.addEventListener('click', () => {
     
     if (salesChartInstance) { salesChartInstance.data.datasets[0].data = [0, 0, 0]; salesChartInstance.update(); }
     if (topProductsChartInstance) { topProductsChartInstance.data.labels = ["Kosong"]; topProductsChartInstance.data.datasets[0].data = [0]; topProductsChartInstance.update(); }
+    
+    // Reset elemen input manual
+    if (manualNamaDropdown) manualNamaDropdown.value = "";
+    if (manualTypeDropdown) { manualTypeDropdown.innerHTML = '<option value="">-- Type --</option>'; manualTypeDropdown.disabled = true; }
+    if (manualWarnaDropdown) { manualWarnaDropdown.innerHTML = '<option value="">-- Warna --</option>'; manualWarnaDropdown.disabled = true; }
+    if (manualQtyInput) manualQtyInput.value = "";
+
     updateStatusMessage('Siap.');
 });
 
 function updateStatusMessage(msg) { statusBar.innerText = msg; }
 
-// 🌟 REVISI FITUR: SEKARANG HANYA MENYALIN ANGKA QTY SAJA BERURUT KE BAWAH (TEXT-FREE COLUMN MURNI)
 btnCopyQty.addEventListener('click', () => {
     const cat = document.querySelector('.sub-tab.active').getAttribute('data-category');
     const data = globalDataKategori[cat];
-    let txt = ""; // Kosongkan string inisial tanpa baris teks judul kolom header
+    let txt = ""; 
     
     Object.keys(data).sort().forEach(k => { 
         if (activeFilterText !== "all" && data[k].nama !== activeFilterText) return;
-        txt += `${data[k].qty}\n`; // Murni ambil angka qty dan buat baris baru di clipboard
+        txt += `${data[k].qty}\n`; 
     });
     
     navigator.clipboard.writeText(txt).then(() => updateStatusMessage('Berhasil copy angka Qty saja ke clipboard.'));
@@ -771,4 +785,128 @@ btnExportCsv.addEventListener('click', () => {
     link.click();
     document.body.removeChild(link);
     updateStatusMessage("Sukses mengunduh laporan berkas teks (.csv).");
+});
+
+// =========================================================================
+// 🌟 NEW ENGINE LOGIC: LOGIKA SISTEM INPUT MANUAL BERANTAI DINAMIS
+// =========================================================================
+
+// 1. Mengisi Dropdown Nama Produk Pertama Kali
+function populateManualNamaDropdown() {
+    if (!manualNamaDropdown) return;
+    manualNamaDropdown.innerHTML = '<option value="">-- Pilih Produk --</option>';
+    
+    let uniqueProductNames = new Set();
+    Object.values(masterSkus).forEach(item => {
+        if (item.nama) uniqueProductNames.add(item.nama.trim().toUpperCase());
+    });
+
+    const sortedNames = Array.from(uniqueProductNames).sort();
+    sortedNames.forEach(nama => {
+        const opt = document.createElement('option');
+        opt.value = nama; opt.innerText = nama;
+        manualNamaDropdown.appendChild(opt);
+    });
+}
+
+// 2. Berantai: Ketika Nama Produk Dipilih -> Aktifkan & Isi Dropdown Type
+manualNamaDropdown.addEventListener('change', () => {
+    const selectedNama = manualNamaDropdown.value;
+    
+    // Reset Dropdown Anak & Cucu di bawahnya
+    manualTypeDropdown.innerHTML = '<option value="">-- Type --</option>';
+    manualWarnaDropdown.innerHTML = '<option value="">-- Warna --</option>';
+    manualWarnaDropdown.disabled = true;
+    
+    if (!selectedNama) {
+        manualTypeDropdown.disabled = true;
+        return;
+    }
+    
+    let uniqueTypes = new Set();
+    Object.values(masterSkus).forEach(item => {
+        if (item.nama === selectedNama && item.type) {
+            uniqueTypes.add(item.type.trim());
+        }
+    });
+    
+    const sortedTypes = Array.from(uniqueTypes).sort();
+    sortedTypes.forEach(type => {
+        const opt = document.createElement('option');
+        opt.value = type; opt.innerText = type;
+        manualTypeDropdown.appendChild(opt);
+    });
+    manualTypeDropdown.disabled = false;
+});
+
+// 3. Berantai: Ketika Type Dipilih -> Aktifkan & Isi Dropdown Warna
+manualTypeDropdown.addEventListener('change', () => {
+    const selectedNama = manualNamaDropdown.value;
+    const selectedType = manualTypeDropdown.value;
+    
+    manualWarnaDropdown.innerHTML = '<option value="">-- Warna --</option>';
+    
+    if (!selectedType) {
+        manualWarnaDropdown.disabled = true;
+        return;
+    }
+    
+    let uniqueWarnas = new Set();
+    Object.values(masterSkus).forEach(item => {
+        if (item.nama === selectedNama && item.type === selectedType && item.warna) {
+            uniqueWarnas.add(item.warna.trim());
+        }
+    });
+    
+    const sortedWarnas = Array.from(uniqueWarnas).sort();
+    sortedWarnas.forEach(warna => {
+        const opt = document.createElement('option');
+        opt.value = warna; opt.innerText = warna;
+        manualWarnaDropdown.appendChild(opt);
+    });
+    manualWarnaDropdown.disabled = false;
+});
+
+// 4. Eksekusi Tombol "+ Manual" Untuk Menambahkan Qty Ke Workspace Kalkulator
+btnAddManual.addEventListener('click', () => {
+    const nama = manualNamaDropdown.value;
+    const type = manualTypeDropdown.value;
+    const warna = manualWarnaDropdown.value;
+    const qty = parseInt(manualQtyInput.value, 10);
+    
+    // Validasi Keamanan Isian Form
+    if (!nama || !type || !warna || isNaN(qty) || qty <= 0) {
+        updateStatusMessage("⚠️ Gagal Input: Silakan pilih detail produk dan jumlah Qty dengan benar.");
+        return;
+    }
+    
+    // Cari SKU yang cocok di database masterSkus
+    let targetSku = null;
+    for (let sku in masterSkus) {
+        if (masterSkus[sku].nama === nama && masterSkus[sku].type === type && masterSkus[sku].warna === warna) {
+            targetSku = sku;
+            break;
+        }
+    }
+    
+    if (targetSku) {
+        const kategori = masterSkus[targetSku].kategori;
+        if (globalDataKategori[kategori] && globalDataKategori[kategori][targetSku]) {
+            // Tambahkan nilai penjualan manual secara akumulatif
+            globalDataKategori[kategori][targetSku].qty += qty;
+            
+            // Refresh tampilan tabel workspace & dashboard metrics
+            refreshAllTables();
+            updateDashboardMetrics();
+            
+            updateStatusMessage(`Sukses input manual: ${nama} (${type} - ${warna}) +${qty} pcs.`);
+            
+            // Bersihkan kolom input angka kuantitas
+            manualQtyInput.value = "";
+        } else {
+            updateStatusMessage("⚠️ Gagal: SKU tidak ditemukan di dalam folder workspace harian.");
+        }
+    } else {
+        updateStatusMessage("⚠️ Gagal: Kombinasi varian produk tidak terdaftar di database cloud.");
+    }
 });
