@@ -52,7 +52,7 @@ const dashSkuAktif = document.getElementById('dash-sku-aktif');
 const dashFileCount = document.getElementById('dash-file-count');
 const dashFilterDropdown = document.getElementById('dash-filter-dropdown');
 
-// 🌟 NEW SELEKTORS: SELEKTOR DOM FITUR INPUT MANUAL
+// SELEKTOR DOM FITUR INPUT MANUAL
 const manualNamaDropdown = document.getElementById('manual-nama-dropdown');
 const manualTypeDropdown = document.getElementById('manual-type-dropdown');
 const manualWarnaDropdown = document.getElementById('manual-warna-dropdown');
@@ -67,8 +67,8 @@ let activeFilterText = "all";
 
 // ARSIP INSTANSI GRAFIK CHART.JS
 let salesChartInstance = null; 
-let trendChartInstance = null;      // Grafik Baru 1 (Line)
-let topProductsChartInstance = null; // Grafik Baru 2 (Horizontal Bar)
+let trendChartInstance = null;      
+let topProductsChartInstance = null; 
 
 // CACHE GLOBAL UNTUK MENAMPUNG DETAIL DATA DARI CLOUD SPREADSHEET
 let globalHistoryCloudCache = {};
@@ -190,7 +190,7 @@ function fetchMasterSkusFromCloud() {
             updateStatusMessage("Master SKU berhasil disinkronisasi dari Google Sheets.");
             renderMasterSkuDatabaseView();
             populateDashboardDropdown(); 
-            populateManualNamaDropdown(); // 🌟 AKTIFKAN LIST DROPDOWN MANUAL UTAMA
+            populateManualNamaDropdown(); 
             resetKalkulatorDataState();
         })
         .catch(err => {
@@ -291,7 +291,7 @@ function processExcelEngine(file) {
     reader.readAsArrayBuffer(file);
 }
 
-// VALUE-FIRST LOOKUP ENGINE (ANTI GAGAL SINKRONISASI)
+// 🔥 REVISI LOGIKA UTAMA: AKOMODASI SINKRONISASI KOLOM QUANTITY LAZADA, SHOPEE, TIKTOK
 function ekstrakDanHitungPenjualan(data) {
     data.forEach(row => {
         let foundSku = "";
@@ -307,12 +307,15 @@ function ekstrakDanHitungPenjualan(data) {
         }
 
         if (foundSku) {
-            let rowQty = 0;
+            // 🌟 STANDARISASI LAZADA: Default diatur ke 1 pcs jika tidak ada nama kolom Qty terdeteksi di baris
+            let rowQty = 1; 
+
             for (let key in row) {
                 let keyClean = key.toString().toLowerCase().replace(/[^a-z0-9]/g, "");
+                // Memindai kata kunci "jumlah" (Shopee) atau "quantity" (TikTok)
                 if (keyClean === "qty" || keyClean === "quantity" || keyClean === "jumlah" || 
                     keyClean === "kuantitas" || keyClean === "jumlahproduk" || keyClean === "kuantitaspcs" || keyClean === "jumlahpesanan") {
-                    rowQty = parseInt(row[key], 10) || 0;
+                    rowQty = parseInt(row[key], 10) || 1; // Jika kolom ketemu tapi angkanya eror, aman kembali ke 1
                     break; 
                 }
             }
@@ -556,7 +559,6 @@ btnFileReset.addEventListener('click', () => {
     if (salesChartInstance) { salesChartInstance.data.datasets[0].data = [0, 0, 0]; salesChartInstance.update(); }
     if (topProductsChartInstance) { topProductsChartInstance.data.labels = ["Kosong"]; topProductsChartInstance.data.datasets[0].data = [0]; topProductsChartInstance.update(); }
     
-    // Reset elemen input manual
     if (manualNamaDropdown) manualNamaDropdown.value = "";
     if (manualTypeDropdown) { manualTypeDropdown.innerHTML = '<option value="">-- Type --</option>'; manualTypeDropdown.disabled = true; }
     if (manualWarnaDropdown) { manualWarnaDropdown.innerHTML = '<option value="">-- Warna --</option>'; manualWarnaDropdown.disabled = true; }
@@ -787,11 +789,7 @@ btnExportCsv.addEventListener('click', () => {
     updateStatusMessage("Sukses mengunduh laporan berkas teks (.csv).");
 });
 
-// =========================================================================
-// 🌟 NEW ENGINE LOGIC: LOGIKA SISTEM INPUT MANUAL BERANTAI DINAMIS
-// =========================================================================
-
-// 1. Mengisi Dropdown Nama Produk Pertama Kali
+// LOGIKA SISTEM INPUT MANUAL BERANTAI DINAMIS
 function populateManualNamaDropdown() {
     if (!manualNamaDropdown) return;
     manualNamaDropdown.innerHTML = '<option value="">-- Pilih Produk --</option>';
@@ -809,11 +807,9 @@ function populateManualNamaDropdown() {
     });
 }
 
-// 2. Berantai: Ketika Nama Produk Dipilih -> Aktifkan & Isi Dropdown Type
 manualNamaDropdown.addEventListener('change', () => {
     const selectedNama = manualNamaDropdown.value;
     
-    // Reset Dropdown Anak & Cucu di bawahnya
     manualTypeDropdown.innerHTML = '<option value="">-- Type --</option>';
     manualWarnaDropdown.innerHTML = '<option value="">-- Warna --</option>';
     manualWarnaDropdown.disabled = true;
@@ -839,7 +835,6 @@ manualNamaDropdown.addEventListener('change', () => {
     manualTypeDropdown.disabled = false;
 });
 
-// 3. Berantai: Ketika Type Dipilih -> Aktifkan & Isi Dropdown Warna
 manualTypeDropdown.addEventListener('change', () => {
     const selectedNama = manualNamaDropdown.value;
     const selectedType = manualTypeDropdown.value;
@@ -867,20 +862,17 @@ manualTypeDropdown.addEventListener('change', () => {
     manualWarnaDropdown.disabled = false;
 });
 
-// 4. Eksekusi Tombol "+ Manual" Untuk Menambahkan Qty Ke Workspace Kalkulator
 btnAddManual.addEventListener('click', () => {
     const nama = manualNamaDropdown.value;
     const type = manualTypeDropdown.value;
     const warna = manualWarnaDropdown.value;
     const qty = parseInt(manualQtyInput.value, 10);
     
-    // Validasi Keamanan Isian Form
     if (!nama || !type || !warna || isNaN(qty) || qty <= 0) {
         updateStatusMessage("⚠️ Gagal Input: Silakan pilih detail produk dan jumlah Qty dengan benar.");
         return;
     }
     
-    // Cari SKU yang cocok di database masterSkus
     let targetSku = null;
     for (let sku in masterSkus) {
         if (masterSkus[sku].nama === nama && masterSkus[sku].type === type && masterSkus[sku].warna === warna) {
@@ -892,16 +884,12 @@ btnAddManual.addEventListener('click', () => {
     if (targetSku) {
         const kategori = masterSkus[targetSku].kategori;
         if (globalDataKategori[kategori] && globalDataKategori[kategori][targetSku]) {
-            // Tambahkan nilai penjualan manual secara akumulatif
             globalDataKategori[kategori][targetSku].qty += qty;
             
-            // Refresh tampilan tabel workspace & dashboard metrics
             refreshAllTables();
             updateDashboardMetrics();
             
             updateStatusMessage(`Sukses input manual: ${nama} (${type} - ${warna}) +${qty} pcs.`);
-            
-            // Bersihkan kolom input angka kuantitas
             manualQtyInput.value = "";
         } else {
             updateStatusMessage("⚠️ Gagal: SKU tidak ditemukan di dalam folder workspace harian.");
