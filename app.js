@@ -1,9 +1,7 @@
 // =========================================================================
 // CLOUD DATABASE CONFIGURATION (GOOGLE SHEETS)
 // =========================================================================
-const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRx0w6ouZ_PYXUTdbqqT_CCslwLR-hdY3c311M7jAzPlskawLg2ewiGPQ_gLZ1K4EjQPI_7_qfp3pzb/pub?gid=0&single=true&output=csv";
-
-// Link Web App Google Apps Script milikmu terpasang rapi di sini:
+// Link Web App Google Apps Script terpasang rapi di sini:
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzc-lYZGC5958wLSHfhlnTr1u0GeKP-6vEYRgIoSkrn98j1oVMhSTKJE9y4hWJsPPY/exec";
 
 // --- DOM SELEKTORS ---
@@ -145,22 +143,18 @@ btnSyncCloud.addEventListener('click', () => {
     fetchMasterSkusFromCloud();
 });
 
-// 1. ENGINE AMBIL DATA TERPUSAT DARI GOOGLE SHEETS
+// 1. 🌟 NEW LIVE ENGINE: AMBIL DATA MASTER SKU SPREADSHEET LANGSUNG SECARA REAL-TIME
 function fetchMasterSkusFromCloud() {
-    updateStatusMessage("Menghubungkan ke Google Sheets Cloud Database...");
-    tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; font-style: italic;">Sinkronisasi data terpusat...</td></tr>`;
+    updateStatusMessage("Menghubungkan ke Google Sheets Cloud Database secara Real-Time...");
+    tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; font-style: italic;">Sinkronisasi data live...</td></tr>`;
 
-    fetch(GOOGLE_SHEET_URL)
+    // Menembak langsung action fetch_skus ke Web App Google Apps Script
+    fetch(`${GOOGLE_SCRIPT_URL}?action=fetch_skus`)
         .then(response => {
-            if (!response.ok) throw new Error("Gagal mengambil data dari URL Google Sheets. Periksa status publish.");
-            return response.arrayBuffer();
+            if (!response.ok) throw new Error("Gagal terhubung ke internal API Google Apps Script.");
+            return response.json();
         })
-        .then(buffer => {
-            const data = new Uint8Array(buffer);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-            const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
+        .then(jsonData => {
             masterSkus = {};
 
             jsonData.forEach(row => {
@@ -170,7 +164,6 @@ function fetchMasterSkusFromCloud() {
                 const warnaProduk = row['Warna'] || row['warna'] || '-';
                 const kategoriLogistik = row['Kategori'] || row['kategori'] || 'utama';
 
-                // SMART NORMALIZER KATEGORI CLOUD SPREADSHEET
                 let rawKat = kategoriLogistik.toString().trim().toLowerCase();
                 let katClean = 'utama'; 
                 if (rawKat.includes('utama')) katClean = 'utama';
@@ -187,7 +180,7 @@ function fetchMasterSkusFromCloud() {
                 }
             });
 
-            updateStatusMessage("Master SKU berhasil disinkronisasi dari Google Sheets.");
+            updateStatusMessage("Master SKU berhasil disinkronisasi secara INSTAN & LIVE!");
             renderMasterSkuDatabaseView();
             populateDashboardDropdown(); 
             populateManualNamaDropdown(); 
@@ -196,7 +189,7 @@ function fetchMasterSkusFromCloud() {
         .catch(err => {
             console.error(err);
             updateStatusMessage("Gagal menyinkronkan data.");
-            tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #dc2626; font-weight: bold; padding: 20px;">⚠️ SISTEM EROR: ${err.message}<br><span style="font-size: 12px; font-weight: normal; color: #64748b; display: block; margin-top: 5px;">Silakan tekan CTRL + F5. Jika pesan ini tetap muncul, laporkan teks eror di atas.</span></td></tr>`;
+            tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #dc2626; font-weight: bold; padding: 20px;">⚠️ SISTEM EROR: ${err.message}<br><span style="font-size: 12px; font-weight: normal; color: #64748b; display: block; margin-top: 5px;">Silakan tekan CTRL + F5 atau klik tombol Sync Ulang. Jika masih bermasalah, cek versi deployment Apps Script.</span></td></tr>`;
         });
 }
 
@@ -230,7 +223,7 @@ function renderMasterSkuDatabaseView() {
     masterSkuCount.innerText = sortedKeys.length;
 
     if (sortedKeys.length === 0) {
-        tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; font-style: italic;">Google Sheet terbaca, tapi data kosong.</td></tr>`;
+        tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; font-style: italic;">Data kosong, silakan periksa isi spreadsheet.</td></tr>`;
         return;
     }
 
@@ -291,7 +284,7 @@ function processExcelEngine(file) {
     reader.readAsArrayBuffer(file);
 }
 
-// 🔥 REVISI LOGIKA UTAMA: AKOMODASI SINKRONISASI KOLOM QUANTITY LAZADA, SHOPEE, TIKTOK
+// VALUE-FIRST LOOKUP ENGINE DENGAN ATURAN KHUSUS LAZADA (DEFAULT QTY = 1)
 function ekstrakDanHitungPenjualan(data) {
     data.forEach(row => {
         let foundSku = "";
@@ -307,15 +300,13 @@ function ekstrakDanHitungPenjualan(data) {
         }
 
         if (foundSku) {
-            // 🌟 STANDARISASI LAZADA: Default diatur ke 1 pcs jika tidak ada nama kolom Qty terdeteksi di baris
             let rowQty = 1; 
 
             for (let key in row) {
                 let keyClean = key.toString().toLowerCase().replace(/[^a-z0-9]/g, "");
-                // Memindai kata kunci "jumlah" (Shopee) atau "quantity" (TikTok)
                 if (keyClean === "qty" || keyClean === "quantity" || keyClean === "jumlah" || 
                     keyClean === "kuantitas" || keyClean === "jumlahproduk" || keyClean === "kuantitaspcs" || keyClean === "jumlahpesanan") {
-                    rowQty = parseInt(row[key], 10) || 1; // Jika kolom ketemu tapi angkanya eror, aman kembali ke 1
+                    rowQty = parseInt(row[key], 10) || 1; 
                     break; 
                 }
             }
@@ -569,6 +560,7 @@ btnFileReset.addEventListener('click', () => {
 
 function updateStatusMessage(msg) { statusBar.innerText = msg; }
 
+// COPY ANGKA QTY SAJA BERURUT KE BAWAH (UNTUK DATA STOCK OPNAME)
 btnCopyQty.addEventListener('click', () => {
     const cat = document.querySelector('.sub-tab.active').getAttribute('data-category');
     const data = globalDataKategori[cat];
