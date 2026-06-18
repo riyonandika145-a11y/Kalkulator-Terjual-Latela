@@ -2,7 +2,7 @@
 // CLOUD DATABASE CONFIGURATION (GOOGLE SHEETS)
 // =========================================================================
 // Link Web App Google Apps Script terpasang rapi di sini:
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzc-lYZGC5958wLSHfhlnTr1u0GeKP-6vEYRgIoSkrn98j1oVMhSTKJE9y4hWJsPPY/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3sr4vIj7n35TMUosknwwZKG09yFHlPrBJQykn6n3SjvnzTrUAmcbTELz_f5o4Jjg/exec";
 
 // --- DOM SELEKTORS ---
 const menuItems = document.querySelectorAll('.menu-item');
