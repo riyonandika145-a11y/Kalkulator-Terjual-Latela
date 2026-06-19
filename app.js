@@ -2,7 +2,7 @@
 // 🌟 REAL-TIME ENGINE JALUR KHUSUS GOOGLE APPS SCRIPT WEB APP 
 // =========================================================================
 // Tautan URL Macro terupdate milikmu terpasang rapi di sini:
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzc-lYZGC5958wLSHfhlnTr1u0GeKP-6vEYRgIoSkrn98j1oVMhSTKJE9y4hWJsPPY/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpkdnChxDaLe1nTO4V0HwCJH7SLIe3P9IBwZXRm5_7EHlscxNWxAqmSdeN6kJ_Qws/exec";
 
 // --- DOM SELEKTORS UTAMA ---
 const loadingOverlay = document.getElementById('loading-overlay'); // Selektor Loading
