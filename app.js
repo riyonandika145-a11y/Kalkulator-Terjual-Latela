@@ -5,6 +5,8 @@
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3sr4vIj7n35TMUosknwwZKG09yFHlPrBJQykn6n3SjvnzTrUAmcbTELz_f5o4Jjg/exec";
 
 // --- DOM SELEKTORS ---
+const loadingOverlay = document.getElementById('loading-overlay'); // 🌟 SELEKTOR LOADING BARU
+
 const menuItems = document.querySelectorAll('.menu-item');
 const contentViews = document.querySelectorAll('.content-view');
 const subTabs = document.querySelectorAll('.sub-tab');
@@ -148,6 +150,11 @@ function fetchMasterSkusFromCloud() {
     updateStatusMessage("Menghubungkan ke Google Sheets Cloud Database secara Real-Time...");
     tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; font-style: italic;">Sinkronisasi data live...</td></tr>`;
 
+    // 🌟 NYALAKAN LOADING SCREEN SAAT SINKRONISASI MULAI BERJALAN
+    if (loadingOverlay) {
+        loadingOverlay.classList.remove('fade-out');
+    }
+
     // Menembak langsung action fetch_skus ke Web App Google Apps Script
     fetch(`${GOOGLE_SCRIPT_URL}?action=fetch_skus`)
         .then(response => {
@@ -190,6 +197,14 @@ function fetchMasterSkusFromCloud() {
             console.error(err);
             updateStatusMessage("Gagal menyinkronkan data.");
             tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #dc2626; font-weight: bold; padding: 20px;">⚠️ SISTEM EROR: ${err.message}<br><span style="font-size: 12px; font-weight: normal; color: #64748b; display: block; margin-top: 5px;">Silakan tekan CTRL + F5 atau klik tombol Sync Ulang. Jika masih bermasalah, cek versi deployment Apps Script.</span></td></tr>`;
+        })
+        .finally(() => {
+            // 🌟 MATIKAN LOADING OVERLAY SECARA OTOMATIS (SETELAH 300ms BIAR HALUS)
+            if (loadingOverlay) {
+                setTimeout(() => {
+                    loadingOverlay.classList.add('fade-out');
+                }, 300);
+            }
         });
 }
 
