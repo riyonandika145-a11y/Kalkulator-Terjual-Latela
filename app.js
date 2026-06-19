@@ -2,7 +2,7 @@
 // 🌟 CONFIG CLOUD: SYSTEM REAL-TIME LIVE DATABASE ENGINE (0 DETIK DELAY)
 // =========================================================================
 // ⚠️ PERINGATAN KRUSIAL: MASUKKAN LINK /exec SAKTI KAMU YANG BERHASIL SEMALAM DI BAWAH INI!
-const GOOGLE_SCRIPT_URL = "PASANG_LINK_DEPLOYMENT_EXEC_BARU_KAMU_DISINI";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQgBar2u3yO_vVImHfbxzUxQaa6Yo13c47agsH4ynuBiODFX8Z-aBeBsJarS8TGD8/exec";
 
 // --- DOM SELEKTORS UTAMA ---
 const loadingOverlay = document.getElementById('loading-overlay'); // Selektor Loader
