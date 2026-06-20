@@ -10,6 +10,7 @@
 </head>
 <body>
 
+    <!-- LAYER LOADING SCREEN AWAL (MINIMALIS VER.) -->
     <div id="loading-overlay" class="loading-overlay">
         <div class="loading-content">
             <img src="logo-loading.png" class="loading-logo-spinner" alt="Loading Latela">
@@ -42,6 +43,11 @@
                     <span class="menu-text">History</span>
                 </button>
                 
+                <!-- 🌟 MENU BARU: PROCUREMENT SESUAI IMAGE_9616E1.PNG -->
+                <button class="menu-item" data-target="procurement">
+                    <span class="menu-text">Procurement</span>
+                </button>
+                
                 <a href="https://docs.google.com/spreadsheets/d/1b67HBw0kqhxMR8gaFTvLcuhOuFrTCdD-6md0N1PiXkU/edit?gid=0#gid=0" target="_blank" class="menu-item-external" id="menu-extension">
                     <span class="menu-text">Extension</span>
                 </a>
@@ -51,6 +57,7 @@
         <main class="main-content-wrapper">
             <div class="main-content">
                 
+                <!-- SECTION 1: DASHBOARD OVERVIEW -->
                 <section id="view-dashboard" class="content-view">
                     <h2 class="page-title">Dashboard Overview</h2>
                     
@@ -102,6 +109,7 @@
                     </div>
                 </section>
 
+                <!-- SECTION 2: KALKULATOR CORE WORKSPACE -->
                 <section id="view-kalkulator" class="content-view active">
                     
                     <div class="top-controls-bar">
@@ -216,6 +224,7 @@
                     </div>
                 </section>
 
+                <!-- SECTION 3: MASTER SKU DATA TABLE -->
                 <section id="view-mastersku" class="content-view">
                     <h2 class="page-title">Master Data SKU Cloud Database</h2>
                     <p class="section-desc">Data di bawah disinkronisasikan secara otomatis and terpusat langsung dari Google Sheets internal.</p>
@@ -246,10 +255,19 @@
                     </div>
                 </section>
 
+                <!-- SECTION 4: HISTORY SPREADSHEET LOG -->
                 <section id="view-history" class="content-view">
                     <h2 class="page-title">History Log</h2>
                     <div id="history-list-container" class="empty-state-card">
                         <p>Belum ada riwayat pemrosesan log data penjualan yang disimpan di Google Sheets.</p>
+                    </div>
+                </section>
+
+                <!-- 🌟 WADAH HALAMAN BARU: VIEW PROCUREMENT -->
+                <section id="view-procurement" class="content-view">
+                    <h2 class="page-title">Procurement Workspace</h2>
+                    <div class="empty-state-card">
+                        <p>Halaman Procurement sedang dalam pengembangan sistem supply chain.</p>
                     </div>
                 </section>
 
@@ -258,6 +276,7 @@
         </main>
     </div>
 
+    <!-- SECURITY MODAL AUTENTIKASI -->
     <div id="password-modal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
