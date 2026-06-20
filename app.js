@@ -1,6 +1,7 @@
 // =========================================================================
 // CLOUD DATABASE CONFIGURATION (GOOGLE SHEETS)
 // =========================================================================
+// Menggunakan Link Apps Script Terkini Milikmu:
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9ZVSAObK0DbfXadHO9LIQGEaLlmFruZ4AR7HFpsYC2ONmKLGQCQ_93TuS_DpOwog/exec";
 
 // --- DOM SELEKTORS ---
@@ -58,7 +59,7 @@ const manualWarnaDropdown = document.getElementById('manual-warna-dropdown');
 const manualQtyInput = document.getElementById('manual-qty-input');
 const btnAddManual = document.getElementById('btn-add-manual');
 
-// 🛠️ SELEKTOR PROCUREMENT DROPDOWN BERANTAI TERBARU
+// SELEKTOR PROCUREMENT DROPDOWN BERANTAI & FITUR BARU
 const procNoPo = document.getElementById('proc-no-po');
 const procJenisBarang = document.getElementById('proc-jenis-barang');
 const procWarnaLatela = document.getElementById('proc-warna-latela');
@@ -284,7 +285,7 @@ if (btnAddProc) {
         const kodeVendor = procKodeVendor ? procKodeVendor.value : ''; 
         const namaKain = procNamaKain ? procNamaKain.value : ''; 
         const qty = procQty ? parseInt(procQty.value, 10) : 0;
-        const satuan = procSatuan ? procSatuan.value : 'Roll'; // 🛠️ Tangkap pilihan satuan
+        const satuan = procSatuan ? procSatuan.value : 'Roll'; 
 
         if(!jenisBarang || !warnaLatela || isNaN(qty) || qty <= 0) { updateStatusMessage("⚠️ Gagal: Isi Qty dengan benar."); return; }
         currentPoBasket.push({ jenisBarang, warnaLatela, kodeWarnaVendor, vendor, kodeVendor, namaKain, qty, satuan });
@@ -302,7 +303,6 @@ function renderProcurementTable() {
     tbodyProcurementList.innerHTML = '';
     currentPoBasket.forEach((item) => {
         const tr = document.createElement('tr');
-        // 🛠️ Menampilkan Qty + Satuan yang dipilih dinamis di baris tabel preview
         tr.innerHTML = `<td><strong>${item.jenisBarang}</strong></td><td><code>${item.warnaLatela}</code></td><td>${item.kodeWarnaVendor}</td><td>${item.vendor}</td><td><strong>${item.kodeVendor}</strong></td><td>${item.namaKain}</td><td style="text-align: right; padding-right:25px; color:#2563eb;">${item.qty} ${item.satuan}</td>`;
         tbodyProcurementList.appendChild(tr);
     });
@@ -311,7 +311,7 @@ function renderProcurementTable() {
 if (btnResetPo) {
     btnResetPo.addEventListener('click', () => {
         currentPoBasket = []; renderProcurementTable();
-        if (procNoPo) procNoPo.value = ''; // 🛠️ Reset nomor PO
+        if (procNoPo) procNoPo.value = ''; 
         if (procJenisBarang) procJenisBarang.value = ''; 
         if (procWarnaLatela) { procWarnaLatela.value = ''; procWarnaLatela.disabled = true; }
         if (procKodeWarnaVendor) procKodeWarnaVendor.value = ''; 
@@ -327,11 +327,11 @@ if (btnExportPo) {
     btnExportPo.addEventListener('click', () => {
         if(currentPoBasket.length === 0) return;
         const wb = XLSX.utils.book_new();
-        const noPoValue = procNoPo ? procNoPo.value.trim() : ''; // 🛠️ Ambil value nomor PO harian
+        const noPoValue = procNoPo ? procNoPo.value.trim() : ''; 
 
         let matriksPO = [
             ["SURAT PURCHASE ORDER (PO) BAHAN BAKU - CV ARSA"],
-            [`Nomor PO          : ${noPoValue || '-'}`], // 🛠️ Tercetak otomatis di baris 2 Excel
+            [`Nomor PO          : ${noPoValue || '-'}`], 
             [`Tanggal Pembuatan : ${new Date().toLocaleDateString('id-ID')}`],
             ["Status Otorisasi : OSCM Supervisor Approved"],
             [], 
@@ -339,7 +339,6 @@ if (btnExportPo) {
         ];
 
         currentPoBasket.forEach(item => { 
-            // 🛠️ Export terpisah antara Qty dan Satuan di Excel biar rapi
             matriksPO.push([item.jenisBarang, item.warnaLatela, item.kodeWarnaVendor, item.vendor, item.kodeVendor, item.namaKain, item.qty, item.satuan]); 
         });
         
@@ -483,9 +482,10 @@ function updateDashboardMetrics() {
     }
 }
 
+// 🌟 FIX UNTUK i.trim -> DIGANTI JADI i.nama.trim() AGAR TIDAK ERROR LAGI
 function populateDashboardDropdown() {
     if (!dashFilterDropdown) return; dashFilterDropdown.innerHTML = '<option value="all">-- Semua Produk --</option>';
-    let names = new Set(); Object.values(masterSkus).forEach(i => { if (i.nama) names.add(i.trim().toUpperCase()); });
+    let names = new Set(); Object.values(masterSkus).forEach(i => { if (i.nama) names.add(i.nama.trim().toUpperCase()); });
     Array.from(names).sort().forEach(n => { const opt = document.createElement('option'); opt.value = n; opt.innerText = n; dashFilterDropdown.appendChild(opt); });
 }
 if (dashFilterDropdown) { dashFilterDropdown.addEventListener('change', () => updateDashboardMetrics()); }
