@@ -671,17 +671,50 @@ function fetchHistoryFromCloud() {
         if (!logs.length) return; container.className = "";
         container.innerHTML = '<div class="table-responsive"><table><thead><tr><th>Waktu Simpan</th><th>Files</th><th>Total Qty</th><th>Aksi</th></tr></thead><tbody id="tbody-history"></tbody></table></div>';
         const tbody = document.getElementById('tbody-history');
+
+        // 🔧 NORMALISASI: header di Google Sheets bisa berbeda nama
+        // ("waktu" vs "Waktu Simpan", dst), jadi dicoba beberapa kemungkinan key
+        const pick = (obj, keys) => {
+            for (const k of keys) {
+                if (obj[k] !== undefined && obj[k] !== '') return obj[k];
+            }
+            return '';
+        };
+        const pickDetail = (obj) => {
+            const knownKeys = ['detail', 'Detail'];
+            for (const k of knownKeys) { if (obj[k]) return obj[k]; }
+            // fallback: ambil value dari key kosong/tak dikenal yang isinya JSON object string
+            for (const k in obj) {
+                if (!['waktu','Waktu Simpan','files','Files Terproses','total','Total Qty Item'].includes(k)) {
+                    if (typeof obj[k] === 'string' && obj[k].trim().startsWith('{')) return obj[k];
+                }
+            }
+            return '';
+        };
+
         logs.reverse().forEach(log => {
-            globalHistoryCloudCache[log.waktu] = log.detail;
+            const waktu = pick(log, ['waktu', 'Waktu Simpan']);
+            let files = pick(log, ['files', 'Files Terproses']);
+            let total = pick(log, ['total', 'Total Qty Item']);
+            const detail = pickDetail(log);
+
+            // Bersihkan angka dari embel-embel teks pada data lama (mis. "1 Berkas", "87 pcs")
+            files = parseInt(String(files).replace(/[^0-9]/g, ''), 10) || 0;
+            total = parseInt(String(total).replace(/[^0-9]/g, ''), 10) || 0;
+
+            globalHistoryCloudCache[waktu] = detail;
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${log.waktu}</td><td>${log.files} Berkas</td><td style="color:#ec4899; font-weight:bold;">${log.total} pcs</td><td><button class="btn-action btn-pink-solid btn-download-history" data-waktu="${log.waktu}">Download</button></td>`;
+            tr.innerHTML = `<td>${waktu}</td><td>${files} Berkas</td><td style="color:#ec4899; font-weight:bold;">${total} pcs</td><td><button class="btn-action btn-pink-solid btn-download-history" data-waktu="${waktu}">Download</button></td>`;
             if (tbody) tbody.appendChild(tr);
         });
         document.querySelectorAll('.btn-download-history').forEach(b => {
             b.addEventListener('click', (e) => {
-                let snap = JSON.parse(globalHistoryCloudCache[e.target.getAttribute('data-waktu')]);
+                const cached = globalHistoryCloudCache[e.target.getAttribute('data-waktu')];
+                if (!cached) { updateStatusMessage('⚠️ Detail data tidak tersedia untuk riwayat ini.'); return; }
+                let snap;
+                try { snap = JSON.parse(cached); } catch (err) { updateStatusMessage('⚠️ Gagal membaca detail data.'); return; }
                 const wb = XLSX.utils.book_new();
-                const fmt = (d) => { let m = [["SKU", "Nama", "Type", "Warna", "Qty"]]; Object.keys(d).sort().forEach(k => m.push([k, d[k].nama, d[k].type, d[k].warna, d[k].qty])); return XLSX.utils.aoa_to_sheet(m); };
+                const fmt = (d) => { let m = [["SKU", "Nama", "Type", "Warna", "Qty"]]; Object.keys(d || {}).sort().forEach(k => m.push([k, d[k].nama, d[k].type, d[k].warna, d[k].qty])); return XLSX.utils.aoa_to_sheet(m); };
                 XLSX.utils.book_append_sheet(wb, fmt(snap.utama), "Produk Utama"); XLSX.utils.book_append_sheet(wb, fmt(snap.aksesoris), "Aksesoris"); XLSX.utils.book_append_sheet(wb, fmt(snap.gradeb), "Grade B");
                 XLSX.writeFile(wb, `Laporan_Cloud_${e.target.getAttribute('data-waktu').replace(/[^a-zA-Z0-9]/g, "_")}.xlsx`);
             });
