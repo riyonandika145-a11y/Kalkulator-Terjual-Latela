@@ -4,7 +4,7 @@
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3sr4vIj7n35TMUosknwwZKG09yFHlPrBJQykn6n3SjvnzTrUAmcbTELz_f5o4Jjg/exec";
 
 // --- DOM SELEKTORS ---
-const loadingOverlay = document.getElementById('loading-overlay');
+const loadingOverlay = document.getElementById('loading-overlay'); 
 
 const menuItems = document.querySelectorAll('.menu-item');
 const contentViews = document.querySelectorAll('.content-view');
@@ -58,7 +58,7 @@ const manualWarnaDropdown = document.getElementById('manual-warna-dropdown');
 const manualQtyInput = document.getElementById('manual-qty-input');
 const btnAddManual = document.getElementById('btn-add-manual');
 
-// 🌟 REVISI SELEKTOR: COMPONENT PROCUREMENT SESUAI IMAGE_95AA63.PNG
+// SELEKTOR COMPONENT PROCUREMENT DROPDOWN BERANTAI
 const procJenisBarang = document.getElementById('proc-jenis-barang');
 const procWarnaLatela = document.getElementById('proc-warna-latela');
 const procKodeWarnaVendor = document.getElementById('proc-kode-warna-vendor');
@@ -77,7 +77,7 @@ let globalDataKategori = { utama: {}, aksesoris: {}, gradeb: {} };
 let totalMasterFiles = 0;
 let activeFilterText = "all";
 
-// 🌟 ARSIP DATA MENTAH VENDOR DARI CLOUD & BASKET PO
+// ARSIP DATA MENTAH VENDOR DARI CLOUD & BASKET PO
 let globalVendorRawData = [];
 let currentPoBasket = [];
 
@@ -223,12 +223,12 @@ function fetchMasterSkusFromCloud() {
         });
 }
 
-// 🌟 1B. REVISI ENGINE: AMBIL & URUS DROPDOWN BERANTAI PROCUREMENT (CHAINED METHOD)
+// 1B. AMBIL DROPDOWN BERANTAI PROCUREMENT (CHAINED DROPDOWN)
 function fetchVendorMappingFromCloud() {
     fetch(`${GOOGLE_SCRIPT_URL}?action=fetch_vendor`)
         .then(res => res.json())
         .then(data => {
-            globalVendorRawData = data; // Simpan data mentah
+            globalVendorRawData = data; 
             procJenisBarang.innerHTML = '<option value="">-- Pilih Jenis Barang --</option>';
             procWarnaLatela.innerHTML = '<option value="">-- Pilih Warna Latela --</option>';
             procWarnaLatela.disabled = true;
@@ -244,17 +244,15 @@ function fetchVendorMappingFromCloud() {
                 opt.value = jenis; opt.innerText = jenis;
                 procJenisBarang.appendChild(opt);
             });
-            console.log("Data Vendor Cloud Terkunci.");
         })
         .catch(err => console.error("Gagal load data vendor mapping:", err));
 }
 
-// 🌟 TINGKAT 1: KETIKA JENIS BARANG DIPILIH -> ISI DROPDOWN KODE WARNA LATELA
+// DROPDOWN PROCUREMENT TINGKAT 1
 procJenisBarang.addEventListener('change', () => {
     const selectedJenis = procJenisBarang.value;
     procWarnaLatela.innerHTML = '<option value="">-- Pilih Warna Latela --</option>';
     
-    // Reset sisa input otomatis
     procKodeWarnaVendor.value = '';
     procVendor.value = '';
     procKodeVendor.value = '';
@@ -282,7 +280,7 @@ procJenisBarang.addEventListener('change', () => {
     procWarnaLatela.disabled = false;
 });
 
-// 🌟 TINGKAT 2: KETIKA KODE WARNA LATELA DIPILIH -> AUTO FILL KOLOM SISANYA
+// DROPDOWN PROCUREMENT TINGKAT 2
 procWarnaLatela.addEventListener('change', () => {
     const selectedJenis = procJenisBarang.value;
     const selectedWarna = procWarnaLatela.value;
@@ -295,7 +293,6 @@ procWarnaLatela.addEventListener('change', () => {
         return;
     }
 
-    // Cari baris yang cocok silang dua kriteria
     const matchedRow = globalVendorRawData.find(row => {
         let jenis = row['Jenis Barang'] || row['jenis_barang'];
         let warna = row['Kode Warna Latela'] || row['kode_warna_latela'];
@@ -311,7 +308,7 @@ procWarnaLatela.addEventListener('change', () => {
     }
 });
 
-// 🌟 REVISI: TAMBAH ITEM KE DALAM SURAT PO SEMENTARA
+// TAMBAH ITEM KE LIST PROCUREMENT
 btnAddProc.addEventListener('click', () => {
     const jenisBarang = procJenisBarang.value;
     const warnaLatela = procWarnaLatela.value;
@@ -333,7 +330,6 @@ btnAddProc.addEventListener('click', () => {
     updateStatusMessage(`Sukses menambah pesanan ${jenisBarang} (${warnaLatela}) ke list PO.`);
 });
 
-// 🌟 REVISI: VIEW TABEL PREVIEW SESUAI URUTAN IMAGE_95AA63.PNG
 function renderProcurementTable() {
     if(currentPoBasket.length === 0) {
         tbodyProcurementList.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #94a3b8; font-style: italic;">Belum ada item ditambahkan ke Surat PO.</td></tr>`;
@@ -341,7 +337,7 @@ function renderProcurementTable() {
     }
 
     tbodyProcurementList.innerHTML = '';
-    currentPoBasket.forEach((item, index) => {
+    currentPoBasket.forEach((item) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><strong>${item.jenisBarang}</strong></td>
@@ -370,7 +366,7 @@ btnResetPo.addEventListener('click', () => {
     updateStatusMessage("Form Surat PO berhasil dibersihkan.");
 });
 
-// 🌟 REVISI: CETAK EXCEL FORMAT KEDUDUKAN BARU
+// CETAK EXCEL SURAT PO VENDOR
 btnExportPo.addEventListener('click', () => {
     if(currentPoBasket.length === 0) {
         updateStatusMessage("⚠️ Gagal Cetak: List item pesanan masih kosong.");
@@ -378,7 +374,6 @@ btnExportPo.addEventListener('click', () => {
     }
 
     const wb = XLSX.utils.book_new();
-    
     let matriksPO = [
         ["SURAT PURCHASE ORDER (PO) BAHAN BAKU - CV ARSA"],
         [`Tanggal Pembuatan: ${new Date().toLocaleDateString('id-ID')}`],
@@ -399,7 +394,7 @@ btnExportPo.addEventListener('click', () => {
     updateStatusMessage("Sukses mengunduh Dokumen Surat PO resmi Vendor!");
 });
 
-// 2. KENDALI SIDEBAR MENU
+// 2. KENDALI SIDEBAR VIEW PANELS
 menuItems.forEach(item => {
     item.addEventListener('click', () => {
         menuItems.forEach(btn => btn.classList.remove('active'));
@@ -736,168 +731,81 @@ function populateFilterDropdown() {
     dropdownFilter.value = activeFilterText;
 }
 
-function populateManualNamaDropdown() {
-    if (!manualNamaDropdown) return;
-    manualNamaDropdown.innerHTML = '<option value="">-- Pilih Produk --</option>';
-    
-    let uniqueProductNames = new Set();
-    Object.values(masterSkus).forEach(item => {
-        if (item.nama) uniqueProductNames.add(item.nama.trim().toUpperCase());
-    });
+dropdownFilter.addEventListener('change', (e) => { activeFilterText = e.target.value; refreshAllTables(); });
+btnFilterReset.addEventListener('click', () => { dropdownFilter.value = "all"; activeFilterText = "all"; refreshAllTables(); });
 
-    const sortedNames = Array.from(uniqueProductNames).sort();
-    sortedNames.forEach(nama => {
-        const opt = document.createElement('option');
-        opt.value = nama; opt.innerText = nama;
-        manualNamaDropdown.appendChild(opt);
-    });
-}
+btnFileReset.addEventListener('click', () => {
+    totalMasterFiles = 0;
+    fileBadge.innerText = '0 File Terupload';
+    resetKalkulatorDataState();
+    
+    if (dashFilterDropdown) dashFilterDropdown.value = "all"; 
+    dashTotalTerjual.innerText = '0';
+    dashSkuAktif.innerText = '0';
+    dashFileCount.innerText = '0';
+    
+    if (salesChartInstance) { salesChartInstance.data.datasets[0].data = [0, 0, 0]; salesChartInstance.update(); }
+    if (topProductsChartInstance) { topProductsChartInstance.data.labels = ["Kosong"]; topProductsChartInstance.data.datasets[0].data = [0]; topProductsChartInstance.update(); }
+    
+    if (manualNamaDropdown) manualNamaDropdown.value = "";
+    if (manualTypeDropdown) { manualTypeDropdown.innerHTML = '<option value="">-- Type --</option>'; manualTypeDropdown.disabled = true; }
+    if (manualWarnaDropdown) { manualWarnaDropdown.innerHTML = '<option value="">-- Warna --</option>'; manualWarnaDropdown.disabled = true; }
+    if (manualQtyInput) manualQtyInput.value = "";
 
-manualNamaDropdown.addEventListener('change', () => {
-    const selectedNama = manualNamaDropdown.value;
-    
-    manualTypeDropdown.innerHTML = '<option value="">-- Type --</option>';
-    manualWarnaDropdown.innerHTML = '<option value="">-- Warna --</option>';
-    manualWarnaDropdown.disabled = true;
-    
-    if (!selectedNama) {
-        manualTypeDropdown.disabled = true;
-        return;
-    }
-    
-    let uniqueTypes = new Set();
-    Object.values(masterSkus).forEach(item => {
-        if (item.nama === selectedNama && item.type) {
-            uniqueTypes.add(item.type.trim());
-        }
-    });
-    
-    const sortedTypes = Array.from(uniqueTypes).sort();
-    sortedTypes.forEach(type => {
-        const opt = document.createElement('option');
-        opt.value = type; opt.innerText = type;
-        manualTypeDropdown.appendChild(opt);
-    });
-    manualTypeDropdown.disabled = false;
+    updateStatusMessage('Siap.');
 });
 
-manualTypeDropdown.addEventListener('change', () => {
-    const selectedNama = manualNamaDropdown.value;
-    const selectedType = manualTypeDropdown.value;
+function updateStatusMessage(msg) { statusBar.innerText = msg; }
+
+btnCopyQty.addEventListener('click', () => {
+    const cat = document.querySelector('.sub-tab.active').getAttribute('data-category');
+    const data = globalDataKategori[cat];
+    let txt = ""; 
     
-    manualWarnaDropdown.innerHTML = '<option value="">-- Warna --</option>';
-    
-    if (!selectedType) {
-        manualWarnaDropdown.disabled = true;
-        return;
-    }
-    
-    let uniqueWarnas = new Set();
-    Object.values(masterSkus).forEach(item => {
-        if (item.nama === selectedNama && item.type === selectedType && item.warna) {
-            uniqueWarnas.add(item.warna.trim());
-        }
+    Object.keys(data).sort().forEach(k => { 
+        if (activeFilterText !== "all" && data[k].nama !== activeFilterText) return;
+        txt += `${data[k].qty}\n`; 
     });
     
-    const sortedWarnas = Array.from(uniqueWarnas).sort();
-    sortedWarnas.forEach(warna => {
-        const opt = document.createElement('option');
-        opt.value = warna; opt.innerText = warna;
-        manualWarnaDropdown.appendChild(opt);
-    });
-    manualWarnaDropdown.disabled = false;
+    navigator.clipboard.writeText(txt).then(() => updateStatusMessage('Berhasil copy angka Qty saja ke clipboard.'));
 });
 
-manualNamaDropdown.addEventListener('change', () => {
-    const selectedNama = manualNamaDropdown.value;
+btnSaveHistory.addEventListener('click', () => {
+    const sumQty = (obj) => Object.values(obj).reduce((s, i) => s + i.qty, 0);
+    const total = sumQty(globalDataKategori.utama) + sumQty(globalDataKategori.aksesoris) + sumQty(globalDataKategori.gradeb);
     
-    manualTypeDropdown.innerHTML = '<option value="">-- Type --</option>';
-    manualWarnaDropdown.innerHTML = '<option value="">-- Warna --</option>';
-    manualWarnaDropdown.disabled = true;
-    
-    if (!selectedNama) {
-        manualTypeDropdown.disabled = true;
+    if (total === 0) {
+        updateStatusMessage("Gagal menyimpan: Tidak ada data Qty penjualan.");
         return;
     }
-    
-    let uniqueTypes = new Set();
-    Object.values(masterSkus).forEach(item => {
-        if (item.nama === selectedNama && item.type) {
-            uniqueTypes.add(item.type.trim());
-        }
-    });
-    
-    const sortedTypes = Array.from(uniqueTypes).sort();
-    sortedTypes.forEach(type => {
-        const opt = document.createElement('option');
-        opt.value = type; opt.innerText = type;
-        manualTypeDropdown.appendChild(opt);
-    });
-    manualTypeDropdown.disabled = false;
-});
 
-manualTypeDropdown.addEventListener('change', () => {
-    const selectedNama = manualNamaDropdown.value;
-    const selectedType = manualTypeDropdown.value;
-    
-    manualWarnaDropdown.innerHTML = '<option value="">-- Warna --</option>';
-    
-    if (!selectedType) {
-        manualWarnaDropdown.disabled = true;
-        return;
-    }
-    
-    let uniqueWarnas = new Set();
-    Object.values(masterSkus).forEach(item => {
-        if (item.nama === selectedNama && item.type === selectedType && item.warna) {
-            uniqueWarnas.add(item.warna.trim());
-        }
-    });
-    
-    const sortedWarnas = Array.from(uniqueWarnas).sort();
-    sortedWarnas.forEach(warna => {
-        const opt = document.createElement('option');
-        opt.value = warna; opt.innerText = warna;
-        manualWarnaDropdown.appendChild(opt);
-    });
-    manualWarnaDropdown.disabled = false;
-});
+    updateStatusMessage("Sedang mengirim data riwayat lengkap ke Cloud Spreadsheet...");
+    const waktuSkrg = new Date().toLocaleString('id-ID');
+    const detailSnapshotString = JSON.stringify(globalDataKategori);
 
-btnAddManual.addEventListener('click', () => {
-    const nama = manualNamaDropdown.value;
-    const type = manualTypeDropdown.value;
-    const warna = manualWarnaDropdown.value;
-    const qty = parseInt(manualQtyInput.value, 10);
-    
-    if (!nama || !type || !warna || isNaN(qty) || qty <= 0) {
-        updateStatusMessage("⚠️ Gagal Input: Silakan pilih detail produk dan jumlah Qty dengan benar.");
-        return;
-    }
-    
-    let targetSku = null;
-    for (let sku in masterSkus) {
-        if (masterSkus[sku].nama === nama && masterSkus[sku].type === type && masterSkus[sku].warna === warna) {
-            targetSku = sku;
-            break;
+    const payloadData = new URLSearchParams();
+    payloadData.append('action', 'save');
+    payloadData.append('waktu', waktuSkrg);
+    payloadData.append('files', totalMasterFiles);
+    payloadData.append('total', total);
+    payloadData.append('detail', detailSnapshotString);
+
+    fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        body: payloadData,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    })
+    .then(res => res.json())
+    .then(result => {
+        if(result.status === "success") {
+            updateStatusMessage(`Sukses! Data penjualan (${total} pcs) dan detail SKU berhasil dikunci ke cloud.`);
+            fetchHistoryFromCloud(); 
         }
-    }
-    
-    if (targetSku) {
-        const kategori = masterSkus[targetSku].kategori;
-        if (globalDataKategori[kategori] && globalDataKategori[kategori][targetSku]) {
-            globalDataKategori[kategori][targetSku].qty += qty;
-            
-            refreshAllTables();
-            updateDashboardMetrics();
-            
-            updateStatusMessage(`Sukses input manual: ${nama} (${type} - ${warna}) +${qty} pcs.`);
-            manualQtyInput.value = "";
-        } else {
-            updateStatusMessage("⚠️ Gagal: SKU tidak ditemukan di dalam folder workspace harian.");
-        }
-    } else {
-        updateStatusMessage("⚠️ Gagal: Kombinasi varian produk tidak terdaftar di database cloud.");
-    }
+    })
+    .catch(err => {
+        console.error(err);
+        updateStatusMessage("Gagal menyimpan ke server spreadsheet. Periksa koneksi internet.");
+    });
 });
 
 function fetchHistoryFromCloud() {
@@ -945,18 +853,12 @@ function fetchHistoryFromCloud() {
                     }
 
                     let targetDataSnapshot = typeof rawDetailData === 'string' ? JSON.parse(rawDetailData) : rawDetailData;
-
                     const wb = XLSX.utils.book_new();
+
                     const bentukMatriksLembarKerja = (dataKategori) => {
                         let matriks = [["SKU", "Nama Produk", "Type", "Warna", "Kuantitas (Qty)"]];
                         Object.keys(dataKategori).sort().forEach(sku => {
-                            matriks.push([
-                                sku, 
-                                dataKategori[sku].nama, 
-                                dataKategori[sku].type, 
-                                dataKategori[sku].warna, 
-                                dataKategori[sku].qty
-                            ]);
+                            matriks.push([sku, dataKategori[sku].nama, dataKategori[sku].type, dataKategori[sku].warna, dataKategori[sku].qty]);
                         });
                         return matriks;
                     };
@@ -978,14 +880,8 @@ function fetchHistoryFromCloud() {
 
             if (trendChartInstance && logs.length > 0) {
                 let dataPembatasTrend = logs.slice(-8);
-
-                let labelSumbuX = dataPembatasTrend.map(item => {
-                    return item.waktu.split(',')[0]; 
-                });
-                
-                let dataSumbuY = dataPembatasTrend.map(item => {
-                    return parseInt(item.total.toString().replace(/[^0-9]/g, ""), 10) || 0;
-                });
+                let labelSumbuX = dataPembatasTrend.map(item => item.waktu.split(',')[0]);
+                let dataSumbuY = dataPembatasTrend.map(item => parseInt(item.total.toString().replace(/[^0-9]/g, ""), 10) || 0);
 
                 trendChartInstance.data.labels = labelSumbuX.reverse();
                 trendChartInstance.data.datasets[0].data = dataSumbuY.reverse();
@@ -997,3 +893,53 @@ function fetchHistoryFromCloud() {
             historyBox.innerHTML = "<p style='color: red; text-align:center;'>Gagal memuat log riwayat dari spreadsheet cloud.</p>";
         });
 }
+
+function generateMasterArrayFormat() {
+    let outputMatrix = [["Kategori", "SKU", "Nama Produk", "Type", "Warna", "Kuantitas (Qty)"]];
+    const insertRows = (namaKategori, dataObjek) => {
+        Object.keys(dataObjek).sort().forEach(sku => {
+            outputMatrix.push([namaKategori, sku, dataObjek[sku].nama, dataObjek[sku].type, dataObjek[sku].warna, dataObjek[sku].qty]);
+        });
+    };
+    insertRows("PRODUK UTAMA", globalDataKategori.utama);
+    insertRows("AKSESORIS", globalDataKategori.aksesoris);
+    insertRows("GRADE B", globalDataKategori.gradeb);
+    return outputMatrix;
+}
+
+btnExportXlsx.addEventListener('click', () => {
+    if (Object.keys(masterSkus).length === 0) {
+        updateStatusMessage("Gagal Export: Data Master SKU dari cloud kosong.");
+        return;
+    }
+    const wb = XLSX.utils.book_new();
+    const bentukMatriksLembarKerja = (dataKategori) => {
+        let matriks = [["SKU", "Nama Produk", "Type", "Warna", "Kuantitas (Qty)"]];
+        Object.keys(dataKategori).sort().forEach(sku => {
+            matriks.push([sku, dataKategori[sku].nama, dataKategori[sku].type, dataKategori[sku].warna, dataKategori[sku].qty]);
+        });
+        return matriks;
+    };
+
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(bentukMatriksLembarKerja(globalDataKategori.utama)), "Produk Utama");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(bentukMatriksLembarKerja(globalDataKategori.aksesoris)), "Aksesoris");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(bentukMatriksLembarKerja(globalDataKategori.gradeb)), "Grade B");
+
+    const tanggalFormat = new Date().toISOString().slice(0,10);
+    XLSX.writeFile(wb, `Latela_Laporan_Penjualan_Tabs_${tanggalFormat}.xlsx`);
+    updateStatusMessage("Sukses mengunduh Excel mewah terpisah 3 tab kategori!");
+});
+
+btnExportCsv.addEventListener('click', () => {
+    const matrixData = generateMasterArrayFormat();
+    if (matrixData.length === 1) { updateStatusMessage("Gagal Export: Data tabel kalkulator kosong."); return; }
+    const ws = XLSX.utils.aoa_to_sheet(matrixData);
+    const csvContent = XLSX.utils.sheet_to_csv(ws);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const tanggalFormat = new Date().toISOString().slice(0,10);
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute("download", `Latela_Rangkuman_Penjualan_${tanggalFormat}.csv`);
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    updateStatusMessage("Sukses mengunduh laporan berkas teks (.csv).");
+});
