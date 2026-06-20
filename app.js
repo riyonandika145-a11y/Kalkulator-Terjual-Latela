@@ -374,8 +374,9 @@ if (btnExportPo) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ unit: 'pt', format: 'a4' });
         const pageWidth = doc.internal.pageSize.getWidth();
-        const marginLeft = 40;
-        const marginRight = 40;
+        const marginLeft = 28.35; // 1 cm
+        const marginRight = 28.35; // 1 cm
+        const contentWidth = pageWidth - marginLeft - marginRight;
 
         // --- HEADER: NAMA PERUSAHAAN (KIRI) & JUDUL (KANAN) ---
         doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
@@ -390,9 +391,9 @@ if (btnExportPo) {
         doc.text('No Tlp :', marginLeft, 112);
 
         // --- INFO PO (KANAN) ---
-        const infoLabelX = pageWidth - 220;
-        const infoColonX = pageWidth - 130;
-        const infoValueX = pageWidth - 122;
+        const infoLabelX = pageWidth - marginRight - 230;
+        const infoColonX = pageWidth - marginRight - 140;
+        const infoValueX = pageWidth - marginRight - 132;
         doc.text('Nomor PO', infoLabelX, 70); doc.text(':', infoColonX, 70); doc.text(noPoValue || '-', infoValueX, 70);
         doc.text('Tanggal', infoLabelX, 84); doc.text(':', infoColonX, 84); doc.text(formattedDate, infoValueX, 84);
         doc.text('Vendor', infoLabelX, 98); doc.text(':', infoColonX, 98); doc.text(vendorHeader, infoValueX, 98);
@@ -433,12 +434,12 @@ if (btnExportPo) {
             headStyles: { fillColor: [20,20,20], textColor: [255,255,255], fontStyle: 'bold' },
             columnStyles: {
                 0: { cellWidth: 30 },
-                1: { cellWidth: 140, halign: 'left' },
-                2: { cellWidth: 80 },
-                3: { cellWidth: 80 },
-                4: { cellWidth: 40 },
-                5: { cellWidth: 40 },
-                6: { cellWidth: 40 }
+                1: { cellWidth: contentWidth - (30 + 90 + 90 + 50 + 50 + 50) },
+                2: { cellWidth: 90 },
+                3: { cellWidth: 90 },
+                4: { cellWidth: 50 },
+                5: { cellWidth: 50 },
+                6: { cellWidth: 50 }
             }
         });
 
