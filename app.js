@@ -1,7 +1,6 @@
 // =========================================================================
 // CLOUD DATABASE CONFIGURATION (GOOGLE SHEETS)
 // =========================================================================
-// Menggunakan Link Apps Script Terkini Milikmu:
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9ZVSAObK0DbfXadHO9LIQGEaLlmFruZ4AR7HFpsYC2ONmKLGQCQ_93TuS_DpOwog/exec";
 
 // --- DOM SELEKTORS ---
@@ -59,8 +58,9 @@ const manualWarnaDropdown = document.getElementById('manual-warna-dropdown');
 const manualQtyInput = document.getElementById('manual-qty-input');
 const btnAddManual = document.getElementById('btn-add-manual');
 
-// SELEKTOR PROCUREMENT DROPDOWN BERANTAI & FITUR BARU
+// SELEKTOR PROCUREMENT DROPDOWN BERANTAI & TANGGAL
 const procNoPo = document.getElementById('proc-no-po');
+const procTanggalPo = document.getElementById('proc-tanggal-po'); // 🌟 SELEKTOR TANGGAL BARU
 const procJenisBarang = document.getElementById('proc-jenis-barang');
 const procWarnaLatela = document.getElementById('proc-warna-latela');
 const procKodeWarnaVendor = document.getElementById('proc-kode-warna-vendor');
@@ -95,6 +95,18 @@ window.addEventListener('DOMContentLoaded', () => {
         sidebarElement.classList.add('collapsed');
         if (btnToggleSidebar) btnToggleSidebar.innerText = "❯";
     }
+
+    // 🌟 INITIALIZE: OTOMATIS KUNCI TANGGAL PO KE HARI INI
+    if (procTanggalPo) {
+        const hariIni = new Date();
+        const yyyy = hariIni.getFullYear();
+        let mm = hariIni.getMonth() + 1; 
+        let dd = hariIni.getDate();
+        if (mm < 10) mm = '0' + mm;
+        if (dd < 10) dd = '0' + dd;
+        procTanggalPo.value = `${yyyy}-${mm}-${dd}`;
+    }
+
     fetchMasterSkusFromCloud();
     fetchHistoryFromCloud(); 
     fetchVendorMappingFromCloud(); 
@@ -320,6 +332,17 @@ if (btnResetPo) {
         if (procNamaKain) procNamaKain.value = ''; 
         if (procQty) procQty.value = '';
         if (procSatuan) procSatuan.value = 'Roll';
+        
+        // Reset Tanggal PO ke Hari Ini Kembali
+        if (procTanggalPo) {
+            const hariIni = new Date();
+            const yyyy = hariIni.getFullYear();
+            let mm = hariIni.getMonth() + 1; 
+            let dd = hariIni.getDate();
+            if (mm < 10) mm = '0' + mm;
+            if (dd < 10) dd = '0' + dd;
+            procTanggalPo.value = `${yyyy}-${mm}-${dd}`;
+        }
     });
 }
 
@@ -328,11 +351,19 @@ if (btnExportPo) {
         if(currentPoBasket.length === 0) return;
         const wb = XLSX.utils.book_new();
         const noPoValue = procNoPo ? procNoPo.value.trim() : ''; 
+        
+        // 🌟 FORMAT TANGGAL YANG DIPILIH USER
+        let rawSelectedDate = procTanggalPo ? procTanggalPo.value : '';
+        let formattedDate = '-';
+        if (rawSelectedDate) {
+            const parts = rawSelectedDate.split('-');
+            if (parts.length === 3) formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`; // Ubah ke format DD/MM/YYYY
+        }
 
         let matriksPO = [
             ["SURAT PURCHASE ORDER (PO) BAHAN BAKU - CV ARSA"],
             [`Nomor PO          : ${noPoValue || '-'}`], 
-            [`Tanggal Pembuatan : ${new Date().toLocaleDateString('id-ID')}`],
+            [`Tanggal PO         : ${formattedDate}`], // 🌟 MENCETAK TANGGAL AMAN PILIHAN USER KE EXCEL
             ["Status Otorisasi : OSCM Supervisor Approved"],
             [], 
             ["Jenis Barang", "Kode Warna Latela", "Kode Warna Vendor", "Vendor", "Kode Vendor", "Nama Kain", "Kuantitas Pesanan", "Satuan"]
@@ -482,7 +513,6 @@ function updateDashboardMetrics() {
     }
 }
 
-// 🌟 FIX UNTUK i.trim -> DIGANTI JADI i.nama.trim() AGAR TIDAK ERROR LAGI
 function populateDashboardDropdown() {
     if (!dashFilterDropdown) return; dashFilterDropdown.innerHTML = '<option value="all">-- Semua Produk --</option>';
     let names = new Set(); Object.values(masterSkus).forEach(i => { if (i.nama) names.add(i.nama.trim().toUpperCase()); });
