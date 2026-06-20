@@ -10,7 +10,6 @@
 </head>
 <body>
 
-    <!-- LAYER LOADING SCREEN AWAL (MINIMALIS VER.) -->
     <div id="loading-overlay" class="loading-overlay">
         <div class="loading-content">
             <img src="logo-loading.png" class="loading-logo-spinner" alt="Loading Latela">
@@ -56,7 +55,6 @@
         <main class="main-content-wrapper">
             <div class="main-content">
                 
-                <!-- SECTION 1: DASHBOARD OVERVIEW -->
                 <section id="view-dashboard" class="content-view">
                     <h2 class="page-title">Dashboard Overview</h2>
                     
@@ -108,7 +106,6 @@
                     </div>
                 </section>
 
-                <!-- SECTION 2: KALKULATOR CORE WORKSPACE -->
                 <section id="view-kalkulator" class="content-view active">
                     
                     <div class="top-controls-bar">
@@ -223,7 +220,6 @@
                     </div>
                 </section>
 
-                <!-- SECTION 3: MASTER SKU DATA TABLE -->
                 <section id="view-mastersku" class="content-view">
                     <h2 class="page-title">Master Data SKU Cloud Database</h2>
                     <p class="section-desc">Data di bawah disinkronisasikan secara otomatis and terpusat langsung dari Google Sheets internal.</p>
@@ -254,7 +250,6 @@
                     </div>
                 </section>
 
-                <!-- SECTION 4: HISTORY SPREADSHEET LOG -->
                 <section id="view-history" class="content-view">
                     <h2 class="page-title">History Log</h2>
                     <div id="history-list-container" class="empty-state-card">
@@ -262,12 +257,17 @@
                     </div>
                 </section>
 
-                <!-- 🌟 SECTION 5: UPDATE WORKSPACE PROCUREMENT SESUAI IMAGE_95AA63.PNG -->
                 <section id="view-procurement" class="content-view">
                     <h2 class="page-title">Procurement & PO Generator</h2>
                     
                     <div class="top-controls-bar" style="background: #ffffff; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px;">
-                        <!-- 1. Dropdown Jenis Barang -->
+                        <div class="control-group">
+                            <span class="group-label">No. PO:</span>
+                            <div class="group-inputs">
+                                <input type="text" id="proc-no-po" placeholder="Ketik No. PO..." style="border: 1px solid var(--border-color); height: 32px; padding: 0 10px; font-size: 12px; width: 115px; font-weight:600; border-radius:4px;">
+                            </div>
+                        </div>
+
                         <div class="control-group">
                             <span class="group-label">Jenis Barang:</span>
                             <div class="group-inputs">
@@ -277,7 +277,6 @@
                             </div>
                         </div>
 
-                        <!-- 2. Dropdown Kode Warna Latela (Chained) -->
                         <div class="control-group">
                             <span class="group-label">Kode Warna Latela:</span>
                             <div class="group-inputs">
@@ -287,21 +286,25 @@
                             </div>
                         </div>
 
-                        <!-- 3. Kolom Sisanya Terisi Otomatis (Readonly) -->
                         <div class="control-group">
                             <span class="group-label">Detail Otomatis Vendor:</span>
                             <div class="group-inputs">
-                                <input type="text" id="proc-kode-warna-vendor" placeholder="Kode Warna Vendor" readonly style="background: #f1f5f9; border: 1px solid var(--border-color); height: 32px; padding: 0 10px; font-size: 12px; width: 130px; font-weight:600; border-radius:4px;">
+                                <input type="text" id="proc-kode-warna-vendor" placeholder="Kode Warna Vendor" readonly style="background: #f1f5f9; border: 1px solid var(--border-color); height: 32px; padding: 0 10px; font-size: 12px; width: 125px; font-weight:600; border-radius:4px;">
                                 <input type="text" id="proc-vendor" placeholder="Vendor" readonly style="background: #f1f5f9; border: 1px solid var(--border-color); height: 32px; padding: 0 10px; font-size: 12px; width: 120px; font-weight:600; border-radius:4px;">
-                                <input type="text" id="proc-kode-vendor" placeholder="Kode Vendor" readonly style="background: #f1f5f9; border: 1px solid var(--border-color); height: 32px; padding: 0 10px; font-size: 12px; width: 110px; font-weight:600; border-radius:4px;">
-                                <input type="text" id="proc-nama-kain" placeholder="Nama Kain" readonly style="background: #f1f5f9; border: 1px solid var(--border-color); height: 32px; padding: 0 10px; font-size: 12px; width: 130px; font-weight:600; border-radius:4px;">
+                                <input type="text" id="proc-kode-vendor" placeholder="Kode Vendor" readonly style="background: #f1f5f9; border: 1px solid var(--border-color); height: 32px; padding: 0 10px; font-size: 12px; width: 95px; font-weight:600; border-radius:4px;">
+                                <input type="text" id="proc-nama-kain" placeholder="Nama Kain" readonly style="background: #f1f5f9; border: 1px solid var(--border-color); height: 32px; padding: 0 10px; font-size: 12px; width: 125px; font-weight:600; border-radius:4px;">
                             </div>
                         </div>
 
                         <div class="control-group">
                             <span class="group-label">Jumlah Order:</span>
                             <div class="group-inputs">
-                                <input type="number" id="proc-qty" placeholder="Qty" min="1" style="width: 65px; height: 32px; padding: 0 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 12px; font-weight: 600;">
+                                <input type="number" id="proc-qty" placeholder="Qty" min="1" style="width: 60px; height: 32px; padding: 0 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 12px; font-weight: 600;">
+                                <select id="proc-satuan" style="height: 32px; font-size: 12px; font-weight: 600; padding: 0 20px 0 8px;">
+                                    <option value="Roll">Roll</option>
+                                    <option value="Yards">Yards</option>
+                                    <option value="Kg">Kg</option>
+                                </select>
                                 <button id="btn-add-proc" class="btn-action btn-pink-solid">+ Item</button>
                                 <button id="btn-export-po" class="btn-action btn-blue-solid">Cetak PO 📄</button>
                                 <button id="btn-reset-po" class="btn-action btn-pink-outline">Reset</button>
@@ -309,7 +312,6 @@
                         </div>
                     </div>
 
-                    <!-- Tabel Preview Item PO Sesuai image_95aa63.png -->
                     <div class="sku-list-card" style="width: 100%;">
                         <h3>Daftar Item Surat Pesanan (PO)</h3>
                         <div class="table-responsive">
@@ -322,7 +324,7 @@
                                         <th>Vendor</th>
                                         <th>Kode Vendor</th>
                                         <th>Nama Kain</th>
-                                        <th style="text-align: right; padding-right:25px;">Jumlah Order (Roll)</th>
+                                        <th style="text-align: right; padding-right:25px;">Jumlah Order</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tbody-procurement-list">
@@ -340,7 +342,6 @@
         </main>
     </div>
 
-    <!-- SECURITY MODAL AUTENTIKASI -->
     <div id="password-modal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
