@@ -302,7 +302,16 @@ if (btnAddProc) {
         if(!jenisBarang || !warnaLatela || isNaN(qty) || qty <= 0) { updateStatusMessage("⚠️ Gagal: Isi Qty dengan benar."); return; }
         currentPoBasket.push({ jenisBarang, warnaLatela, kodeWarnaVendor, vendor, kodeVendor, namaKain, qty, satuan });
         renderProcurementTable(); 
+
+        // 🔄 RESET FORM SETELAH ITEM DITAMBAHKAN (biar siap input item baru)
+        if (procJenisBarang) procJenisBarang.value = '';
+        if (procWarnaLatela) { procWarnaLatela.innerHTML = '<option value="">-- Pilih Warna Latela --</option>'; procWarnaLatela.disabled = true; }
+        if (procKodeWarnaVendor) procKodeWarnaVendor.value = '';
+        if (procVendor) procVendor.value = '';
+        if (procKodeVendor) procKodeVendor.value = '';
+        if (procNamaKain) procNamaKain.value = '';
         if (procQty) procQty.value = '';
+
         updateStatusMessage(`Sukses menambah pesanan ${jenisBarang} (${warnaLatela}) ke list PO.`);
     });
 }
