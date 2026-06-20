@@ -1,7 +1,7 @@
 // =========================================================================
 // CLOUD DATABASE CONFIGURATION (GOOGLE SHEETS)
 // =========================================================================
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3sr4vIj7n35TMUosknwwZKG09yFHlPrBJQykn6n3SjvnzTrUAmcbTELz_f5o4Jjg/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzKoyY_rGqoFIzii1GBUt4R9znXW0XLEfx1CUorSk_BSsxy3a539k9nUKk0JSy70Sms/exec";
 
 // --- DOM SELEKTORS ---
 const loadingOverlay = document.getElementById('loading-overlay'); 
