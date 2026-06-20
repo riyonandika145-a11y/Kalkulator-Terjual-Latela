@@ -499,3 +499,15 @@ table thead th {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
+
+/* Menurunkan posisi container Qty & Satuan agar sejajar dengan dropdown */
+#proc-qty, #proc-satuan {
+    /* Angka 25px ini adalah 'offset' untuk turun ke bawah. 
+       Kalau masih kurang pas, silakan ubah angkanya jadi 26px atau 24px */
+    margin-top: 25px !important; 
+}
+
+/* Opsional: Jika ingin container pembungkusnya yang turun sekalian */
+.procurement-form-container .qty-container {
+    margin-top: 25px !important;
+}
