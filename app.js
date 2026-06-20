@@ -1,7 +1,7 @@
 // =========================================================================
 // CLOUD DATABASE CONFIGURATION (GOOGLE SHEETS)
 // =========================================================================
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKtVX7_LrD_ZmJe6wvog8Hxxld45QdKQ2xmYD8iiOyI9FoZ4dPzpSeJ2_vmf3Kwos/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxsNrkkWNz08gs2iHiDg5sW-OYtvFARMUAulmJCQjLKF7Pk1ABeTOCtx2oPNPaRKfc/exec";
 
 // --- DOM SELEKTORS ---
 const loadingOverlay = document.getElementById('loading-overlay'); 
@@ -58,7 +58,7 @@ const manualWarnaDropdown = document.getElementById('manual-warna-dropdown');
 const manualQtyInput = document.getElementById('manual-qty-input');
 const btnAddManual = document.getElementById('btn-add-manual');
 
-// SELEKTOR COMPUREMENT DROPDOWN BERANTAI IMAG_95AA63
+// SELEKTOR PROCUREMENT DROPDOWN BERANTAI
 const procJenisBarang = document.getElementById('proc-jenis-barang');
 const procWarnaLatela = document.getElementById('proc-warna-latela');
 const procKodeWarnaVendor = document.getElementById('proc-kode-warna-vendor');
@@ -88,9 +88,9 @@ let globalHistoryCloudCache = {};
 // --- INITIAL BOOTSTRAP ---
 window.addEventListener('DOMContentLoaded', () => {
     const savedSidebarState = localStorage.getItem('sidebarState');
-    if (savedSidebarState === 'collapsed') {
+    if (savedSidebarState === 'collapsed' && sidebarElement) {
         sidebarElement.classList.add('collapsed');
-        btnToggleSidebar.innerText = "❯";
+        if (btnToggleSidebar) btnToggleSidebar.innerText = "❯";
     }
     fetchMasterSkusFromCloud();
     fetchHistoryFromCloud(); 
@@ -98,59 +98,68 @@ window.addEventListener('DOMContentLoaded', () => {
     initDashboardEmptyChart(); 
 });
 
-btnToggleSidebar.addEventListener('click', () => {
-    sidebarElement.classList.toggle('collapsed');
-    if (sidebarElement.classList.contains('collapsed')) {
-        btnToggleSidebar.innerText = "❯";
-        localStorage.setItem('sidebarState', 'collapsed');
-    } else {
-        btnToggleSidebar.innerText = "☰";
-        localStorage.setItem('sidebarState', 'expanded');
-    }
-});
+if (btnToggleSidebar) {
+    btnToggleSidebar.addEventListener('click', () => {
+        if (!sidebarElement) return;
+        sidebarElement.classList.toggle('collapsed');
+        if (sidebarElement.classList.contains('collapsed')) {
+            btnToggleSidebar.innerText = "❯";
+            localStorage.setItem('sidebarState', 'collapsed');
+        } else {
+            btnToggleSidebar.innerText = "☰";
+            localStorage.setItem('sidebarState', 'expanded');
+        }
+    });
+}
 
-btnExportToggle.addEventListener('click', (e) => {
-    e.stopPropagation(); 
-    exportMenuItems.classList.toggle('show');
-});
+if (btnExportToggle) {
+    btnExportToggle.addEventListener('click', (e) => {
+        e.stopPropagation(); 
+        if (exportMenuItems) exportMenuItems.classList.toggle('show');
+    });
+}
 
 document.addEventListener('click', () => {
-    exportMenuItems.classList.remove('show');
+    if (exportMenuItems) exportMenuItems.classList.remove('show');
 });
 
 if (menuExtension) {
     menuExtension.addEventListener('click', (e) => {
         e.preventDefault(); 
-        modalErrorMsg.innerText = ""; inputExtPassword.value = ""; 
-        passwordModal.classList.add('show'); 
-        setTimeout(() => inputExtPassword.focus(), 100); 
+        if (modalErrorMsg) modalErrorMsg.innerText = ""; 
+        if (inputExtPassword) inputExtPassword.value = ""; 
+        if (passwordModal) passwordModal.classList.add('show'); 
+        setTimeout(() => { if (inputExtPassword) inputExtPassword.focus(); }, 100); 
     });
 }
 
 function eksekusiVerifikasiPasswordModal() {
+    if (!inputExtPassword) return;
     if (inputExtPassword.value === "latela2026") { 
-        passwordModal.classList.remove('show'); 
-        window.open(menuExtension.href, '_blank'); 
+        if (passwordModal) passwordModal.classList.remove('show'); 
+        if (menuExtension) window.open(menuExtension.href, '_blank'); 
         updateStatusMessage("Otorisasi sukses. Database utama berhasil dibuka.");
     } else {
-        modalErrorMsg.innerText = "⚠️ Password salah! Akses ditolak sistem.";
+        if (modalErrorMsg) modalErrorMsg.innerText = "⚠️ Password salah! Akses ditolak sistem.";
         updateStatusMessage("Akses ditolak: Percobaan masuk salah.");
     }
 }
 
-btnModalSubmit.addEventListener('click', eksekusiVerifikasiPasswordModal);
-btnModalCancel.addEventListener('click', () => { passwordModal.classList.remove('show'); });
-inputExtPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') eksekusiVerifikasiPasswordModal(); });
+if (btnModalSubmit) btnModalSubmit.addEventListener('click', eksekusiVerifikasiPasswordModal);
+if (btnModalCancel) btnModalCancel.addEventListener('click', () => { if (passwordModal) passwordModal.classList.remove('show'); });
+if (inputExtPassword) inputExtPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') eksekusiVerifikasiPasswordModal(); });
 
-btnSyncCloud.addEventListener('click', () => {
-    fetchMasterSkusFromCloud();
-    fetchVendorMappingFromCloud(); 
-});
+if (btnSyncCloud) {
+    btnSyncCloud.addEventListener('click', () => {
+        fetchMasterSkusFromCloud();
+        fetchVendorMappingFromCloud(); 
+    });
+}
 
 // 1. ENGINE FETCH SKU CORE
 function fetchMasterSkusFromCloud() {
     updateStatusMessage("Menghubungkan ke Google Sheets Cloud Database secara Real-Time...");
-    tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; font-style: italic;">Sinkronisasi data live...</td></tr>`;
+    if (tbodyMasterList) tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; font-style: italic;">Sinkronisasi data live...</td></tr>`;
     if (loadingOverlay) loadingOverlay.classList.remove('fade-out');
 
     fetch(`${GOOGLE_SCRIPT_URL}?action=fetch_skus`)
@@ -186,7 +195,7 @@ function fetchMasterSkusFromCloud() {
             resetKalkulatorDataState();
         })
         .catch(err => {
-            tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #dc2626; font-weight: bold; padding: 20px;">⚠️ SISTEM EROR: ${err.message}</td></tr>`;
+            if (tbodyMasterList) tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #dc2626; font-weight: bold; padding: 20px;">⚠️ SISTEM EROR: ${err.message}</td></tr>`;
         })
         .finally(() => { if (loadingOverlay) setTimeout(() => { loadingOverlay.classList.add('fade-out'); }, 300); });
 }
@@ -197,9 +206,8 @@ function fetchVendorMappingFromCloud() {
         .then(res => res.json())
         .then(data => {
             globalVendorRawData = data; 
-            procJenisBarang.innerHTML = '<option value="">-- Pilih Jenis Barang --</option>';
-            procWarnaLatela.innerHTML = '<option value="">-- Pilih Warna Latela --</option>';
-            procWarnaLatela.disabled = true;
+            if (procJenisBarang) procJenisBarang.innerHTML = '<option value="">-- Pilih Jenis Barang --</option>';
+            if (procWarnaLatela) { procWarnaLatela.innerHTML = '<option value="">-- Pilih Warna Latela --</option>'; procWarnaLatela.disabled = true; }
 
             let uniqueJenis = new Set();
             data.forEach(row => {
@@ -208,62 +216,83 @@ function fetchVendorMappingFromCloud() {
             });
             Array.from(uniqueJenis).sort().forEach(jenis => {
                 const opt = document.createElement('option'); opt.value = jenis; opt.innerText = jenis;
-                procJenisBarang.appendChild(opt);
+                if (procJenisBarang) procJenisBarang.appendChild(opt);
             });
         })
         .catch(err => console.error("Gagal load vendor mapping:", err));
 }
 
-procJenisBarang.addEventListener('change', () => {
-    const selectedJenis = procJenisBarang.value;
-    procWarnaLatela.innerHTML = '<option value="">-- Pilih Warna Latela --</option>';
-    procKodeWarnaVendor.value = ''; procVendor.value = ''; procKodeVendor.value = ''; procNamaKain.value = '';
+if (procJenisBarang) {
+    procJenisBarang.addEventListener('change', () => {
+        const selectedJenis = procJenisBarang.value;
+        if (procWarnaLatela) procWarnaLatela.innerHTML = '<option value="">-- Pilih Warna Latela --</option>';
+        if (procKodeWarnaVendor) procKodeWarnaVendor.value = ''; 
+        if (procVendor) procVendor.value = ''; 
+        if (procKodeVendor) procKodeVendor.value = ''; 
+        if (procNamaKain) procNamaKain.value = '';
 
-    if (!selectedJenis) { procWarnaLatela.disabled = true; return; }
+        if (!selectedJenis) { if (procWarnaLatela) procWarnaLatela.disabled = true; return; }
 
-    let uniqueWarna = new Set();
-    globalVendorRawData.forEach(row => {
-        let jenis = row['Jenis Barang'] || row['jenis_barang'];
-        let warna = row['Kode Warna Latela'] || row['kode_warna_latela'];
-        if (jenis && jenis.toString().trim() === selectedJenis && warna) uniqueWarna.add(warna.toString().trim());
+        let uniqueWarna = new Set();
+        globalVendorRawData.forEach(row => {
+            let jenis = row['Jenis Barang'] || row['jenis_barang'];
+            let warna = row['Kode Warna Latela'] || row['kode_warna_latela'];
+            if (jenis && jenis.toString().trim() === selectedJenis && warna) uniqueWarna.add(warna.toString().trim());
+        });
+        Array.from(uniqueWarna).sort().forEach(warna => {
+            const opt = document.createElement('option'); opt.value = warna; opt.innerText = warna;
+            if (procWarnaLatela) procWarnaLatela.appendChild(opt);
+        });
+        if (procWarnaLatela) procWarnaLatela.disabled = false;
     });
-    Array.from(uniqueWarna).sort().forEach(warna => {
-        const opt = document.createElement('option'); opt.value = warna; opt.innerText = warna;
-        procWarnaLatela.appendChild(opt);
+}
+
+if (procWarnaLatela) {
+    procWarnaLatela.addEventListener('change', () => {
+        const selectedJenis = procJenisBarang ? procJenisBarang.value : '';
+        const selectedWarna = procWarnaLatela.value;
+        if (!selectedJenis || !selectedWarna) { 
+            if (procKodeWarnaVendor) procKodeWarnaVendor.value = ''; 
+            if (procVendor) procVendor.value = ''; 
+            if (procKodeVendor) procKodeVendor.value = ''; 
+            if (procNamaKain) procNamaKain.value = ''; 
+            return; 
+        }
+
+        const matchedRow = globalVendorRawData.find(row => {
+            let jenis = row['Jenis Barang'] || row['jenis_barang'];
+            let warna = row['Kode Warna Latela'] || row['kode_warna_latela'];
+            return jenis && jenis.toString().trim() === selectedJenis && warna && warna.toString().trim() === selectedWarna;
+        });
+        if (matchedRow) {
+            if (procKodeWarnaVendor) procKodeWarnaVendor.value = matchedRow['Kode Warna Vendor'] || matchedRow['kode_warna_vendor'] || '-';
+            if (procVendor) procVendor.value = matchedRow['Vendor'] || matchedRow['vendor'] || '-';
+            if (procKodeVendor) procKodeVendor.value = matchedRow['Kode Vendor'] || matchedRow['kode_vendor'] || '-';
+            if (procNamaKain) procNamaKain.value = matchedRow['Nama Kain'] || matchedRow['nama_kain'] || '-';
+        }
     });
-    procWarnaLatela.disabled = false;
-});
+}
 
-procWarnaLatela.addEventListener('change', () => {
-    const selectedJenis = procJenisBarang.value;
-    const selectedWarna = procWarnaLatela.value;
-    if (!selectedJenis || !selectedWarna) { procKodeWarnaVendor.value = ''; procVendor.value = ''; procKodeVendor.value = ''; procNamaKain.value = ''; return; }
+if (btnAddProc) {
+    btnAddProc.addEventListener('click', () => {
+        const jenisBarang = procJenisBarang ? procJenisBarang.value : ''; 
+        const warnaLatela = procWarnaLatela ? procWarnaLatela.value : '';
+        const kodeWarnaVendor = procKodeWarnaVendor ? procKodeWarnaVendor.value : ''; 
+        const vendor = procVendor ? procVendor.value : '';
+        const kodeVendor = procKodeVendor ? procKodeVendor.value : ''; 
+        const namaKain = procNamaKain ? procNamaKain.value : ''; 
+        const qty = procQty ? parseInt(procQty.value, 10) : 0;
 
-    const matchedRow = globalVendorRawData.find(row => {
-        let jenis = row['Jenis Barang'] || row['jenis_barang'];
-        let warna = row['Kode Warna Latela'] || row['kode_warna_latela'];
-        return jenis && jenis.toString().trim() === selectedJenis && warna && warna.toString().trim() === selectedWarna;
+        if(!jenisBarang || !warnaLatela || isNaN(qty) || qty <= 0) { updateStatusMessage("⚠️ Gagal: Isi Qty roll order dengan benar."); return; }
+        currentPoBasket.push({ jenisBarang, warnaLatela, kodeWarnaVendor, vendor, kodeVendor, namaKain, qty });
+        renderProcurementTable(); 
+        if (procQty) procQty.value = '';
+        updateStatusMessage(`Sukses menambah pesanan ${jenisBarang} (${warnaLatela}) ke list PO.`);
     });
-    if (matchedRow) {
-        procKodeWarnaVendor.value = matchedRow['Kode Warna Vendor'] || matchedRow['kode_warna_vendor'] || '-';
-        procVendor.value = matchedRow['Vendor'] || matchedRow['vendor'] || '-';
-        procKodeVendor.value = matchedRow['Kode Vendor'] || matchedRow['kode_vendor'] || '-';
-        procNamaKain.value = matchedRow['Nama Kain'] || matchedRow['nama_kain'] || '-';
-    }
-});
-
-btnAddProc.addEventListener('click', () => {
-    const jenisBarang = procJenisBarang.value; const warnaLatela = procWarnaLatela.value;
-    const kodeWarnaVendor = procKodeWarnaVendor.value; const vendor = procVendor.value;
-    const kodeVendor = procKodeVendor.value; const namaKain = procNamaKain.value; const qty = parseInt(procQty.value, 10);
-
-    if(!jenisBarang || !warnaLatela || isNaN(qty) || qty <= 0) { updateStatusMessage("⚠️ Gagal: Isi Qty roll order dengan benar."); return; }
-    currentPoBasket.push({ jenisBarang, warnaLatela, kodeWarnaVendor, vendor, kodeVendor, namaKain, qty });
-    renderProcurementTable(); procQty.value = '';
-    updateStatusMessage(`Sukses menambah pesanan ${jenisBarang} (${warnaLatela}) ke list PO.`);
-});
+}
 
 function renderProcurementTable() {
+    if (!tbodyProcurementList) return;
     if(currentPoBasket.length === 0) {
         tbodyProcurementList.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #94a3b8; font-style: italic;">Belum ada item ditambahkan ke Surat PO.</td></tr>`; return;
     }
@@ -275,27 +304,37 @@ function renderProcurementTable() {
     });
 }
 
-btnResetPo.addEventListener('click', () => {
-    currentPoBasket = []; renderProcurementTable();
-    procJenisBarang.value = ''; procWarnaLatela.value = ''; procWarnaLatela.disabled = true;
-    procKodeWarnaVendor.value = ''; procVendor.value = ''; procKodeVendor.value = ''; procNamaKain.value = ''; procQty.value = '';
-});
+if (btnResetPo) {
+    btnResetPo.addEventListener('click', () => {
+        currentPoBasket = []; renderProcurementTable();
+        if (procJenisBarang) procJenisBarang.value = ''; 
+        if (procWarnaLatela) { procWarnaLatela.value = ''; procWarnaLatela.disabled = true; }
+        if (procKodeWarnaVendor) procKodeWarnaVendor.value = ''; 
+        if (procVendor) procVendor.value = ''; 
+        if (procKodeVendor) procKodeVendor.value = ''; 
+        if (procNamaKain) procNamaKain.value = ''; 
+        if (procQty) procQty.value = '';
+    });
+}
 
-btnExportPo.addEventListener('click', () => {
-    if(currentPoBasket.length === 0) return;
-    const wb = XLSX.utils.book_new();
-    let matriksPO = [["SURAT PURCHASE ORDER (PO) BAHAN BAKU - CV ARSA"],[`Tanggal Pembuatan: ${new Date().toLocaleDateString('id-ID')}`],["Status Otorisasi: OSCM Supervisor Approved"],[],["Jenis Barang", "Kode Warna Latela", "Kode Warna Vendor", "Vendor", "Kode Vendor", "Nama Kain", "Kuantitas Pesanan (Roll)"]];
-    currentPoBasket.forEach(item => { matriksPO.push([item.jenisBarang, item.warnaLatela, item.kodeWarnaVendor, item.vendor, item.kodeVendor, item.namaKain, item.qty]); });
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(matriksPO), "Surat PO Vendor");
-    XLSX.writeFile(wb, `CV_Arsa_Surat_PO_${new Date().toISOString().slice(0,10)}.xlsx`);
-});
+if (btnExportPo) {
+    btnExportPo.addEventListener('click', () => {
+        if(currentPoBasket.length === 0) return;
+        const wb = XLSX.utils.book_new();
+        let matriksPO = [["SURAT PURCHASE ORDER (PO) BAHAN BAKU - CV ARSA"],[`Tanggal Pembuatan: ${new Date().toLocaleDateString('id-ID')}`],["Status Otorisasi: OSCM Supervisor Approved"],[],["Jenis Barang", "Kode Warna Latela", "Kode Warna Vendor", "Vendor", "Kode Vendor", "Nama Kain", "Kuantitas Pesanan (Roll)"]];
+        currentPoBasket.forEach(item => { matriksPO.push([item.jenisBarang, item.warnaLatela, item.kodeWarnaVendor, item.vendor, item.kodeVendor, item.namaKain, item.qty]); });
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(matriksPO), "Surat PO Vendor");
+        XLSX.writeFile(wb, `CV_Arsa_Surat_PO_${new Date().toISOString().slice(0,10)}.xlsx`);
+    });
+}
 
 // 3. MENU NAVIGATION LAYER
 menuItems.forEach(item => {
     item.addEventListener('click', () => {
         menuItems.forEach(btn => btn.classList.remove('active')); item.classList.add('active');
         contentViews.forEach(view => view.classList.remove('active'));
-        document.getElementById(`view-${item.getAttribute('data-target')}`).classList.add('active');
+        const targetView = document.getElementById(`view-${item.getAttribute('data-target')}`);
+        if (targetView) targetView.classList.add('active');
     });
 });
 
@@ -303,18 +342,21 @@ subTabs.forEach(tab => {
     tab.addEventListener('click', () => {
         subTabs.forEach(t => t.classList.remove('active')); tab.classList.add('active');
         subTablePanels.forEach(p => p.classList.remove('active'));
-        document.getElementById(`panel-${tab.getAttribute('data-category')}`).classList.add('active');
+        const targetPanel = document.getElementById(`panel-${tab.getAttribute('data-category')}`);
+        if (targetPanel) targetPanel.classList.add('active');
         activeFilterText = "all"; populateFilterDropdown(); refreshAllTables();
     });
 });
 
 function renderMasterSkuDatabaseView() {
-    tbodyMasterList.innerHTML = ''; const sortedKeys = Object.keys(masterSkus).sort(); masterSkuCount.innerText = sortedKeys.length;
+    if (tbodyMasterList) tbodyMasterList.innerHTML = ''; 
+    const sortedKeys = Object.keys(masterSkus).sort(); 
+    if (masterSkuCount) masterSkuCount.innerText = sortedKeys.length;
     if (sortedKeys.length === 0) return;
     sortedKeys.forEach(sku => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td><code>${sku}</code></td><td><strong>${masterSkus[sku].nama}</strong></td><td>${masterSkus[sku].type}</td><td>${masterSkus[sku].warna}</td><td style="text-transform: uppercase;">${masterSkus[sku].kategori}</td>`;
-        tbodyMasterList.appendChild(tr);
+        tr.innerHTML = `<td><code>${sku}</code></td><td>exportMe<strong>${masterSkus[sku].nama}</strong></td><td>${masterSkus[sku].type}</td><td>${masterSkus[sku].warna}</td><td style="text-transform: uppercase;">${masterSkus[sku].kategori}</td>`;
+        if (tbodyMasterList) tbodyMasterList.appendChild(tr);
     });
     populateFilterDropdown();
 }
@@ -331,8 +373,8 @@ function resetKalkulatorDataState() {
 }
 
 // 4. PARSER LOGIKA EXCEL MANIFEST MARKETPLACE
-btnAddFile.addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', (e) => processExcelEngine(e.target.files[0]));
+if (btnAddFile) btnAddFile.addEventListener('click', () => { if (fileInput) fileInput.click(); });
+if (fileInput) fileInput.addEventListener('change', (e) => processExcelEngine(e.target.files[0]));
 
 function processExcelEngine(file) {
     if (!file) return;
@@ -369,11 +411,13 @@ function ekstrakDanHitungPenjualan(data) {
             if (globalDataKategori[kategori] && globalDataKategori[kategori][foundSku]) globalDataKategori[kategori][foundSku].qty += rowQty;
         }
     });
-    totalMasterFiles += 1; fileBadge.innerText = `${totalMasterFiles} File Terupload`;
+    totalMasterFiles += 1; 
+    if (fileBadge) fileBadge.innerText = `${totalMasterFiles} File Terupload`;
     refreshAllTables(); updateDashboardMetrics();
 }
 
 function renderSingleTable(dataKategori, tbodyElement) {
+    if (!tbodyElement) return;
     tbodyElement.innerHTML = '';
     Object.keys(dataKategori).sort().forEach(sku => {
         if (activeFilterText !== "all" && dataKategori[sku].nama !== activeFilterText) return;
@@ -406,8 +450,9 @@ function updateDashboardMetrics() {
     };
     hitung(globalDataKategori.utama); hitung(globalDataKategori.aksesoris); hitung(globalDataKategori.gradeb);
 
-    dashTotalTerjual.innerText = (qtyUtama + qtyAksesoris + qtyGradeB).toLocaleString('id-ID');
-    dashSkuAktif.innerText = skuAktifCount; dashFileCount.innerText = totalMasterFiles;
+    if (dashTotalTerjual) dashTotalTerjual.innerText = (qtyUtama + qtyAksesoris + qtyGradeB).toLocaleString('id-ID');
+    if (dashSkuAktif) dashSkuAktif.innerText = skuAktifCount; 
+    if (dashFileCount) dashFileCount.innerText = totalMasterFiles;
 
     if (salesChartInstance) { salesChartInstance.data.datasets[0].data = [qtyUtama, qtyAksesoris, qtyGradeB]; salesChartInstance.update(); }
     if (topProductsChartInstance) {
@@ -426,12 +471,16 @@ function populateDashboardDropdown() {
 if (dashFilterDropdown) { dashFilterDropdown.addEventListener('change', () => updateDashboardMetrics()); }
 
 function initDashboardEmptyChart() {
-    salesChartInstance = new Chart(document.getElementById('salesChart').getContext('2d'), { type: 'bar', data: { labels: ['Produk Utama', 'Aksesoris', 'Grade B'], datasets: [{ data: [0, 0, 0], backgroundColor: ['#ec4899', '#2563eb', '#f59e0b'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
-    trendChartInstance = new Chart(document.getElementById('trendChart').getContext('2d'), { type: 'line', data: { labels: ['Mulai'], datasets: [{ data: [0], borderColor: '#8b5cf6', fill: true }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
-    topProductsChartInstance = new Chart(document.getElementById('topProductsChart').getContext('2d'), { type: 'bar', data: { labels: ['Menunggu...'], datasets: [{ data: [0], backgroundColor: '#10b981' }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+    const sChart = document.getElementById('salesChart');
+    const tChart = document.getElementById('trendChart');
+    const tpChart = document.getElementById('topProductsChart');
+    if (sChart) salesChartInstance = new Chart(sChart.getContext('2d'), { type: 'bar', data: { labels: ['Produk Utama', 'Aksesoris', 'Grade B'], datasets: [{ data: [0, 0, 0], backgroundColor: ['#ec4899', '#2563eb', '#f59e0b'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+    if (tChart) trendChartInstance = new Chart(tChart.getContext('2d'), { type: 'line', data: { labels: ['Mulai'], datasets: [{ data: [0], borderColor: '#8b5cf6', fill: true }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+    if (tpChart) topProductsChartInstance = new Chart(tpChart.getContext('2d'), { type: 'bar', data: { labels: ['Menunggu...'], datasets: [{ data: [0], backgroundColor: '#10b981' }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
 }
 
 function populateFilterDropdown() {
+    if (!dropdownFilter) return;
     dropdownFilter.innerHTML = '<option value="all">-- Tampilkan Semua Produk --</option>';
     const cat = document.querySelector('.sub-tab.active')?.getAttribute('data-category') || 'utama';
     let names = new Set();
@@ -440,34 +489,42 @@ function populateFilterDropdown() {
     dropdownFilter.value = activeFilterText;
 }
 
-dropdownFilter.addEventListener('change', (e) => { activeFilterText = e.target.value; refreshAllTables(); });
-btnFilterReset.addEventListener('click', () => { dropdownFilter.value = "all"; activeFilterText = "all"; refreshAllTables(); });
+if (dropdownFilter) dropdownFilter.addEventListener('change', (e) => { activeFilterText = e.target.value; refreshAllTables(); });
+if (btnFilterReset) btnFilterReset.addEventListener('click', () => { if (dropdownFilter) dropdownFilter.value = "all"; activeFilterText = "all"; refreshAllTables(); });
 
-btnFileReset.addEventListener('click', () => {
-    totalMasterFiles = 0; fileBadge.innerText = '0 File Terupload'; resetKalkulatorDataState();
-    dashTotalTerjual.innerText = '0'; dashSkuAktif.innerText = '0'; dashFileCount.innerText = '0';
-});
+if (btnFileReset) {
+    btnFileReset.addEventListener('click', () => {
+        totalMasterFiles = 0; if (fileBadge) fileBadge.innerText = '0 File Terupload'; resetKalkulatorDataState();
+        if (dashTotalTerjual) dashTotalTerjual.innerText = '0'; 
+        if (dashSkuAktif) dashSkuAktif.innerText = '0'; 
+        if (dashFileCount) dashFileCount.innerText = '0';
+    });
+}
 
 // 6. COPY AND SAVE HISTORY METHODS
-btnCopyQty.addEventListener('click', () => {
-    const cat = document.querySelector('.sub-tab.active').getAttribute('data-category');
-    let txt = ""; Object.keys(globalDataKategori[cat]).sort().forEach(k => { if (activeFilterText === "all" || globalDataKategori[cat][k].nama === activeFilterText) txt += `${globalDataKategori[cat][k].qty}\n`; });
-    navigator.clipboard.writeText(txt).then(() => updateStatusMessage('Qty copied.'));
-});
+if (btnCopyQty) {
+    btnCopyQty.addEventListener('click', () => {
+        const cat = document.querySelector('.sub-tab.active').getAttribute('data-category');
+        let txt = ""; Object.keys(globalDataKategori[cat]).sort().forEach(k => { if (activeFilterText === "all" || globalDataKategori[cat][k].nama === activeFilterText) txt += `${globalDataKategori[cat][k].qty}\n`; });
+        navigator.clipboard.writeText(txt).then(() => updateStatusMessage('Qty copied.'));
+    });
+}
 
-btnSaveHistory.addEventListener('click', () => {
-    const sum = (o) => Object.values(o).reduce((s, i) => s + i.qty, 0);
-    const tot = sum(globalDataKategori.utama) + sum(globalDataKategori.aksesoris) + sum(globalDataKategori.gradeb);
-    if (tot === 0) return;
+if (btnSaveHistory) {
+    btnSaveHistory.addEventListener('click', () => {
+        const sum = (o) => Object.values(o).reduce((s, i) => s + i.qty, 0);
+        const tot = sum(globalDataKategori.utama) + sum(globalDataKategori.aksesoris) + sum(globalDataKategori.gradeb);
+        if (tot === 0) return;
 
-    updateStatusMessage("Mengirim data harian...");
-    const payload = new URLSearchParams();
-    payload.append('action', 'save'); payload.append('waktu', new Date().toLocaleString('id-ID'));
-    payload.append('files', totalMasterFiles); payload.append('total', tot); payload.append('detail', JSON.stringify(globalDataKategori));
+        updateStatusMessage("Mengirim data harian...");
+        const payload = new URLSearchParams();
+        payload.append('action', 'save'); payload.append('waktu', new Date().toLocaleString('id-ID'));
+        payload.append('files', totalMasterFiles); payload.append('total', tot); payload.append('detail', JSON.stringify(globalDataKategori));
 
-    fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
-    .then(res => res.json()).then(() => { updateStatusMessage("Sukses tersimpan di Cloud!"); fetchHistoryFromCloud(); });
-});
+        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
+        .then(res => res.json()).then(() => { updateStatusMessage("Sukses tersimpan di Cloud!"); fetchHistoryFromCloud(); });
+    });
+}
 
 function fetchHistoryFromCloud() {
     const container = document.getElementById('history-list-container'); if (!container) return;
@@ -479,7 +536,7 @@ function fetchHistoryFromCloud() {
             globalHistoryCloudCache[log.waktu] = log.detail;
             const tr = document.createElement('tr');
             tr.innerHTML = `<td>${log.waktu}</td><td>${log.files} Berkas</td><td style="color:#ec4899; font-weight:bold;">${log.total} pcs</td><td><button class="btn-action btn-pink-solid btn-download-history" data-waktu="${log.waktu}">Download</button></td>`;
-            tbody.appendChild(tr);
+            if (tbody) tbody.appendChild(tr);
         });
         document.querySelectorAll('.btn-download-history').forEach(b => {
             b.addEventListener('click', (e) => {
@@ -499,18 +556,22 @@ function generateMasterArrayFormat() {
     ins("PRODUK UTAMA", globalDataKategori.utama); ins("AKSESORIS", globalDataKategori.aksesoris); ins("GRADE B", globalDataKategori.gradeb); return m;
 }
 
-btnExportXlsx.addEventListener('click', () => {
-    const wb = XLSX.utils.book_new();
-    const fmt = (d) => { let m = [["SKU", "Nama", "Type", "Warna", "Qty"]]; Object.keys(d).sort().forEach(k => m.push([k, d[k].nama, d[k].type, d[k].warna, d[k].qty])); return XLSX.utils.aoa_to_sheet(m); };
-    XLSX.utils.book_append_sheet(wb, fmt(globalDataKategori.utama), "Produk Utama"); XLSX.utils.book_append_sheet(wb, fmt(globalDataKategori.aksesoris), "Aksesoris"); XLSX.utils.book_append_sheet(wb, fmt(globalDataKategori.gradeb), "Grade B");
-    XLSX.writeFile(wb, `Laporan_Tabs_${new Date().toISOString().slice(0,10)}.xlsx`);
-});
+if (btnExportXlsx) {
+    btnExportXlsx.addEventListener('click', () => {
+        const wb = XLSX.utils.book_new();
+        const fmt = (d) => { let m = [["SKU", "Nama", "Type", "Warna", "Qty"]]; Object.keys(d).sort().forEach(k => m.push([k, d[k].nama, d[k].type, d[k].warna, d[k].qty])); return XLSX.utils.aoa_to_sheet(m); };
+        XLSX.utils.book_append_sheet(wb, fmt(globalDataKategori.utama), "Produk Utama"); XLSX.utils.book_append_sheet(wb, fmt(globalDataKategori.aksesoris), "Aksesoris"); XLSX.utils.book_append_sheet(wb, fmt(globalDataKategori.gradeb), "Grade B");
+        XLSX.writeFile(wb, `Laporan_Tabs_${new Date().toISOString().slice(0,10)}.xlsx`);
+    });
+}
 
-btnExportCsv.addEventListener('click', () => {
-    const ws = XLSX.utils.aoa_to_sheet(generateMasterArrayFormat());
-    const blob = new Blob([XLSX.utils.sheet_to_csv(ws)], { type: 'text/csv;charset=utf-8;' });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.setAttribute("download", `Laporan_${new Date().toISOString().slice(0,10)}.csv`); a.click();
-});
+if (btnExportCsv) {
+    btnExportCsv.addEventListener('click', () => {
+        const ws = XLSX.utils.aoa_to_sheet(generateMasterArrayFormat());
+        const blob = new Blob([XLSX.utils.sheet_to_csv(ws)], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.setAttribute("download", `Laporan_${new Date().toISOString().slice(0,10)}.csv`); a.click();
+    });
+}
 
 // 7. INPUT MANUAL BERANTAI DROPDOWN
 function populateManualNamaDropdown() {
@@ -519,28 +580,35 @@ function populateManualNamaDropdown() {
     Array.from(names).sort().forEach(n => { const opt = document.createElement('option'); opt.value = n; opt.innerText = n; manualNamaDropdown.appendChild(opt); });
 }
 
-manualNamaDropdown.addEventListener('change', () => {
-    const sNama = manualNamaDropdown.value; manualTypeDropdown.innerHTML = '<option value="">-- Type --</option>'; manualWarnaDropdown.innerHTML = '<option value="">-- Warna --</option>'; manualWarnaDropdown.disabled = true;
-    if (!sNama) { manualTypeDropdown.disabled = true; return; }
-    let types = new Set(); Object.values(masterSkus).forEach(i => { if (i.nama === sNama && i.type) types.add(i.type.trim()); });
-    Array.from(types).sort().forEach(t => { const opt = document.createElement('option'); opt.value = t; opt.innerText = t; manualTypeDropdown.appendChild(opt); });
-    manualTypeDropdown.disabled = false;
-});
+if (manualNamaDropdown) {
+    manualNamaDropdown.addEventListener('change', () => {
+        const sNama = manualNamaDropdown.value; if (manualTypeDropdown) manualTypeDropdown.innerHTML = '<option value="">-- Type --</option>'; if (manualWarnaDropdown) manualWarnaDropdown.innerHTML = '<option value="">-- Warna --</option>'; if (manualWarnaDropdown) manualWarnaDropdown.disabled = true;
+        if (!sNama) { if (manualTypeDropdown) manualTypeDropdown.disabled = true; return; }
+        let types = new Set(); Object.values(masterSkus).forEach(i => { if (i.nama === sNama && i.type) types.add(i.type.trim()); });
+        Array.from(types).sort().forEach(t => { const opt = document.createElement('option'); opt.value = t; opt.innerText = t; if (manualTypeDropdown) manualTypeDropdown.appendChild(opt); });
+        if (manualTypeDropdown) manualTypeDropdown.disabled = false;
+    });
+}
 
-manualTypeDropdown.addEventListener('change', () => {
-    const sNama = manualNamaDropdown.value; const sType = manualTypeDropdown.value; manualWarnaDropdown.innerHTML = '<option value="">-- Warna --</option>';
-    if (!sType) { manualWarnaDropdown.disabled = true; return; }
-    let warnas = new Set(); Object.values(masterSkus).forEach(i => { if (i.nama === sNama && i.type === sType && i.warna) warnas.add(i.warna.trim()); });
-    Array.from(warnas).sort().forEach(w => { const opt = document.createElement('option'); opt.value = w; opt.innerText = w; manualWarnaDropdown.appendChild(opt); });
-    manualWarnaDropdown.disabled = false;
-});
+if (manualTypeDropdown) {
+    manualTypeDropdown.addEventListener('change', () => {
+        const sNama = manualNamaDropdown ? manualNamaDropdown.value : ''; const sType = manualTypeDropdown.value; if (manualWarnaDropdown) manualWarnaDropdown.innerHTML = '<option value="">-- Warna --</option>';
+        if (!sType) { if (manualWarnaDropdown) manualWarnaDropdown.disabled = true; return; }
+        let warnas = new Set(); Object.values(masterSkus).forEach(i => { if (i.nama === sNama && i.type === sType && i.warna) warnas.add(i.warna.trim()); });
+        Array.from(warnas).sort().forEach(w => { const opt = document.createElement('option'); opt.value = w; opt.innerText = w; if (manualWarnaDropdown) manualWarnaDropdown.appendChild(opt); });
+        if (manualWarnaDropdown) manualWarnaDropdown.disabled = false;
+    });
+}
 
-btnAddManual.addEventListener('click', () => {
-    const n = manualNamaDropdown.value; const t = manualTypeDropdown.value; const w = manualWarnaDropdown.value; const q = parseInt(manualQtyInput.value, 10);
-    if (!n || !t || !w || isNaN(q) || q <= 0) return;
-    let tSku = null; for (let k in masterSkus) { if (masterSkus[k].nama === n && masterSkus[k].type === t && masterSkus[k].warna === w) { tSku = k; break; } }
-    if (tSku) {
-        const cat = masterSkus[tSku].kategori;
-        if (globalDataKategori[cat] && globalDataKategori[cat][tSku]) { globalDataKategori[cat][tSku].qty += q; refreshAllTables(); updateDashboardMetrics(); manualQtyInput.value = ""; }
-    }
-});
+if (btnAddManual) {
+    btnAddManual.addEventListener('click', () => {
+        const n = manualNamaDropdown ? manualNamaDropdown.value : ''; const t = manualTypeDropdown ? manualTypeDropdown.value : ''; const w = manualWarnaDropdown ? manualWarnaDropdown.value : ''; const q = manualQtyInput ? parseInt(manualQtyInput.value, 10) : 0;
+        if (!n || !t || !w || isNaN(q) || q <= 0) return;
+        let tSku = null; for (let k in masterSkus) { if (masterSkus[k].nama === n && masterSkus[k].type === t && masterSkus[k].warna === w) { tSku = k; break; } }
+        if (tSku) {
+            const cat = masterSkus[tSku].kategori;
+            if (globalDataKategori[cat] && globalDataKategori[cat][tSku]) { globalDataKategori[cat][tSku].qty += q; refreshAllTables(); updateDashboardMetrics(); if (manualQtyInput) manualQtyInput.value = ""; }
+        }
+    });
+}
+function updateStatusMessage(msg) { if (statusBar) statusBar.innerText = msg; }
