@@ -1,7 +1,7 @@
 // =========================================================================
 // CLOUD DATABASE CONFIGURATION (GOOGLE SHEETS)
 // =========================================================================
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwXH-V0URflSVIfRZVua0DgLclBRDbRaRnY5zfiJXRc0U15DyRKGKNFz0Iqro8Wrhg/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3sr4vIj7n35TMUosknwwZKG09yFHlPrBJQykn6n3SjvnzTrUAmcbTELz_f5o4Jjg/exec";
 
 // --- DOM SELEKTORS ---
 const loadingOverlay = document.getElementById('loading-overlay'); 
@@ -58,7 +58,7 @@ const manualWarnaDropdown = document.getElementById('manual-warna-dropdown');
 const manualQtyInput = document.getElementById('manual-qty-input');
 const btnAddManual = document.getElementById('btn-add-manual');
 
-// SELEKTOR COMPONENT PROCUREMENT DROPDOWN BERANTAI
+// SELEKTOR COMPUREMENT DROPDOWN BERANTAI IMAG_95AA63
 const procJenisBarang = document.getElementById('proc-jenis-barang');
 const procWarnaLatela = document.getElementById('proc-warna-latela');
 const procKodeWarnaVendor = document.getElementById('proc-kode-warna-vendor');
@@ -77,19 +77,15 @@ let globalDataKategori = { utama: {}, aksesoris: {}, gradeb: {} };
 let totalMasterFiles = 0;
 let activeFilterText = "all";
 
-// ARSIP DATA MENTAH VENDOR DARI CLOUD & BASKET PO
 let globalVendorRawData = [];
 let currentPoBasket = [];
 
-// ARSIP INSTANSI GRAFIK CHART.JS
 let salesChartInstance = null; 
 let trendChartInstance = null;      
 let topProductsChartInstance = null; 
-
-// CACHE GLOBAL UNTUK MENAMPUNG DETAIL DATA DARI CLOUD SPREADSHEET
 let globalHistoryCloudCache = {};
 
-// --- INITIAL BOOTSTRAP SINKRONISASI CLOUD ---
+// --- INITIAL BOOTSTRAP ---
 window.addEventListener('DOMContentLoaded', () => {
     const savedSidebarState = localStorage.getItem('sidebarState');
     if (savedSidebarState === 'collapsed') {
@@ -102,7 +98,6 @@ window.addEventListener('DOMContentLoaded', () => {
     initDashboardEmptyChart(); 
 });
 
-// EVENT LOGIKA TOGGLE SIDEBAR
 btnToggleSidebar.addEventListener('click', () => {
     sidebarElement.classList.toggle('collapsed');
     if (sidebarElement.classList.contains('collapsed')) {
@@ -114,7 +109,6 @@ btnToggleSidebar.addEventListener('click', () => {
     }
 });
 
-// LOGIKA PEMBUKA & PENUTUP DROPDOWN EXPORT BUTTON
 btnExportToggle.addEventListener('click', (e) => {
     e.stopPropagation(); 
     exportMenuItems.classList.toggle('show');
@@ -124,12 +118,10 @@ document.addEventListener('click', () => {
     exportMenuItems.classList.remove('show');
 });
 
-// INTERCEPT MENU EXTENSION DENGAN CUSTOM IN-APP MODAL
 if (menuExtension) {
     menuExtension.addEventListener('click', (e) => {
         e.preventDefault(); 
-        modalErrorMsg.innerText = ""; 
-        inputExtPassword.value = ""; 
+        modalErrorMsg.innerText = ""; inputExtPassword.value = ""; 
         passwordModal.classList.add('show'); 
         setTimeout(() => inputExtPassword.focus(), 100); 
     });
@@ -147,39 +139,24 @@ function eksekusiVerifikasiPasswordModal() {
 }
 
 btnModalSubmit.addEventListener('click', eksekusiVerifikasiPasswordModal);
-btnModalCancel.addEventListener('click', () => {
-    passwordModal.classList.remove('show');
-    updateStatusMessage("Otorisasi dibatalkan oleh user.");
-});
-
-inputExtPassword.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        eksekusiVerifikasiPasswordModal();
-    }
-});
+btnModalCancel.addEventListener('click', () => { passwordModal.classList.remove('show'); });
+inputExtPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') eksekusiVerifikasiPasswordModal(); });
 
 btnSyncCloud.addEventListener('click', () => {
     fetchMasterSkusFromCloud();
     fetchVendorMappingFromCloud(); 
 });
 
-// 1. AMBIL DATA MASTER SKU SPREADSHEET LANGSUNG SECARA REAL-TIME
+// 1. ENGINE FETCH SKU CORE
 function fetchMasterSkusFromCloud() {
     updateStatusMessage("Menghubungkan ke Google Sheets Cloud Database secara Real-Time...");
     tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; font-style: italic;">Sinkronisasi data live...</td></tr>`;
-
-    if (loadingOverlay) {
-        loadingOverlay.classList.remove('fade-out');
-    }
+    if (loadingOverlay) loadingOverlay.classList.remove('fade-out');
 
     fetch(`${GOOGLE_SCRIPT_URL}?action=fetch_skus`)
-        .then(response => {
-            if (!response.ok) throw new Error("Gagal terhubung ke internal API Google Apps Script.");
-            return response.json();
-        })
+        .then(response => { if (!response.ok) throw new Error("Gagal terhubung ke Apps Script."); return response.json(); })
         .then(jsonData => {
             masterSkus = {};
-
             jsonData.forEach(row => {
                 const skuCode = row['SKU'] || row['sku'] || row['Code'];
                 const namaResmi = row['Nama'] || row['nama'] || row['Product'];
@@ -202,7 +179,6 @@ function fetchMasterSkusFromCloud() {
                     };
                 }
             });
-
             updateStatusMessage("Master SKU berhasil disinkronisasi secara INSTAN & LIVE!");
             renderMasterSkuDatabaseView();
             populateDashboardDropdown(); 
@@ -210,20 +186,12 @@ function fetchMasterSkusFromCloud() {
             resetKalkulatorDataState();
         })
         .catch(err => {
-            console.error(err);
-            updateStatusMessage("Gagal menyinkronkan data.");
-            tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #dc2626; font-weight: bold; padding: 20px;">⚠️ SISTEM EROR: ${err.message}<br><span style="font-size: 12px; font-weight: normal; color: #64748b; display: block; margin-top: 5px;">Silakan tekan CTRL + F5 atau klik tombol Sync Ulang. Jika masih bermasalah, cek versi deployment Apps Script.</span></td></tr>`;
+            tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #dc2626; font-weight: bold; padding: 20px;">⚠️ SISTEM EROR: ${err.message}</td></tr>`;
         })
-        .finally(() => {
-            if (loadingOverlay) {
-                setTimeout(() => {
-                    loadingOverlay.classList.add('fade-out');
-                }, 300);
-            }
-        });
+        .finally(() => { if (loadingOverlay) setTimeout(() => { loadingOverlay.classList.add('fade-out'); }, 300); });
 }
 
-// 1B. AMBIL DROPDOWN BERANTAI PROCUREMENT (CHAINED DROPDOWN)
+// 2. FETCH MAPPING VENDOR DROPDOWN BERANTAI
 function fetchVendorMappingFromCloud() {
     fetch(`${GOOGLE_SCRIPT_URL}?action=fetch_vendor`)
         .then(res => res.json())
@@ -238,68 +206,44 @@ function fetchVendorMappingFromCloud() {
                 let jenis = row['Jenis Barang'] || row['jenis_barang'];
                 if(jenis) uniqueJenis.add(jenis.toString().trim());
             });
-
             Array.from(uniqueJenis).sort().forEach(jenis => {
-                const opt = document.createElement('option');
-                opt.value = jenis; opt.innerText = jenis;
+                const opt = document.createElement('option'); opt.value = jenis; opt.innerText = jenis;
                 procJenisBarang.appendChild(opt);
             });
         })
-        .catch(err => console.error("Gagal load data vendor mapping:", err));
+        .catch(err => console.error("Gagal load vendor mapping:", err));
 }
 
-// DROPDOWN PROCUREMENT TINGKAT 1
 procJenisBarang.addEventListener('change', () => {
     const selectedJenis = procJenisBarang.value;
     procWarnaLatela.innerHTML = '<option value="">-- Pilih Warna Latela --</option>';
-    
-    procKodeWarnaVendor.value = '';
-    procVendor.value = '';
-    procKodeVendor.value = '';
-    procNamaKain.value = '';
+    procKodeWarnaVendor.value = ''; procVendor.value = ''; procKodeVendor.value = ''; procNamaKain.value = '';
 
-    if (!selectedJenis) {
-        procWarnaLatela.disabled = true;
-        return;
-    }
+    if (!selectedJenis) { procWarnaLatela.disabled = true; return; }
 
     let uniqueWarna = new Set();
     globalVendorRawData.forEach(row => {
         let jenis = row['Jenis Barang'] || row['jenis_barang'];
         let warna = row['Kode Warna Latela'] || row['kode_warna_latela'];
-        if (jenis && jenis.toString().trim() === selectedJenis && warna) {
-            uniqueWarna.add(warna.toString().trim());
-        }
+        if (jenis && jenis.toString().trim() === selectedJenis && warna) uniqueWarna.add(warna.toString().trim());
     });
-
     Array.from(uniqueWarna).sort().forEach(warna => {
-        const opt = document.createElement('option');
-        opt.value = warna; opt.innerText = warna;
+        const opt = document.createElement('option'); opt.value = warna; opt.innerText = warna;
         procWarnaLatela.appendChild(opt);
     });
     procWarnaLatela.disabled = false;
 });
 
-// DROPDOWN PROCUREMENT TINGKAT 2
 procWarnaLatela.addEventListener('change', () => {
     const selectedJenis = procJenisBarang.value;
     const selectedWarna = procWarnaLatela.value;
-
-    if (!selectedJenis || !selectedWarna) {
-        procKodeWarnaVendor.value = '';
-        procVendor.value = '';
-        procKodeVendor.value = '';
-        procNamaKain.value = '';
-        return;
-    }
+    if (!selectedJenis || !selectedWarna) { procKodeWarnaVendor.value = ''; procVendor.value = ''; procKodeVendor.value = ''; procNamaKain.value = ''; return; }
 
     const matchedRow = globalVendorRawData.find(row => {
         let jenis = row['Jenis Barang'] || row['jenis_barang'];
         let warna = row['Kode Warna Latela'] || row['kode_warna_latela'];
-        return jenis && jenis.toString().trim() === selectedJenis && 
-               warna && warna.toString().trim() === selectedWarna;
+        return jenis && jenis.toString().trim() === selectedJenis && warna && warna.toString().trim() === selectedWarna;
     });
-
     if (matchedRow) {
         procKodeWarnaVendor.value = matchedRow['Kode Warna Vendor'] || matchedRow['kode_warna_vendor'] || '-';
         procVendor.value = matchedRow['Vendor'] || matchedRow['vendor'] || '-';
@@ -308,135 +252,68 @@ procWarnaLatela.addEventListener('change', () => {
     }
 });
 
-// TAMBAH ITEM KE LIST PROCUREMENT
 btnAddProc.addEventListener('click', () => {
-    const jenisBarang = procJenisBarang.value;
-    const warnaLatela = procWarnaLatela.value;
-    const kodeWarnaVendor = procKodeWarnaVendor.value;
-    const vendor = procVendor.value;
-    const kodeVendor = procKodeVendor.value;
-    const namaKain = procNamaKain.value;
-    const qty = parseInt(procQty.value, 10);
+    const jenisBarang = procJenisBarang.value; const warnaLatela = procWarnaLatela.value;
+    const kodeWarnaVendor = procKodeWarnaVendor.value; const vendor = procVendor.value;
+    const kodeVendor = procKodeVendor.value; const namaKain = procNamaKain.value; const qty = parseInt(procQty.value, 10);
 
-    if(!jenisBarang || !warnaLatela || isNaN(qty) || qty <= 0) {
-        updateStatusMessage("⚠️ Gagal: Isi pilihan jenis barang, warna, dan kuantitas order roll dengan benar.");
-        return;
-    }
-
+    if(!jenisBarang || !warnaLatela || isNaN(qty) || qty <= 0) { updateStatusMessage("⚠️ Gagal: Isi Qty roll order dengan benar."); return; }
     currentPoBasket.push({ jenisBarang, warnaLatela, kodeWarnaVendor, vendor, kodeVendor, namaKain, qty });
-    renderProcurementTable();
-    
-    procQty.value = '';
+    renderProcurementTable(); procQty.value = '';
     updateStatusMessage(`Sukses menambah pesanan ${jenisBarang} (${warnaLatela}) ke list PO.`);
 });
 
 function renderProcurementTable() {
     if(currentPoBasket.length === 0) {
-        tbodyProcurementList.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #94a3b8; font-style: italic;">Belum ada item ditambahkan ke Surat PO.</td></tr>`;
-        return;
+        tbodyProcurementList.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #94a3b8; font-style: italic;">Belum ada item ditambahkan ke Surat PO.</td></tr>`; return;
     }
-
     tbodyProcurementList.innerHTML = '';
     currentPoBasket.forEach((item) => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><strong>${item.jenisBarang}</strong></td>
-            <td><code>${item.warnaLatela}</code></td>
-            <td>${item.kodeWarnaVendor}</td>
-            <td>${item.vendor}</td>
-            <td><strong>${item.kodeVendor}</strong></td>
-            <td>${item.namaKain}</td>
-            <td style="text-align: right; padding-right:25px; color:#2563eb;">${item.qty} Roll</td>
-        `;
+        tr.innerHTML = `<td><strong>${item.jenisBarang}</strong></td><td><code>${item.warnaLatela}</code></td><td>${item.kodeWarnaVendor}</td><td>${item.vendor}</td><td><strong>${item.kodeVendor}</strong></td><td>${item.namaKain}</td><td style="text-align: right; padding-right:25px; color:#2563eb;">${item.qty} Roll</td>`;
         tbodyProcurementList.appendChild(tr);
     });
 }
 
 btnResetPo.addEventListener('click', () => {
-    currentPoBasket = [];
-    renderProcurementTable();
-    procJenisBarang.value = '';
-    procWarnaLatela.value = '';
-    procWarnaLatela.disabled = true;
-    procKodeWarnaVendor.value = '';
-    procVendor.value = '';
-    procKodeVendor.value = '';
-    procNamaKain.value = '';
-    procQty.value = '';
-    updateStatusMessage("Form Surat PO berhasil dibersihkan.");
+    currentPoBasket = []; renderProcurementTable();
+    procJenisBarang.value = ''; procWarnaLatela.value = ''; procWarnaLatela.disabled = true;
+    procKodeWarnaVendor.value = ''; procVendor.value = ''; procKodeVendor.value = ''; procNamaKain.value = ''; procQty.value = '';
 });
 
-// CETAK EXCEL SURAT PO VENDOR
 btnExportPo.addEventListener('click', () => {
-    if(currentPoBasket.length === 0) {
-        updateStatusMessage("⚠️ Gagal Cetak: List item pesanan masih kosong.");
-        return;
-    }
-
+    if(currentPoBasket.length === 0) return;
     const wb = XLSX.utils.book_new();
-    let matriksPO = [
-        ["SURAT PURCHASE ORDER (PO) BAHAN BAKU - CV ARSA"],
-        [`Tanggal Pembuatan: ${new Date().toLocaleDateString('id-ID')}`],
-        ["Status Otorisasi: OSCM Supervisor Approved"],
-        [], 
-        ["Jenis Barang", "Kode Warna Latela", "Kode Warna Vendor", "Vendor", "Kode Vendor", "Nama Kain", "Kuantitas Pesanan (Roll)"]
-    ];
-
-    currentPoBasket.forEach(item => {
-        matriksPO.push([item.jenisBarang, item.warnaLatela, item.kodeWarnaVendor, item.vendor, item.kodeVendor, item.namaKain, item.qty]);
-    });
-
-    const ws = XLSX.utils.aoa_to_sheet(matriksPO);
-    XLSX.utils.book_append_sheet(wb, ws, "Surat PO Vendor");
-
-    const tgl = new Date().toISOString().slice(0,10);
-    XLSX.writeFile(wb, `CV_Arsa_Surat_PO_${tgl}.xlsx`);
-    updateStatusMessage("Sukses mengunduh Dokumen Surat PO resmi Vendor!");
+    let matriksPO = [["SURAT PURCHASE ORDER (PO) BAHAN BAKU - CV ARSA"],[`Tanggal Pembuatan: ${new Date().toLocaleDateString('id-ID')}`],["Status Otorisasi: OSCM Supervisor Approved"],[],["Jenis Barang", "Kode Warna Latela", "Kode Warna Vendor", "Vendor", "Kode Vendor", "Nama Kain", "Kuantitas Pesanan (Roll)"]];
+    currentPoBasket.forEach(item => { matriksPO.push([item.jenisBarang, item.warnaLatela, item.kodeWarnaVendor, item.vendor, item.kodeVendor, item.namaKain, item.qty]); });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(matriksPO), "Surat PO Vendor");
+    XLSX.writeFile(wb, `CV_Arsa_Surat_PO_${new Date().toISOString().slice(0,10)}.xlsx`);
 });
 
-// 2. KENDALI SIDEBAR VIEW PANELS
+// 3. MENU NAVIGATION LAYER
 menuItems.forEach(item => {
     item.addEventListener('click', () => {
-        menuItems.forEach(btn => btn.classList.remove('active'));
-        item.classList.add('active');
+        menuItems.forEach(btn => btn.classList.remove('active')); item.classList.add('active');
         contentViews.forEach(view => view.classList.remove('active'));
         document.getElementById(`view-${item.getAttribute('data-target')}`).classList.add('active');
     });
 });
 
-// 3. KENDALI SUB-TABS KATEGORI
 subTabs.forEach(tab => {
     tab.addEventListener('click', () => {
-        subTabs.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
+        subTabs.forEach(t => t.classList.remove('active')); tab.classList.add('active');
         subTablePanels.forEach(p => p.classList.remove('active'));
         document.getElementById(`panel-${tab.getAttribute('data-category')}`).classList.add('active');
-        
-        activeFilterText = "all";
-        populateFilterDropdown();
-        refreshAllTables();
+        activeFilterText = "all"; populateFilterDropdown(); refreshAllTables();
     });
 });
 
 function renderMasterSkuDatabaseView() {
-    tbodyMasterList.innerHTML = '';
-    const sortedKeys = Object.keys(masterSkus).sort();
-    masterSkuCount.innerText = sortedKeys.length;
-
-    if (sortedKeys.length === 0) {
-        tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; font-style: italic;">Data kosong, silakan periksa isi spreadsheet.</td></tr>`;
-        return;
-    }
-
+    tbodyMasterList.innerHTML = ''; const sortedKeys = Object.keys(masterSkus).sort(); masterSkuCount.innerText = sortedKeys.length;
+    if (sortedKeys.length === 0) return;
     sortedKeys.forEach(sku => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><code>${sku}</code></td>
-            <td><strong>${masterSkus[sku].nama}</strong></td>
-            <td>${masterSkus[sku].type}</td>
-            <td>${masterSkus[sku].warna}</td>
-            <td style="text-transform: uppercase; font-size:12px;">${masterSkus[sku].kategori}</td>
-        `;
+        tr.innerHTML = `<td><code>${sku}</code></td><td><strong>${masterSkus[sku].nama}</strong></td><td>${masterSkus[sku].type}</td><td>${masterSkus[sku].warna}</td><td style="text-transform: uppercase;">${masterSkus[sku].kategori}</td>`;
         tbodyMasterList.appendChild(tr);
     });
     populateFilterDropdown();
@@ -444,43 +321,29 @@ function renderMasterSkuDatabaseView() {
 
 function resetKalkulatorDataState() {
     globalDataKategori = { utama: {}, aksesoris: {}, gradeb: {} };
-    
     Object.keys(masterSkus).forEach(sku => {
         const kat = masterSkus[sku].kategori;
         if (globalDataKategori[kat]) {
-            globalDataKategori[kat][sku] = {
-                nama: masterSkus[sku].nama,
-                type: masterSkus[sku].type,
-                warna: masterSkus[sku].warna,
-                qty: 0
-            };
+            globalDataKategori[kat][sku] = { nama: masterSkus[sku].nama, type: masterSkus[sku].type, warna: masterSkus[sku].warna, qty: 0 };
         }
     });
     refreshAllTables();
 }
 
-// 4. MANAGEMENT IMPORT EXCEL MANIFEST MARKETPLACE
+// 4. PARSER LOGIKA EXCEL MANIFEST MARKETPLACE
 btnAddFile.addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', (e) => processExcelEngine(e.target.files[0]));
 
 function processExcelEngine(file) {
     if (!file) return;
-    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
-        updateStatusMessage('Format file ditolak, wajib file Excel!');
-        return;
-    }
-    updateStatusMessage(`Sedang mengurai berkas harian: ${file.name}...`);
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
-            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+            const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
             ekstrakDanHitungPenjualan(jsonData);
-        } catch (err) {
-            updateStatusMessage('Gagal memproses file Excel.');
-        }
+        } catch (err) { updateStatusMessage('Gagal memproses file Excel.'); }
     };
     reader.readAsArrayBuffer(file);
 }
@@ -488,59 +351,34 @@ function processExcelEngine(file) {
 function ekstrakDanHitungPenjualan(data) {
     data.forEach(row => {
         let foundSku = "";
-
         for (let key in row) {
             if (row[key] !== undefined && row[key] !== null) {
                 let cellValue = row[key].toString().trim();
-                if (masterSkus[cellValue]) {
-                    foundSku = cellValue;
-                    break; 
-                }
+                if (masterSkus[cellValue]) { foundSku = cellValue; break; }
             }
         }
-
         if (foundSku) {
-            let rowQty = 1; 
-
+            let rowQty = 1;
             for (let key in row) {
                 let keyClean = key.toString().toLowerCase().replace(/[^a-z0-9]/g, "");
-                if (keyClean === "qty" || keyClean === "quantity" || keyClean === "jumlah" || 
-                    keyClean === "kuantitas" || keyClean === "jumlahproduk" || keyClean === "kuantitaspcs" || keyClean === "jumlahpesanan") {
-                    rowQty = parseInt(row[key], 10) || 1; 
-                    break; 
+                if (["qty", "quantity", "jumlah", "kuantitas", "jumlahproduk", "kuantitaspcs", "jumlahpesanan"].includes(keyClean)) {
+                    rowQty = parseInt(row[key], 10) || 1; break;
                 }
             }
-
             const kategori = masterSkus[foundSku].kategori;
-            if (globalDataKategori[kategori] && globalDataKategori[kategori][foundSku]) {
-                globalDataKategori[kategori][foundSku].qty += rowQty;
-            }
+            if (globalDataKategori[kategori] && globalDataKategori[kategori][foundSku]) globalDataKategori[kategori][foundSku].qty += rowQty;
         }
     });
-
-    totalMasterFiles += 1;
-    fileBadge.innerText = `${totalMasterFiles} File Terupload`;
-    
-    refreshAllTables();
-    updateDashboardMetrics(); 
-    updateStatusMessage('Rangkuman data penjualan berhasil diperbarui berdasarkan pencocokan nilai SKU database terpusat.');
+    totalMasterFiles += 1; fileBadge.innerText = `${totalMasterFiles} File Terupload`;
+    refreshAllTables(); updateDashboardMetrics();
 }
 
 function renderSingleTable(dataKategori, tbodyElement) {
     tbodyElement.innerHTML = '';
-    const sortedKeys = Object.keys(dataKategori).sort();
-
-    sortedKeys.forEach(sku => {
+    Object.keys(dataKategori).sort().forEach(sku => {
         if (activeFilterText !== "all" && dataKategori[sku].nama !== activeFilterText) return;
-        
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${sku}</td>
-            <td>${dataKategori[sku].nama}</td>
-            <td>${dataKategori[sku].type}</td>
-            <td>${dataKategori[sku].warna}</td>
-            <td>${dataKategori[sku].qty}</td>
-        `;
+        tr.innerHTML = `<td>${sku}</td><td>${dataKategori[sku].nama}</td><td>${dataKategori[sku].type}</td><td>${dataKategori[sku].warna}</td><td>${dataKategori[sku].qty}</td>`;
         tbodyElement.appendChild(tr);
     });
 }
@@ -551,183 +389,54 @@ function refreshAllTables() {
     renderSingleTable(globalDataKategori.gradeb, tbodyGradeb); 
 }
 
+// 5. UPDATE GRAPHICS METRICS DASHBOARD
 function updateDashboardMetrics() {
     const targetProduct = dashFilterDropdown ? dashFilterDropdown.value : "all";
-    
-    let qtyUtama = 0;
-    let qtyAksesoris = 0;
-    let qtyGradeB = 0;
-    let skuAktifCount = 0;
-    let productSalesGroup = {};
+    let qtyUtama = 0, qtyAksesoris = 0, qtyGradeB = 0, skuAktifCount = 0; let productSalesGroup = {};
 
-    const hitungDanKelompokkan = (dataKategori) => {
+    const hitung = (dataKategori) => {
         Object.values(dataKategori).forEach(item => {
             if (targetProduct === "all" || item.nama === targetProduct) {
-                if (item.qty > 0) {
-                    skuAktifCount++;
-                    let namaProd = item.nama.trim().toUpperCase();
-                    productSalesGroup[namaProd] = (productSalesGroup[namaProd] || 0) + item.qty;
-                }
+                if (item.qty > 0) { skuAktifCount++; let name = item.nama.trim().toUpperCase(); productSalesGroup[name] = (productSalesGroup[name] || 0) + item.qty; }
                 if (item.kategori === 'utama') qtyUtama += item.qty;
                 if (item.kategori === 'aksesoris') qtyAksesoris += item.qty;
                 if (item.kategori === 'gradeb') qtyGradeB += item.qty;
             }
         });
     };
+    hitung(globalDataKategori.utama); hitung(globalDataKategori.aksesoris); hitung(globalDataKategori.gradeb);
 
-    hitungDanKelompokkan(globalDataKategori.utama);
-    hitungDanKelompokkan(globalDataKategori.aksesoris);
-    hitungDanKelompokkan(globalDataKategori.gradeb);
+    dashTotalTerjual.innerText = (qtyUtama + qtyAksesoris + qtyGradeB).toLocaleString('id-ID');
+    dashSkuAktif.innerText = skuAktifCount; dashFileCount.innerText = totalMasterFiles;
 
-    const grandTotal = qtyUtama + qtyAksesoris + qtyGradeB;
-
-    dashTotalTerjual.innerText = grandTotal.toLocaleString('id-ID');
-    dashSkuAktif.innerText = skuAktifCount;
-    dashFileCount.innerText = totalMasterFiles;
-
-    if (salesChartInstance) {
-        salesChartInstance.data.datasets[0].data = [qtyUtama, qtyAksesoris, qtyGradeB];
-        salesChartInstance.update(); 
-    }
-
+    if (salesChartInstance) { salesChartInstance.data.datasets[0].data = [qtyUtama, qtyAksesoris, qtyGradeB]; salesChartInstance.update(); }
     if (topProductsChartInstance) {
-        let sortedTopArray = Object.keys(productSalesGroup).map(name => {
-            return { name: name, qty: productSalesGroup[name] };
-        }).sort((a, b) => b.qty - a.qty).slice(0, 5); 
-
-        let labelPeringkat = sortedTopArray.map(item => item.name);
-        let dataPeringkat = sortedTopArray.map(item => item.qty);
-
-        if (sortedTopArray.length === 0) {
-            labelPeringkat = ["Belum Ada Data"];
-            dataPeringkat = [0];
-        }
-
-        topProductsChartInstance.data.labels = labelPeringkat;
-        topProductsChartInstance.data.datasets[0].data = dataPeringkat;
+        let sorted = Object.keys(productSalesGroup).map(k => ({ name: k, qty: productSalesGroup[k] })).sort((a,b) => b.qty - a.qty).slice(0, 5);
+        topProductsChartInstance.data.labels = sorted.length ? sorted.map(i => i.name) : ["Kosong"];
+        topProductsChartInstance.data.datasets[0].data = sorted.length ? sorted.map(i => i.qty) : [0];
         topProductsChartInstance.update();
     }
 }
 
 function populateDashboardDropdown() {
-    if (!dashFilterDropdown) return;
-    dashFilterDropdown.innerHTML = '<option value="all">-- Semua Produk --</option>';
-    
-    let allProductNames = new Set();
-    Object.values(masterSkus).forEach(item => {
-        if (item.nama) allProductNames.add(item.nama.trim().toUpperCase());
-    });
-
-    const sortedNames = Array.from(allProductNames).sort();
-    sortedNames.forEach(nama => {
-        const opt = document.createElement('option');
-        opt.value = nama; opt.innerText = nama;
-        dashFilterDropdown.appendChild(opt);
-    });
+    if (!dashFilterDropdown) return; dashFilterDropdown.innerHTML = '<option value="all">-- Semua Produk --</option>';
+    let names = new Set(); Object.values(masterSkus).forEach(i => { if (i.nama) names.add(i.nama.trim().toUpperCase()); });
+    Array.from(names).sort().forEach(n => { const opt = document.createElement('option'); opt.value = n; opt.innerText = n; dashFilterDropdown.appendChild(opt); });
 }
-
-if (dashFilterDropdown) {
-    dashFilterDropdown.addEventListener('change', () => {
-        updateDashboardMetrics();
-    });
-}
+if (dashFilterDropdown) { dashFilterDropdown.addEventListener('change', () => updateDashboardMetrics()); }
 
 function initDashboardEmptyChart() {
-    const ctxSales = document.getElementById('salesChart').getContext('2d');
-    salesChartInstance = new Chart(ctxSales, {
-        type: 'bar', 
-        data: {
-            labels: ['Produk Utama', 'Aksesoris', 'Grade B'],
-            datasets: [{
-                label: 'Kuantitas Terjual (pcs)',
-                data: [0, 0, 0], 
-                backgroundColor: ['#ec4899', '#2563eb', '#f59e0b'],
-                borderWidth: 0, borderRadius: 5, barPercentage: 0.4
-            }]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
-        }
-    });
-
-    const ctxTrend = document.getElementById('trendChart').getContext('2d');
-    trendChartInstance = new Chart(ctxTrend, {
-        type: 'line',
-        data: {
-            labels: ['Mulai'],
-            datasets: [{
-                label: 'Total Terjual (pcs)',
-                data: [0],
-                borderColor: '#8b5cf6', 
-                backgroundColor: 'rgba(139, 92, 246, 0.08)',
-                borderWidth: 3,
-                tension: 0.3, 
-                fill: true,
-                pointRadius: 4,
-                pointBackgroundColor: '#8b5cf6'
-            }]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { 
-                y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, 
-                x: { grid: { display: false }, ticks: { font: { size: 10 } } } 
-            }
-        }
-    });
-
-    const ctxTop = document.getElementById('topProductsChart').getContext('2d');
-    topProductsChartInstance = new Chart(ctxTop, {
-        type: 'bar',
-        data: {
-            labels: ['Menunggu Berkas...'],
-            datasets: [{
-                label: 'Item Terjual (pcs)',
-                data: [0],
-                backgroundColor: '#10b981', 
-                borderRadius: 4,
-                borderWidth: 0,
-                barPercentage: 0.5
-            }]
-        },
-        options: {
-            indexAxis: 'y', 
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { 
-                x: { beginAtZero: true, grid: { color: '#f1f5f9' } }, 
-                y: { grid: { display: false }, ticks: { font: { size: 11, weight: '700' } } } 
-            }
-        }
-    });
+    salesChartInstance = new Chart(document.getElementById('salesChart').getContext('2d'), { type: 'bar', data: { labels: ['Produk Utama', 'Aksesoris', 'Grade B'], datasets: [{ data: [0, 0, 0], backgroundColor: ['#ec4899', '#2563eb', '#f59e0b'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+    trendChartInstance = new Chart(document.getElementById('trendChart').getContext('2d'), { type: 'line', data: { labels: ['Mulai'], datasets: [{ data: [0], borderColor: '#8b5cf6', fill: true }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+    topProductsChartInstance = new Chart(document.getElementById('topProductsChart').getContext('2d'), { type: 'bar', data: { labels: ['Menunggu...'], datasets: [{ data: [0], backgroundColor: '#10b981' }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
 }
 
 function populateFilterDropdown() {
     dropdownFilter.innerHTML = '<option value="all">-- Tampilkan Semua Produk --</option>';
-    
-    const activeTab = document.querySelector('.sub-tab.active');
-    const currentCategory = activeTab ? activeTab.getAttribute('data-category') : 'utama';
-
-    let namaProdukUnikSet = new Set();
-
-    if (globalDataKategori[currentCategory]) {
-        Object.values(globalDataKategori[currentCategory]).forEach(item => {
-            if (item.nama) {
-                namaProdukUnikSet.add(item.nama.trim().toUpperCase());
-            }
-        });
-    }
-
-    const sortedNamaProduk = Array.from(namaProdukUnikSet).sort();
-    sortedNamaProduk.forEach(nama => {
-        const opt = document.createElement('option');
-        opt.value = nama; opt.innerText = nama;
-        dropdownFilter.appendChild(opt);
-    });
-
+    const cat = document.querySelector('.sub-tab.active')?.getAttribute('data-category') || 'utama';
+    let names = new Set();
+    if (globalDataKategori[cat]) Object.values(globalDataKategori[cat]).forEach(i => { if (i.nama) names.add(i.nama.trim().toUpperCase()); });
+    Array.from(names).sort().forEach(n => { const opt = document.createElement('option'); opt.value = n; opt.innerText = n; dropdownFilter.appendChild(opt); });
     dropdownFilter.value = activeFilterText;
 }
 
@@ -735,211 +444,103 @@ dropdownFilter.addEventListener('change', (e) => { activeFilterText = e.target.v
 btnFilterReset.addEventListener('click', () => { dropdownFilter.value = "all"; activeFilterText = "all"; refreshAllTables(); });
 
 btnFileReset.addEventListener('click', () => {
-    totalMasterFiles = 0;
-    fileBadge.innerText = '0 File Terupload';
-    resetKalkulatorDataState();
-    
-    if (dashFilterDropdown) dashFilterDropdown.value = "all"; 
-    dashTotalTerjual.innerText = '0';
-    dashSkuAktif.innerText = '0';
-    dashFileCount.innerText = '0';
-    
-    if (salesChartInstance) { salesChartInstance.data.datasets[0].data = [0, 0, 0]; salesChartInstance.update(); }
-    if (topProductsChartInstance) { topProductsChartInstance.data.labels = ["Kosong"]; topProductsChartInstance.data.datasets[0].data = [0]; topProductsChartInstance.update(); }
-    
-    if (manualNamaDropdown) manualNamaDropdown.value = "";
-    if (manualTypeDropdown) { manualTypeDropdown.innerHTML = '<option value="">-- Type --</option>'; manualTypeDropdown.disabled = true; }
-    if (manualWarnaDropdown) { manualWarnaDropdown.innerHTML = '<option value="">-- Warna --</option>'; manualWarnaDropdown.disabled = true; }
-    if (manualQtyInput) manualQtyInput.value = "";
-
-    updateStatusMessage('Siap.');
+    totalMasterFiles = 0; fileBadge.innerText = '0 File Terupload'; resetKalkulatorDataState();
+    dashTotalTerjual.innerText = '0'; dashSkuAktif.innerText = '0'; dashFileCount.innerText = '0';
 });
 
-function updateStatusMessage(msg) { statusBar.innerText = msg; }
-
+// 6. COPY AND SAVE HISTORY METHODS
 btnCopyQty.addEventListener('click', () => {
     const cat = document.querySelector('.sub-tab.active').getAttribute('data-category');
-    const data = globalDataKategori[cat];
-    let txt = ""; 
-    
-    Object.keys(data).sort().forEach(k => { 
-        if (activeFilterText !== "all" && data[k].nama !== activeFilterText) return;
-        txt += `${data[k].qty}\n`; 
-    });
-    
-    navigator.clipboard.writeText(txt).then(() => updateStatusMessage('Berhasil copy angka Qty saja ke clipboard.'));
+    let txt = ""; Object.keys(globalDataKategori[cat]).sort().forEach(k => { if (activeFilterText === "all" || globalDataKategori[cat][k].nama === activeFilterText) txt += `${globalDataKategori[cat][k].qty}\n`; });
+    navigator.clipboard.writeText(txt).then(() => updateStatusMessage('Qty copied.'));
 });
 
 btnSaveHistory.addEventListener('click', () => {
-    const sumQty = (obj) => Object.values(obj).reduce((s, i) => s + i.qty, 0);
-    const total = sumQty(globalDataKategori.utama) + sumQty(globalDataKategori.aksesoris) + sumQty(globalDataKategori.gradeb);
-    
-    if (total === 0) {
-        updateStatusMessage("Gagal menyimpan: Tidak ada data Qty penjualan.");
-        return;
-    }
+    const sum = (o) => Object.values(o).reduce((s, i) => s + i.qty, 0);
+    const tot = sum(globalDataKategori.utama) + sum(globalDataKategori.aksesoris) + sum(globalDataKategori.gradeb);
+    if (tot === 0) return;
 
-    updateStatusMessage("Sedang mengirim data riwayat lengkap ke Cloud Spreadsheet...");
-    const waktuSkrg = new Date().toLocaleString('id-ID');
-    const detailSnapshotString = JSON.stringify(globalDataKategori);
+    updateStatusMessage("Mengirim data harian...");
+    const payload = new URLSearchParams();
+    payload.append('action', 'save'); payload.append('waktu', new Date().toLocaleString('id-ID'));
+    payload.append('files', totalMasterFiles); payload.append('total', tot); payload.append('detail', JSON.stringify(globalDataKategori));
 
-    const payloadData = new URLSearchParams();
-    payloadData.append('action', 'save');
-    payloadData.append('waktu', waktuSkrg);
-    payloadData.append('files', totalMasterFiles);
-    payloadData.append('total', total);
-    payloadData.append('detail', detailSnapshotString);
-
-    fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
-        body: payloadData,
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-    })
-    .then(res => res.json())
-    .then(result => {
-        if(result.status === "success") {
-            updateStatusMessage(`Sukses! Data penjualan (${total} pcs) dan detail SKU berhasil dikunci ke cloud.`);
-            fetchHistoryFromCloud(); 
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        updateStatusMessage("Gagal menyimpan ke server spreadsheet. Periksa koneksi internet.");
-    });
+    fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
+    .then(res => res.json()).then(() => { updateStatusMessage("Sukses tersimpan di Cloud!"); fetchHistoryFromCloud(); });
 });
 
 function fetchHistoryFromCloud() {
-    const historyBox = document.getElementById('history-list-container');
-    if (!historyBox) return;
-
-    fetch(`${GOOGLE_SCRIPT_URL}?action=fetch`)
-        .then(res => res.json())
-        .then(logs => {
-            if (logs.length === 0) {
-                historyBox.className = "empty-state-card";
-                historyBox.innerHTML = "<p>Belum ada riwayat pemrosesan log data penjualan yang disimpan di Google Sheets.</p>";
-                return;
-            }
-
-            historyBox.className = "";
-            historyBox.innerHTML = '<div class="table-responsive"><table><thead><tr><th>Waktu Simpan</th><th>Files Terproses</th><th>Total Qty Item</th><th style="text-align: center; width: 140px;">Aksi</th></tr></thead><tbody id="tbody-history"></tbody></table></div>';
-            
-            const tbodyHist = document.getElementById('tbody-history');
-            globalHistoryCloudCache = {}; 
-
-            logs.reverse().forEach(log => {
-                globalHistoryCloudCache[log.waktu] = log.detail;
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${log.waktu}</td>
-                    <td><span class="badge-file-status" style="height:22px; font-size:11px;">${log.files} Berkas</span></td>
-                    <td style="color: #ec4899; font-weight: bold;">${log.total} pcs</td>
-                    <td style="text-align: center;">
-                        <button class="btn-action btn-pink-solid btn-download-history" data-waktu="${log.waktu}" style="height: 24px; font-size: 11px; padding: 0 10px; line-height: 1;">Download 📄</button>
-                    </td>
-                `;
-                tbodyHist.appendChild(tr);
-            });
-
-            document.querySelectorAll('.btn-download-history').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const targetWaktu = e.target.getAttribute('data-waktu');
-                    let rawDetailData = globalHistoryCloudCache[targetWaktu];
-
-                    if (!rawDetailData) {
-                        alert("⚠️ Detail data lengkap gagal diurai dari basis data awan.");
-                        return;
-                    }
-
-                    let targetDataSnapshot = typeof rawDetailData === 'string' ? JSON.parse(rawDetailData) : rawDetailData;
-                    const wb = XLSX.utils.book_new();
-
-                    const bentukMatriksLembarKerja = (dataKategori) => {
-                        let matriks = [["SKU", "Nama Produk", "Type", "Warna", "Kuantitas (Qty)"]];
-                        Object.keys(dataKategori).sort().forEach(sku => {
-                            matriks.push([sku, dataKategori[sku].nama, dataKategori[sku].type, dataKategori[sku].warna, dataKategori[sku].qty]);
-                        });
-                        return matriks;
-                    };
-
-                    const wsUtama = XLSX.utils.aoa_to_sheet(bentukMatriksLembarKerja(targetDataSnapshot.utama));
-                    XLSX.utils.book_append_sheet(wb, wsUtama, "Produk Utama");
-
-                    const wsAksesoris = XLSX.utils.aoa_to_sheet(bentukMatriksLembarKerja(targetDataSnapshot.aksesoris));
-                    XLSX.utils.book_append_sheet(wb, wsAksesoris, "Aksesoris");
-
-                    const wsGradeB = XLSX.utils.aoa_to_sheet(bentukMatriksLembarKerja(targetDataSnapshot.gradeb));
-                    XLSX.utils.book_append_sheet(wb, wsGradeB, "Grade B");
-
-                    let namaFileAman = targetWaktu.replace(/[^a-zA-Z0-9]/g, "_");
-                    XLSX.writeFile(wb, `Latela_Laporan_Cloud_${namaFileAman}.xlsx`);
-                    updateStatusMessage(`Sukses mengunduh detail riwayat tanggal ${targetWaktu}`);
-                });
-            });
-
-            if (trendChartInstance && logs.length > 0) {
-                let dataPembatasTrend = logs.slice(-8);
-                let labelSumbuX = dataPembatasTrend.map(item => item.waktu.split(',')[0]);
-                let dataSumbuY = dataPembatasTrend.map(item => parseInt(item.total.toString().replace(/[^0-9]/g, ""), 10) || 0);
-
-                trendChartInstance.data.labels = labelSumbuX.reverse();
-                trendChartInstance.data.datasets[0].data = dataSumbuY.reverse();
-                trendChartInstance.update();
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            historyBox.innerHTML = "<p style='color: red; text-align:center;'>Gagal memuat log riwayat dari spreadsheet cloud.</p>";
+    const container = document.getElementById('history-list-container'); if (!container) return;
+    fetch(`${GOOGLE_SCRIPT_URL}?action=fetch`).then(res => res.json()).then(logs => {
+        if (!logs.length) return; container.className = "";
+        container.innerHTML = '<div class="table-responsive"><table><thead><tr><th>Waktu Simpan</th><th>Files</th><th>Total Qty</th><th>Aksi</th></tr></thead><tbody id="tbody-history"></tbody></table></div>';
+        const tbody = document.getElementById('tbody-history');
+        logs.reverse().forEach(log => {
+            globalHistoryCloudCache[log.waktu] = log.detail;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${log.waktu}</td><td>${log.files} Berkas</td><td style="color:#ec4899; font-weight:bold;">${log.total} pcs</td><td><button class="btn-action btn-pink-solid btn-download-history" data-waktu="${log.waktu}">Download</button></td>`;
+            tbody.appendChild(tr);
         });
+        document.querySelectorAll('.btn-download-history').forEach(b => {
+            b.addEventListener('click', (e) => {
+                let snap = JSON.parse(globalHistoryCloudCache[e.target.getAttribute('data-waktu')]);
+                const wb = XLSX.utils.book_new();
+                const fmt = (d) => { let m = [["SKU", "Nama", "Type", "Warna", "Qty"]]; Object.keys(d).sort().forEach(k => m.push([k, d[k].nama, d[k].type, d[k].warna, d[k].qty])); return XLSX.utils.aoa_to_sheet(m); };
+                XLSX.utils.book_append_sheet(wb, fmt(snap.utama), "Produk Utama"); XLSX.utils.book_append_sheet(wb, fmt(snap.aksesoris), "Aksesoris"); XLSX.utils.book_append_sheet(wb, fmt(snap.gradeb), "Grade B");
+                XLSX.writeFile(wb, `Laporan_Cloud_${e.target.getAttribute('data-waktu').replace(/[^a-zA-Z0-9]/g, "_")}.xlsx`);
+            });
+        });
+    });
 }
 
 function generateMasterArrayFormat() {
-    let outputMatrix = [["Kategori", "SKU", "Nama Produk", "Type", "Warna", "Kuantitas (Qty)"]];
-    const insertRows = (namaKategori, dataObjek) => {
-        Object.keys(dataObjek).sort().forEach(sku => {
-            outputMatrix.push([namaKategori, sku, dataObjek[sku].nama, dataObjek[sku].type, dataObjek[sku].warna, dataObjek[sku].qty]);
-        });
-    };
-    insertRows("PRODUK UTAMA", globalDataKategori.utama);
-    insertRows("AKSESORIS", globalDataKategori.aksesoris);
-    insertRows("GRADE B", globalDataKategori.gradeb);
-    return outputMatrix;
+    let m = [["Kategori", "SKU", "Nama", "Type", "Warna", "Qty"]];
+    const ins = (n, o) => Object.keys(o).sort().forEach(k => m.push([n, k, o[k].nama, o[k].type, o[k].warna, o[k].qty]));
+    ins("PRODUK UTAMA", globalDataKategori.utama); ins("AKSESORIS", globalDataKategori.aksesoris); ins("GRADE B", globalDataKategori.gradeb); return m;
 }
 
 btnExportXlsx.addEventListener('click', () => {
-    if (Object.keys(masterSkus).length === 0) {
-        updateStatusMessage("Gagal Export: Data Master SKU dari cloud kosong.");
-        return;
-    }
     const wb = XLSX.utils.book_new();
-    const bentukMatriksLembarKerja = (dataKategori) => {
-        let matriks = [["SKU", "Nama Produk", "Type", "Warna", "Kuantitas (Qty)"]];
-        Object.keys(dataKategori).sort().forEach(sku => {
-            matriks.push([sku, dataKategori[sku].nama, dataKategori[sku].type, dataKategori[sku].warna, dataKategori[sku].qty]);
-        });
-        return matriks;
-    };
-
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(bentukMatriksLembarKerja(globalDataKategori.utama)), "Produk Utama");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(bentukMatriksLembarKerja(globalDataKategori.aksesoris)), "Aksesoris");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(bentukMatriksLembarKerja(globalDataKategori.gradeb)), "Grade B");
-
-    const tanggalFormat = new Date().toISOString().slice(0,10);
-    XLSX.writeFile(wb, `Latela_Laporan_Penjualan_Tabs_${tanggalFormat}.xlsx`);
-    updateStatusMessage("Sukses mengunduh Excel mewah terpisah 3 tab kategori!");
+    const fmt = (d) => { let m = [["SKU", "Nama", "Type", "Warna", "Qty"]]; Object.keys(d).sort().forEach(k => m.push([k, d[k].nama, d[k].type, d[k].warna, d[k].qty])); return XLSX.utils.aoa_to_sheet(m); };
+    XLSX.utils.book_append_sheet(wb, fmt(globalDataKategori.utama), "Produk Utama"); XLSX.utils.book_append_sheet(wb, fmt(globalDataKategori.aksesoris), "Aksesoris"); XLSX.utils.book_append_sheet(wb, fmt(globalDataKategori.gradeb), "Grade B");
+    XLSX.writeFile(wb, `Laporan_Tabs_${new Date().toISOString().slice(0,10)}.xlsx`);
 });
 
 btnExportCsv.addEventListener('click', () => {
-    const matrixData = generateMasterArrayFormat();
-    if (matrixData.length === 1) { updateStatusMessage("Gagal Export: Data tabel kalkulator kosong."); return; }
-    const ws = XLSX.utils.aoa_to_sheet(matrixData);
-    const csvContent = XLSX.utils.sheet_to_csv(ws);
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const tanggalFormat = new Date().toISOString().slice(0,10);
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute("download", `Latela_Rangkuman_Penjualan_${tanggalFormat}.csv`);
-    document.body.appendChild(link); link.click(); document.body.removeChild(link);
-    updateStatusMessage("Sukses mengunduh laporan berkas teks (.csv).");
+    const ws = XLSX.utils.aoa_to_sheet(generateMasterArrayFormat());
+    const blob = new Blob([XLSX.utils.sheet_to_csv(ws)], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.setAttribute("download", `Laporan_${new Date().toISOString().slice(0,10)}.csv`); a.click();
+});
+
+// 7. INPUT MANUAL BERANTAI DROPDOWN
+function populateManualNamaDropdown() {
+    if (!manualNamaDropdown) return; manualNamaDropdown.innerHTML = '<option value="">-- Pilih Produk --</option>';
+    let names = new Set(); Object.values(masterSkus).forEach(i => { if (i.nama) names.add(i.nama.trim().toUpperCase()); });
+    Array.from(names).sort().forEach(n => { const opt = document.createElement('option'); opt.value = n; opt.innerText = n; manualNamaDropdown.appendChild(opt); });
+}
+
+manualNamaDropdown.addEventListener('change', () => {
+    const sNama = manualNamaDropdown.value; manualTypeDropdown.innerHTML = '<option value="">-- Type --</option>'; manualWarnaDropdown.innerHTML = '<option value="">-- Warna --</option>'; manualWarnaDropdown.disabled = true;
+    if (!sNama) { manualTypeDropdown.disabled = true; return; }
+    let types = new Set(); Object.values(masterSkus).forEach(i => { if (i.nama === sNama && i.type) types.add(i.type.trim()); });
+    Array.from(types).sort().forEach(t => { const opt = document.createElement('option'); opt.value = t; opt.innerText = t; manualTypeDropdown.appendChild(opt); });
+    manualTypeDropdown.disabled = false;
+});
+
+manualTypeDropdown.addEventListener('change', () => {
+    const sNama = manualNamaDropdown.value; const sType = manualTypeDropdown.value; manualWarnaDropdown.innerHTML = '<option value="">-- Warna --</option>';
+    if (!sType) { manualWarnaDropdown.disabled = true; return; }
+    let warnas = new Set(); Object.values(masterSkus).forEach(i => { if (i.nama === sNama && i.type === sType && i.warna) warnas.add(i.warna.trim()); });
+    Array.from(warnas).sort().forEach(w => { const opt = document.createElement('option'); opt.value = w; opt.innerText = w; manualWarnaDropdown.appendChild(opt); });
+    manualWarnaDropdown.disabled = false;
+});
+
+btnAddManual.addEventListener('click', () => {
+    const n = manualNamaDropdown.value; const t = manualTypeDropdown.value; const w = manualWarnaDropdown.value; const q = parseInt(manualQtyInput.value, 10);
+    if (!n || !t || !w || isNaN(q) || q <= 0) return;
+    let tSku = null; for (let k in masterSkus) { if (masterSkus[k].nama === n && masterSkus[k].type === t && masterSkus[k].warna === w) { tSku = k; break; } }
+    if (tSku) {
+        const cat = masterSkus[tSku].kategori;
+        if (globalDataKategori[cat] && globalDataKategori[cat][tSku]) { globalDataKategori[cat][tSku].qty += q; refreshAllTables(); updateDashboardMetrics(); manualQtyInput.value = ""; }
+    }
 });
