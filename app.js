@@ -300,28 +300,29 @@ if (btnAddProc) {
         const satuan = procSatuan ? procSatuan.value : 'Roll'; 
 
         if(!jenisBarang || !warnaLatela || isNaN(qty) || qty <= 0) { updateStatusMessage("⚠️ Gagal: Isi Qty dengan benar."); return; }
-        
         currentPoBasket.push({ jenisBarang, warnaLatela, kodeWarnaVendor, vendor, kodeVendor, namaKain, qty, satuan });
         renderProcurementTable(); 
-        
-        // --- RESET DROPDOWN (TAPI NO PO & TANGGAL TETAP) ---
-        if (procJenisBarang) procJenisBarang.value = '';
-        if (procWarnaLatela) { procWarnaLatela.value = ''; procWarnaLatela.disabled = true; }
-        if (procKodeWarnaVendor) procKodeWarnaVendor.value = ''; 
-        if (procVendor) procVendor.value = ''; 
-        if (procKodeVendor) procKodeVendor.value = ''; 
-        if (procNamaKain) procNamaKain.value = ''; 
         if (procQty) procQty.value = '';
-        if (procSatuan) procSatuan.value = 'Roll';
-        
         updateStatusMessage(`Sukses menambah pesanan ${jenisBarang} (${warnaLatela}) ke list PO.`);
+    });
+}
+
+function renderProcurementTable() {
+    if (!tbodyProcurementList) return;
+    if(currentPoBasket.length === 0) {
+        tbodyProcurementList.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #94a3b8; font-style: italic;">Belum ada item ditambahkan ke Surat PO.</td></tr>`; return;
+    }
+    tbodyProcurementList.innerHTML = '';
+    currentPoBasket.forEach((item) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><strong>${item.jenisBarang}</strong></td><td><code>${item.warnaLatela}</code></td><td>${item.kodeWarnaVendor}</td><td>${item.vendor}</td><td><strong>${item.kodeVendor}</strong></td><td>${item.namaKain}</td><td style="text-align: right; padding-right:25px; color:#2563eb;">${item.qty} ${item.satuan}</td>`;
+        tbodyProcurementList.appendChild(tr);
     });
 }
 
 if (btnResetPo) {
     btnResetPo.addEventListener('click', () => {
         currentPoBasket = []; renderProcurementTable();
-        // Reset Semua termasuk No PO & Tanggal
         if (procNoPo) procNoPo.value = ''; 
         if (procJenisBarang) procJenisBarang.value = ''; 
         if (procWarnaLatela) { procWarnaLatela.value = ''; procWarnaLatela.disabled = true; }
@@ -332,9 +333,15 @@ if (btnResetPo) {
         if (procQty) procQty.value = '';
         if (procSatuan) procSatuan.value = 'Roll';
         
+        // Reset Tanggal PO ke Hari Ini Kembali
         if (procTanggalPo) {
             const hariIni = new Date();
-            procTanggalPo.value = hariIni.toISOString().split('T')[0];
+            const yyyy = hariIni.getFullYear();
+            let mm = hariIni.getMonth() + 1; 
+            let dd = hariIni.getDate();
+            if (mm < 10) mm = '0' + mm;
+            if (dd < 10) dd = '0' + dd;
+            procTanggalPo.value = `${yyyy}-${mm}-${dd}`;
         }
     });
 }
