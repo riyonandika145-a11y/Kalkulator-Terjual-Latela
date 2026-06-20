@@ -58,7 +58,8 @@ const manualWarnaDropdown = document.getElementById('manual-warna-dropdown');
 const manualQtyInput = document.getElementById('manual-qty-input');
 const btnAddManual = document.getElementById('btn-add-manual');
 
-// SELEKTOR PROCUREMENT DROPDOWN BERANTAI
+// 🛠️ SELEKTOR PROCUREMENT DROPDOWN BERANTAI TERBARU
+const procNoPo = document.getElementById('proc-no-po');
 const procJenisBarang = document.getElementById('proc-jenis-barang');
 const procWarnaLatela = document.getElementById('proc-warna-latela');
 const procKodeWarnaVendor = document.getElementById('proc-kode-warna-vendor');
@@ -66,6 +67,7 @@ const procVendor = document.getElementById('proc-vendor');
 const procKodeVendor = document.getElementById('proc-kode-vendor');
 const procNamaKain = document.getElementById('proc-nama-kain');
 const procQty = document.getElementById('proc-qty');
+const procSatuan = document.getElementById('proc-satuan');
 const btnAddProc = document.getElementById('btn-add-proc');
 const btnExportPo = document.getElementById('btn-export-po');
 const btnResetPo = document.getElementById('btn-reset-po');
@@ -211,7 +213,7 @@ function fetchVendorMappingFromCloud() {
 
             let uniqueJenis = new Set();
             data.forEach(row => {
-                let jenis = row['Jenis Barang'] || row['jenis_barang'];
+                let jenis = row['Jenis Barang'] || row['jenis_barang'] || row['Jenis barang'] || row['JENIS BARANG'];
                 if(jenis) uniqueJenis.add(jenis.toString().trim());
             });
             Array.from(uniqueJenis).sort().forEach(jenis => {
@@ -235,8 +237,8 @@ if (procJenisBarang) {
 
         let uniqueWarna = new Set();
         globalVendorRawData.forEach(row => {
-            let jenis = row['Jenis Barang'] || row['jenis_barang'];
-            let warna = row['Kode Warna Latela'] || row['kode_warna_latela'];
+            let jenis = row['Jenis Barang'] || row['jenis_barang'] || row['Jenis barang'] || row['JENIS BARANG'];
+            let warna = row['Kode Warna Latela'] || row['kode_warna_latela'] || row['Kode warna latela'] || row['KODE WARNA LATELA'];
             if (jenis && jenis.toString().trim() === selectedJenis && warna) uniqueWarna.add(warna.toString().trim());
         });
         Array.from(uniqueWarna).sort().forEach(warna => {
@@ -260,15 +262,15 @@ if (procWarnaLatela) {
         }
 
         const matchedRow = globalVendorRawData.find(row => {
-            let jenis = row['Jenis Barang'] || row['jenis_barang'];
-            let warna = row['Kode Warna Latela'] || row['kode_warna_latela'];
+            let jenis = row['Jenis Barang'] || row['jenis_barang'] || row['Jenis barang'] || row['JENIS BARANG'];
+            let warna = row['Kode Warna Latela'] || row['kode_warna_latela'] || row['Kode warna latela'] || row['KODE WARNA LATELA'];
             return jenis && jenis.toString().trim() === selectedJenis && warna && warna.toString().trim() === selectedWarna;
         });
         if (matchedRow) {
-            if (procKodeWarnaVendor) procKodeWarnaVendor.value = matchedRow['Kode Warna Vendor'] || matchedRow['kode_warna_vendor'] || '-';
+            if (procKodeWarnaVendor) procKodeWarnaVendor.value = matchedRow['Kode Warna Vendor'] || matchedRow['kode_warna_vendor'] || matchedRow['Kode warna vendor'] || '-';
             if (procVendor) procVendor.value = matchedRow['Vendor'] || matchedRow['vendor'] || '-';
-            if (procKodeVendor) procKodeVendor.value = matchedRow['Kode Vendor'] || matchedRow['kode_vendor'] || '-';
-            if (procNamaKain) procNamaKain.value = matchedRow['Nama Kain'] || matchedRow['nama_kain'] || '-';
+            if (procKodeVendor) procKodeVendor.value = matchedRow['Kode Vendor'] || matchedRow['kode_vendor'] || matchedRow['Kode vendor'] || '-';
+            if (procNamaKain) procNamaKain.value = matchedRow['Nama Kain'] || matchedRow['nama_kain'] || matchedRow['Nama kain'] || '-';
         }
     });
 }
@@ -282,9 +284,10 @@ if (btnAddProc) {
         const kodeVendor = procKodeVendor ? procKodeVendor.value : ''; 
         const namaKain = procNamaKain ? procNamaKain.value : ''; 
         const qty = procQty ? parseInt(procQty.value, 10) : 0;
+        const satuan = procSatuan ? procSatuan.value : 'Roll'; // 🛠️ Tangkap pilihan satuan
 
-        if(!jenisBarang || !warnaLatela || isNaN(qty) || qty <= 0) { updateStatusMessage("⚠️ Gagal: Isi Qty roll order dengan benar."); return; }
-        currentPoBasket.push({ jenisBarang, warnaLatela, kodeWarnaVendor, vendor, kodeVendor, namaKain, qty });
+        if(!jenisBarang || !warnaLatela || isNaN(qty) || qty <= 0) { updateStatusMessage("⚠️ Gagal: Isi Qty dengan benar."); return; }
+        currentPoBasket.push({ jenisBarang, warnaLatela, kodeWarnaVendor, vendor, kodeVendor, namaKain, qty, satuan });
         renderProcurementTable(); 
         if (procQty) procQty.value = '';
         updateStatusMessage(`Sukses menambah pesanan ${jenisBarang} (${warnaLatela}) ke list PO.`);
@@ -299,7 +302,8 @@ function renderProcurementTable() {
     tbodyProcurementList.innerHTML = '';
     currentPoBasket.forEach((item) => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td><strong>${item.jenisBarang}</strong></td><td><code>${item.warnaLatela}</code></td><td>${item.kodeWarnaVendor}</td><td>${item.vendor}</td><td><strong>${item.kodeVendor}</strong></td><td>${item.namaKain}</td><td style="text-align: right; padding-right:25px; color:#2563eb;">${item.qty} Roll</td>`;
+        // 🛠️ Menampilkan Qty + Satuan yang dipilih dinamis di baris tabel preview
+        tr.innerHTML = `<td><strong>${item.jenisBarang}</strong></td><td><code>${item.warnaLatela}</code></td><td>${item.kodeWarnaVendor}</td><td>${item.vendor}</td><td><strong>${item.kodeVendor}</strong></td><td>${item.namaKain}</td><td style="text-align: right; padding-right:25px; color:#2563eb;">${item.qty} ${item.satuan}</td>`;
         tbodyProcurementList.appendChild(tr);
     });
 }
@@ -307,6 +311,7 @@ function renderProcurementTable() {
 if (btnResetPo) {
     btnResetPo.addEventListener('click', () => {
         currentPoBasket = []; renderProcurementTable();
+        if (procNoPo) procNoPo.value = ''; // 🛠️ Reset nomor PO
         if (procJenisBarang) procJenisBarang.value = ''; 
         if (procWarnaLatela) { procWarnaLatela.value = ''; procWarnaLatela.disabled = true; }
         if (procKodeWarnaVendor) procKodeWarnaVendor.value = ''; 
@@ -314,6 +319,7 @@ if (btnResetPo) {
         if (procKodeVendor) procKodeVendor.value = ''; 
         if (procNamaKain) procNamaKain.value = ''; 
         if (procQty) procQty.value = '';
+        if (procSatuan) procSatuan.value = 'Roll';
     });
 }
 
@@ -321,10 +327,24 @@ if (btnExportPo) {
     btnExportPo.addEventListener('click', () => {
         if(currentPoBasket.length === 0) return;
         const wb = XLSX.utils.book_new();
-        let matriksPO = [["SURAT PURCHASE ORDER (PO) BAHAN BAKU - CV ARSA"],[`Tanggal Pembuatan: ${new Date().toLocaleDateString('id-ID')}`],["Status Otorisasi: OSCM Supervisor Approved"],[],["Jenis Barang", "Kode Warna Latela", "Kode Warna Vendor", "Vendor", "Kode Vendor", "Nama Kain", "Kuantitas Pesanan (Roll)"]];
-        currentPoBasket.forEach(item => { matriksPO.push([item.jenisBarang, item.warnaLatela, item.kodeWarnaVendor, item.vendor, item.kodeVendor, item.namaKain, item.qty]); });
+        const noPoValue = procNoPo ? procNoPo.value.trim() : ''; // 🛠️ Ambil value nomor PO harian
+
+        let matriksPO = [
+            ["SURAT PURCHASE ORDER (PO) BAHAN BAKU - CV ARSA"],
+            [`Nomor PO          : ${noPoValue || '-'}`], // 🛠️ Tercetak otomatis di baris 2 Excel
+            [`Tanggal Pembuatan : ${new Date().toLocaleDateString('id-ID')}`],
+            ["Status Otorisasi : OSCM Supervisor Approved"],
+            [], 
+            ["Jenis Barang", "Kode Warna Latela", "Kode Warna Vendor", "Vendor", "Kode Vendor", "Nama Kain", "Kuantitas Pesanan", "Satuan"]
+        ];
+
+        currentPoBasket.forEach(item => { 
+            // 🛠️ Export terpisah antara Qty dan Satuan di Excel biar rapi
+            matriksPO.push([item.jenisBarang, item.warnaLatela, item.kodeWarnaVendor, item.vendor, item.kodeVendor, item.namaKain, item.qty, item.satuan]); 
+        });
+        
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(matriksPO), "Surat PO Vendor");
-        XLSX.writeFile(wb, `CV_Arsa_Surat_PO_${new Date().toISOString().slice(0,10)}.xlsx`);
+        XLSX.writeFile(wb, `CV_Arsa_Surat_PO_${noPoValue || new Date().toISOString().slice(0,10)}.xlsx`);
     });
 }
 
@@ -355,7 +375,6 @@ function renderMasterSkuDatabaseView() {
     if (sortedKeys.length === 0) return;
     sortedKeys.forEach(sku => {
         const tr = document.createElement('tr');
-        // 🌟 FIX TAKTIS: Teks "exportMe" resmi dihapus total dari baris di bawah ini
         tr.innerHTML = `<td><code>${sku}</code></td><td><strong>${masterSkus[sku].nama}</strong></td><td>${masterSkus[sku].type}</td><td>${masterSkus[sku].warna}</td><td style="text-transform: uppercase;">${masterSkus[sku].kategori}</td>`;
         if (tbodyMasterList) tbodyMasterList.appendChild(tr);
     });
@@ -466,7 +485,7 @@ function updateDashboardMetrics() {
 
 function populateDashboardDropdown() {
     if (!dashFilterDropdown) return; dashFilterDropdown.innerHTML = '<option value="all">-- Semua Produk --</option>';
-    let names = new Set(); Object.values(masterSkus).forEach(i => { if (i.nama) names.add(i.nama.trim().toUpperCase()); });
+    let names = new Set(); Object.values(masterSkus).forEach(i => { if (i.nama) names.add(i.trim().toUpperCase()); });
     Array.from(names).sort().forEach(n => { const opt = document.createElement('option'); opt.value = n; opt.innerText = n; dashFilterDropdown.appendChild(opt); });
 }
 if (dashFilterDropdown) { dashFilterDropdown.addEventListener('change', () => updateDashboardMetrics()); }
