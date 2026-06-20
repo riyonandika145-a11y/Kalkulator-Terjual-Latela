@@ -449,8 +449,8 @@ if (btnExportPo) {
         // --- TANDA TANGAN ---
         const finalY = doc.lastAutoTable.finalY + 60;
         doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
-        const signLeftCenterX = marginLeft + (contentWidth * 0.25);
-        const signRightCenterX = marginLeft + (contentWidth * 0.75);
+        const signLeftCenterX = marginLeft + (contentWidth * 0.15);
+        const signRightCenterX = marginLeft + (contentWidth * 0.85);
         doc.text('CV ARSA', signLeftCenterX, finalY, { align: 'center' });
         doc.text(vendorHeader, signRightCenterX, finalY, { align: 'center' });
 
