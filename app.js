@@ -357,33 +357,101 @@ if (btnResetPo) {
 
 if (btnExportPo) {
     btnExportPo.addEventListener('click', () => {
-        if(currentPoBasket.length === 0) return;
-        const wb = XLSX.utils.book_new();
-        const noPoValue = procNoPo ? procNoPo.value.trim() : ''; 
-        
-        // 🌟 FORMAT TANGGAL YANG DIPILIH USER
+        if(currentPoBasket.length === 0) { updateStatusMessage("⚠️ Belum ada item di list PO."); return; }
+        const noPoValue = procNoPo ? procNoPo.value.trim() : '';
+
+        // FORMAT TANGGAL YANG DIPILIH USER
         let rawSelectedDate = procTanggalPo ? procTanggalPo.value : '';
         let formattedDate = '-';
         if (rawSelectedDate) {
             const parts = rawSelectedDate.split('-');
-            if (parts.length === 3) formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`; // Ubah ke format DD/MM/YYYY
+            if (parts.length === 3) formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
         }
 
-        let matriksPO = [
-            ["SURAT PURCHASE ORDER (PO) BAHAN BAKU - CV ARSA"],
-            [`Nomor PO          : ${noPoValue || '-'}`], 
-            [`Tanggal PO         : ${formattedDate}`], // 🌟 MENCETAK TANGGAL AMAN PILIHAN USER KE EXCEL
-            ["Status Otorisasi : OSCM Supervisor Approved"],
-            [], 
-            ["Jenis Barang", "Kode Warna Latela", "Kode Warna Vendor", "Vendor", "Kode Vendor", "Nama Kain", "Kuantitas Pesanan", "Satuan"]
-        ];
+        // VENDOR DI HEADER DIAMBIL DARI ITEM PERTAMA DI LIST
+        const vendorHeader = currentPoBasket[0].vendor || '-';
 
-        currentPoBasket.forEach(item => { 
-            matriksPO.push([item.jenisBarang, item.warnaLatela, item.kodeWarnaVendor, item.vendor, item.kodeVendor, item.namaKain, item.qty, item.satuan]); 
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const marginLeft = 40;
+        const marginRight = 40;
+
+        // --- HEADER: NAMA PERUSAHAAN (KIRI) & JUDUL (KANAN) ---
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
+        doc.text('CV ARSA (ARSATEX)', marginLeft, 50);
+        doc.text('ORDER PEMBELIAN', pageWidth - marginRight, 50, { align: 'right' });
+
+        // --- ALAMAT (KIRI) ---
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+        doc.text('Jl. Majalaya No. 47', marginLeft, 70);
+        doc.text('Kp Majalaya Rt 001/002 Kel/Kec. Majalaya', marginLeft, 84);
+        doc.text('Bandung. Jawa Barat', marginLeft, 98);
+        doc.text('No Tlp :', marginLeft, 112);
+
+        // --- INFO PO (KANAN) ---
+        const infoLabelX = pageWidth - 220;
+        const infoColonX = pageWidth - 130;
+        const infoValueX = pageWidth - 122;
+        doc.text('Nomor PO', infoLabelX, 70); doc.text(':', infoColonX, 70); doc.text(noPoValue || '-', infoValueX, 70);
+        doc.text('Tanggal', infoLabelX, 84); doc.text(':', infoColonX, 84); doc.text(formattedDate, infoValueX, 84);
+        doc.text('Vendor', infoLabelX, 98); doc.text(':', infoColonX, 98); doc.text(vendorHeader, infoValueX, 98);
+
+        // --- TABEL ITEM (sesuai struktur template: NO | NAMA PRODUK | WARNA | KODE VENDOR | YDS | KG | ROLL) ---
+        const bodyRows = currentPoBasket.map((item, idx) => {
+            const isYds = item.satuan === 'Yards';
+            const isKg = item.satuan === 'Kg';
+            const isRoll = item.satuan === 'Roll';
+            return [
+                idx + 1,
+                item.jenisBarang || '-',
+                item.warnaLatela || '-',
+                item.kodeWarnaVendor || '-',
+                isYds ? item.qty : '',
+                isKg ? item.qty : '',
+                isRoll ? item.qty : ''
+            ];
         });
-        
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(matriksPO), "Surat PO Vendor");
-        XLSX.writeFile(wb, `CV_Arsa_Surat_PO_${noPoValue || new Date().toISOString().slice(0,10)}.xlsx`);
+        // Baris kosong tambahan biar konsisten seperti template (kalau item sedikit)
+        while (bodyRows.length < 8) bodyRows.push(['', '', '', '', '', '', '']);
+
+        doc.autoTable({
+            startY: 130,
+            margin: { left: marginLeft, right: marginRight },
+            head: [
+                [
+                    { content: 'NO', rowSpan: 2 },
+                    { content: 'NAMA PRODUK', rowSpan: 2 },
+                    { content: 'KODE WARNA', colSpan: 2, styles: { halign: 'center' } },
+                    { content: 'QUANTITY', colSpan: 3, styles: { halign: 'center' } }
+                ],
+                ['WARNA', 'KODE VENDOR', 'YDS', 'KG', 'ROLL']
+            ],
+            body: bodyRows,
+            theme: 'grid',
+            styles: { fontSize: 9, halign: 'center', valign: 'middle', lineColor: [0,0,0], lineWidth: 0.75, minCellHeight: 24 },
+            headStyles: { fillColor: [20,20,20], textColor: [255,255,255], fontStyle: 'bold' },
+            columnStyles: {
+                0: { cellWidth: 30 },
+                1: { cellWidth: 140, halign: 'left' },
+                2: { cellWidth: 80 },
+                3: { cellWidth: 80 },
+                4: { cellWidth: 40 },
+                5: { cellWidth: 40 },
+                6: { cellWidth: 40 }
+            }
+        });
+
+        // --- TANDA TANGAN ---
+        const finalY = doc.lastAutoTable.finalY + 60;
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
+        doc.text('CV ARSA', marginLeft + 40, finalY);
+        doc.text('PT MSU', pageWidth - marginRight - 100, finalY);
+        doc.text('(……………………………)', marginLeft, finalY + 60);
+        doc.text('(……………………………)', pageWidth - marginRight - 140, finalY + 60);
+
+        doc.save(`CV_Arsa_Surat_PO_${noPoValue || new Date().toISOString().slice(0,10)}.pdf`);
+        updateStatusMessage('PDF Surat PO berhasil dicetak & terdownload.');
     });
 }
 
