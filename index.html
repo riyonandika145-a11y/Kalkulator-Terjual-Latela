@@ -9,96 +9,324 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div id="loading-overlay" class="loading-overlay"><div class="loading-content"><img src="logo-loading.png" class="loading-logo-spinner" alt="Loading Latela"><p class="loading-text">Loading...</p></div></div>
+
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content">
+            <img src="logo-loading.png" class="loading-logo-spinner" alt="Loading Latela">
+            <p class="loading-text">Loading...</p>
+        </div>
+    </div>
 
     <div class="app-container">
         <aside class="sidebar">
             <button id="btn-toggle-sidebar" class="btn-toggle">☰</button>
+
             <div class="brand-section">
                 <img src="logo.jpeg" class="brand-logo" alt="Logo Latela" style="object-fit: contain;">
                 <h1 class="brand-title">LATELA</h1>
                 <h2 class="app-subtitle">KALKULATOR TERJUAL</h2>
             </div>
+
             <nav class="menu-container">
                 <span class="menu-label">MAIN MENU</span>
-                <button class="menu-item" data-target="dashboard"><span class="menu-text">Dashboard</span></button>
-                <button class="menu-item active" data-target="kalkulator"><span class="menu-text">Kalkulator Terjual</span></button>
-                <button class="menu-item" data-target="mastersku"><span class="menu-text">Master SKU</span></button>
-                <button class="menu-item" data-target="history"><span class="menu-text">History</span></button>
-                <button class="menu-item" data-target="procurement"><span class="menu-text">Procurement</span></button>
-                <a href="https://docs.google.com/spreadsheets/d/1b67HBw0kqhxMR8gaFTvLcuhOuFrTCdD-6md0N1PiXkU/edit?gid=0#gid=0" target="_blank" class="menu-item-external" id="menu-extension"><span class="menu-text">Extension</span></a>
+                <button class="menu-item" data-target="dashboard">
+                    <span class="menu-text">Dashboard</span>
+                </button>
+                <button class="menu-item active" data-target="kalkulator">
+                    <span class="menu-text">Kalkulator Terjual</span>
+                </button>
+                <button class="menu-item" data-target="mastersku">
+                    <span class="menu-text">Master SKU</span>
+                </button>
+                <button class="menu-item" data-target="history">
+                    <span class="menu-text">History</span>
+                </button>
+                
+                <button class="menu-item" data-target="procurement">
+                    <span class="menu-text">Procurement</span>
+                </button>
+                
+                <a href="https://docs.google.com/spreadsheets/d/1b67HBw0kqhxMR8gaFTvLcuhOuFrTCdD-6md0N1PiXkU/edit?gid=0#gid=0" target="_blank" class="menu-item-external" id="menu-extension">
+                    <span class="menu-text">Extension</span>
+                </a>
             </nav>
         </aside>
 
         <main class="main-content-wrapper">
             <div class="main-content">
+                
                 <section id="view-dashboard" class="content-view">
                     <h2 class="page-title">Dashboard Overview</h2>
-                    <div class="control-group" style="margin-bottom: 20px; background: #ffffff; padding: 12px 15px; border-radius: 6px; border: 1px solid var(--border-color); display: inline-flex;"><span class="group-label">Filter Produk Dashboard:</span><div class="group-inputs"><select id="dash-filter-dropdown" style="min-width: 220px; font-weight: 600;"><option value="all">-- Semua Produk --</option></select></div></div>
-                    <div class="cards-grid">
-                        <div class="card card-pink"><span class="card-label">Total Terjual</span><span class="card-value" id="dash-total-terjual">0</span></div>
-                        <div class="card card-blue"><span class="card-label">SKU Aktif</span><span class="card-value" id="dash-sku-aktif">0</span></div>
-                        <div class="card card-green"><span class="card-label">File</span><span class="card-value" id="dash-file-count">0</span></div>
+                    
+                    <div class="control-group" style="margin-bottom: 20px; background: #ffffff; padding: 12px 15px; border-radius: 6px; border: 1px solid var(--border-color); display: inline-flex;">
+                        <span class="group-label">Filter Produk Dashboard:</span>
+                        <div class="group-inputs">
+                            <select id="dash-filter-dropdown" style="min-width: 220px; font-weight: 600;">
+                                <option value="all">-- Semua Produk --</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="chart-container-card" style="margin-bottom: 20px;"><h3 class="chart-card-title">Proporsi Penjualan per Kategori</h3><div class="chart-canvas-wrapper"><canvas id="salesChart"></canvas></div></div>
+                    
+                    <div class="cards-grid">
+                        <div class="card card-pink">
+                            <span class="card-label">Total Terjual</span>
+                            <span class="card-value" id="dash-total-terjual">0</span>
+                        </div>
+                        <div class="card card-blue">
+                            <span class="card-label">SKU Aktif</span>
+                            <span class="card-value" id="dash-sku-aktif">0</span>
+                        </div>
+                        <div class="card card-green">
+                            <span class="card-label">File</span>
+                            <span class="card-value" id="dash-file-count">0</span>
+                        </div>
+                    </div>
+
+                    <div class="chart-container-card" style="margin-bottom: 20px;">
+                        <h3 class="chart-card-title">Proporsi Penjualan per Kategori</h3>
+                        <div class="chart-canvas-wrapper">
+                            <canvas id="salesChart"></canvas>
+                        </div>
+                    </div>
+
                     <div class="dashboard-double-row">
-                        <div class="chart-container-card"><h3 class="chart-card-title">Tren Volume Penjualan</h3><div class="chart-canvas-wrapper"><canvas id="trendChart"></canvas></div></div>
-                        <div class="chart-container-card"><h3 class="chart-card-title">Top 5 Produk Terlaris</h3><div class="chart-canvas-wrapper"><canvas id="topProductsChart"></canvas></div></div>
+                        <div class="chart-container-card">
+                            <h3 class="chart-card-title">Tren Volume Penjualan Historis Cloud</h3>
+                            <div class="chart-canvas-wrapper">
+                                <canvas id="trendChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="chart-container-card">
+                            <h3 class="chart-card-title">Peringkat 5 Produk Teratas Terlaris</h3>
+                            <div class="chart-canvas-wrapper">
+                                <canvas id="topProductsChart"></canvas>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
                 <section id="view-kalkulator" class="content-view active">
+                    
                     <div class="top-controls-bar">
-                        <div class="control-group"><span class="group-label">Filter:</span><div class="group-inputs"><select id="filter-dropdown"><option value="all">-- Semua Produk --</option></select><button id="btn-filter-reset" class="btn-action btn-gray-outline">Reset</button></div></div>
-                        <div class="control-group"><span class="group-label">File:</span><div class="group-inputs"><span id="file-badge" class="badge-file-status">0 File</span><button id="btn-add-file" class="btn-action btn-pink-solid">+ File</button><button id="btn-file-reset" class="btn-action btn-pink-outline">Reset</button><input type="file" id="file-input" accept=".xlsx, .xls" style="display: none;"></div></div>
-                        <div class="control-group"><span class="group-label">Manual:</span><div class="group-inputs"><select id="manual-nama-dropdown"><option value="">-- Pilih Produk --</option></select><select id="manual-type-dropdown" disabled><option value="">-- Type --</option></select><select id="manual-warna-dropdown" disabled><option value="">-- Warna --</option></select><input type="number" id="manual-qty-input" placeholder="Qty" style="width: 65px; border: 1px solid var(--border-color); border-radius: 4px;"><button id="btn-add-manual" class="btn-action btn-pink-solid">+ Manual</button></div></div>
-                        <div class="control-group"><span class="group-label">Actions:</span><div class="group-inputs"><button id="btn-save-history" class="btn-action btn-purple-solid">Save History</button><button id="btn-export-toggle" class="btn-action btn-blue-solid">Export ▾</button><button id="btn-copy-qty" class="btn-action btn-green-solid">Copy Qty</button></div></div>
+                        <div class="control-group">
+                            <span class="group-label">Filter Produk:</span>
+                            <div class="group-inputs">
+                                <select id="filter-dropdown">
+                                    <option value="all">-- Tampilkan Semua Produk --</option>
+                                </select>
+                                <button id="btn-filter-reset" class="btn-action btn-gray-outline">Reset</button>
+                            </div>
+                        </div>
+
+                        <div class="control-group">
+                            <span class="group-label">File Management:</span>
+                            <div class="group-inputs">
+                                <span id="file-badge" class="badge-file-status">0 File Terupload</span>
+                                <button id="btn-add-file" class="btn-action btn-pink-solid">+ File</button>
+                                <button id="btn-file-reset" class="btn-action btn-pink-outline">Reset</button>
+                                <input type="file" id="file-input" accept=".xlsx, .xls" style="display: none;">
+                            </div>
+                        </div>
+
+                        <div class="control-group">
+                            <span class="group-label">Input Manual:</span>
+                            <div class="group-inputs">
+                                <select id="manual-nama-dropdown">
+                                    <option value="">-- Pilih Produk --</option>
+                                </select>
+                                <select id="manual-type-dropdown" disabled>
+                                    <option value="">-- Type --</option>
+                                </select>
+                                <select id="manual-warna-dropdown" disabled>
+                                    <option value="">-- Warna --</option>
+                                </select>
+                                <input type="number" id="manual-qty-input" placeholder="Qty" min="1" style="width: 65px; height: 32px; padding: 0 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 12px; font-weight: 600;">
+                                <button id="btn-add-manual" class="btn-action btn-pink-solid">+ Manual</button>
+                            </div>
+                        </div>
+
+                        <div class="control-group">
+                            <span class="group-label">Data Actions:</span>
+                            <div class="group-inputs">
+                                <button id="btn-save-history" class="btn-action btn-purple-solid">Save History</button>
+                                
+                                <div class="export-dropdown-wrapper">
+                                    <button id="btn-export-toggle" class="btn-action btn-blue-solid">Export ▾</button>
+                                    <div id="export-menu-items" class="export-dropdown-menu">
+                                        <button id="btn-export-xlsx">📄 Export .XLSX</button>
+                                        <button id="btn-export-csv">📝 Export .CSV</button>
+                                    </div>
+                                </div>
+
+                                <button id="btn-copy-qty" class="btn-action btn-green-solid">Copy Qty</button>
+                            </div>
+                        </div>
                     </div>
+
                     <div class="workspace-panel">
-                        <div class="sub-tabs-container"><button class="sub-tab active" data-category="utama">PRODUK UTAMA</button><button class="sub-tab" data-category="aksesoris">AKSESORIS</button><button class="sub-tab" data-category="gradeb">GRADE B</button></div>
+                        <div class="sub-tabs-container">
+                            <button class="sub-tab active" data-category="utama">PRODUK UTAMA</button>
+                            <button class="sub-tab" data-category="aksesoris">AKSESORIS</button>
+                            <button class="sub-tab" data-category="gradeb">GRADE B</button>
+                        </div>
+
                         <div class="table-frame-box">
-                            <div id="panel-utama" class="sub-table-panel active"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align: right;">Qty</th></tr></thead><tbody id="tbody-utama"></tbody></table></div>
-                            <div id="panel-aksesoris" class="sub-table-panel"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align: right;">Qty</th></tr></thead><tbody id="tbody-aksesoris"></tbody></table></div>
-                            <div id="panel-gradeb" class="sub-table-panel"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align: right;">Qty</th></tr></thead><tbody id="tbody-gradeb"></tbody></table></div>
+                            <div id="panel-utama" class="sub-table-panel active">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 15%;">SKU</th>
+                                            <th style="width: 35%;">Nama</th>
+                                            <th style="width: 18%;">Type</th>
+                                            <th style="width: 17%;">Warna</th>
+                                            <th style="width: 15%; text-align: right;">Qty</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-utama"></tbody>
+                                </table>
+                            </div>
+
+                            <div id="panel-aksesoris" class="sub-table-panel">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 15%;">SKU</th>
+                                            <th style="width: 35%;">Nama</th>
+                                            <th style="width: 18%;">Type</th>
+                                            <th style="width: 17%;">Warna</th>
+                                            <th style="width: 15%; text-align: right;">Qty</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-aksesoris"></tbody>
+                                </table>
+                            </div>
+
+                            <div id="panel-gradeb" class="sub-table-panel">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 15%;">SKU</th>
+                                            <th style="width: 35%;">Nama</th>
+                                            <th style="width: 18%;">Type</th>
+                                            <th style="width: 17%;">Warna</th>
+                                            <th style="width: 15%; text-align: right;">Qty</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-gradeb"></tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </section>
 
                 <section id="view-mastersku" class="content-view">
                     <h2 class="page-title">Master Data SKU Cloud Database</h2>
-                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Total: <span id="master-sku-count">0</span> SKU</h3><button id="btn-sync-cloud" class="btn-action btn-pink-outline">🔄 Sync</button></div>
-                    <div class="table-responsive"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th>Kategori</th></tr></thead><tbody id="tbody-master-list"></tbody></table></div></div>
+                    <p class="section-desc">Data di bawah disinkronisasikan secara otomatis and terpusat langsung dari Google Sheets internal.</p>
+                    
+                    <div class="sku-list-card" style="width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;">
+                            <h3 style="border: none; margin: 0;">Total Sinkronisasi: <span id="master-sku-count">0</span> SKU</h3>
+                            <button id="btn-sync-cloud" class="btn-action btn-pink-outline" style="height: 28px; font-size: 11px;">🔄 Sync Ulang</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th style="width: 15%;">Nomor SKU / Code</th>
+                                        <th style="width: 35%;">Nama Produk Resmi Gudang</th>
+                                        <th style="width: 18%;">Type</th>
+                                        <th style="width: 17%;">Warna</th>
+                                        <th style="width: 15%;">Kategori</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-master-list">
+                                    <tr>
+                                        <td colspan="5" style="text-align: center; color: #94a3b8; font-style: italic;">Menghubungkan ke Cloud Database Google...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </section>
 
                 <section id="view-history" class="content-view">
                     <h2 class="page-title">History Log</h2>
-                    <div id="history-list-container" class="empty-state-card"><p>Tidak ada riwayat.</p></div>
+                    <div id="history-list-container" class="empty-state-card">
+                        <p>Belum ada riwayat pemrosesan log data penjualan yang disimpan di Google Sheets.</p>
+                    </div>
                 </section>
 
                 <section id="view-procurement" class="content-view">
                     <h2 class="page-title">Procurement & PO Generator</h2>
+                    
                     <div class="procurement-form-container" style="background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; display: flex; flex-direction: column; gap: 15px;">
+                        
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 12px;">
-                            <div style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 13px; font-weight: 700;">Nomor PO:</span><input type="text" id="proc-no-po" placeholder="Ketik nomor PO..." style="border: 1px solid #cbd5e1; height: 36px; padding: 0 12px; border-radius: 4px; font-size: 13px;"></div>
-                            <div style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 13px; font-weight: 700;">Tanggal PO:</span><input type="date" id="proc-tanggal-po" style="border: 1px solid #cbd5e1; height: 36px; padding: 0 12px; border-radius: 4px; font-size: 13px;"></div>
+                            <div style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 13px; font-weight: 700; color: #475569;">Nomor PO:</span><input type="text" id="proc-no-po" placeholder="Ketik nomor PO..." style="border: 1px solid #cbd5e1; height: 36px; padding: 0 12px; border-radius: 4px;"></div>
+                            <div style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 13px; font-weight: 700; color: #475569;">Tanggal PO:</span><input type="date" id="proc-tanggal-po" style="border: 1px solid #cbd5e1; height: 36px; padding: 0 12px; border-radius: 4px; background: #ffffff;"></div>
                         </div>
+
                         <div style="display: grid; grid-template-columns: 70% 30%; gap: 15px; align-items: start; border-bottom: 1px dashed #cbd5e1; padding-bottom: 15px;">
-                            <div style="display: flex; flex-direction: column; gap: 8px;"><span style="font-size: 13px; font-weight: 700;">Detail Vendor:</span>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;"><select id="proc-jenis-barang" style="height: 36px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;"><option value="">-- Jenis Barang --</option></select><select id="proc-warna-latela" disabled style="height: 36px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;"><option value="">-- Warna Latela --</option></select></div>
-                                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;"><input type="text" id="proc-kode-warna-vendor" placeholder="Kd Warna" readonly style="background: #f8fafc; border: 1px solid #e2e8f0; height: 32px; font-size: 10px; border-radius: 4px; text-align: center;"><input type="text" id="proc-vendor" placeholder="Vendor" readonly style="background: #f8fafc; border: 1px solid #e2e8f0; height: 32px; font-size: 10px; border-radius: 4px; text-align: center;"><input type="text" id="proc-kode-vendor" placeholder="Kd Vendor" readonly style="background: #f8fafc; border: 1px solid #e2e8f0; height: 32px; font-size: 10px; border-radius: 4px; text-align: center;"><input type="text" id="proc-nama-kain" placeholder="Kain" readonly style="background: #f8fafc; border: 1px solid #e2e8f0; height: 32px; font-size: 10px; border-radius: 4px; text-align: center;"></div>
+                            <div style="display: flex; flex-direction: column; gap: 8px;"><span style="font-size: 13px; font-weight: 700; color: #475569;">Detail Komponen Vendor:</span>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;"><select id="proc-jenis-barang" style="height: 36px; border: 1px solid #cbd5e1; border-radius: 4px;"><option value="">-- Jenis Barang --</option></select><select id="proc-warna-latela" disabled style="height: 36px; border: 1px solid #cbd5e1; border-radius: 4px;"><option value="">-- Warna Latela --</option></select></div>
+                                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;"><input type="text" id="proc-kode-warna-vendor" placeholder="Kd Warna" readonly style="background: #f8fafc; border: 1px solid #e2e8f0; height: 32px; font-size: 10px; border-radius: 4px; text-align: center;"><input type="text" id="proc-vendor" placeholder="Vendor" readonly style="background: #f8fafc; border: 1px solid #e2e8f0; height: 32px; font-size: 10px; border-radius: 4px; text-align: center;"><input type="text" id="proc-kode-vendor" placeholder="Kd Vendor" readonly style="background: #f8fafc; border: 1px solid #e2e8f0; height: 32px; font-size: 10px; border-radius: 4px; text-align: center;"><input type="text" id="proc-nama-kain" placeholder="Nama Kain" readonly style="background: #f8fafc; border: 1px solid #e2e8f0; height: 32px; font-size: 10px; border-radius: 4px; text-align: center;"></div>
                             </div>
-                            <div style="display: flex; flex-direction: column; gap: 8px; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;"><span style="font-size: 12px; font-weight: 700;">Qty & Satuan:</span>
-                                <div style="display: flex; gap: 5px;"><input type="number" id="proc-qty" placeholder="Qty" min="1" style="width: 60%; height: 36px; padding: 0 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; font-weight: 700; text-align: center;"><select id="proc-satuan" style="width: 40%; height: 36px; font-size: 11px; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 4px;"><option value="Roll">Roll</option><option value="Yards">Yards</option><option value="Kg">Kg</option></select></div>
+                            <div style="display: flex; flex-direction: column; gap: 6px; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;"><span style="font-size: 12px; font-weight: 700; color: #475569;">Qty & Satuan:</span>
+                                <div style="display: flex; gap: 5px;"><input type="number" id="proc-qty" placeholder="Qty" min="1" style="width: 60%; height: 36px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 700; text-align: center;"><select id="proc-satuan" style="width: 40%; height: 36px; font-size: 11px; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 4px;"><option value="Roll">Roll</option><option value="Yards">Yards</option><option value="Kg">Kg</option></select></div>
                             </div>
                         </div>
+
                         <div style="display: flex; justify-content: flex-end; gap: 10px; align-items: center;"><button id="btn-reset-po" style="height: 36px; padding: 0 20px; border: 1px solid #f472b6; color: #f472b6; border-radius: 4px; font-weight: 700; background: transparent; cursor: pointer;">Reset</button><button id="btn-export-po" style="height: 36px; padding: 0 20px; background: #2563eb; color: #fff; border: none; border-radius: 4px; font-weight: 700; cursor: pointer;">Cetak PO 📄</button><button id="btn-add-proc" style="height: 36px; padding: 0 20px; background: #ec4899; color: #fff; border: none; border-radius: 4px; font-weight: 700; cursor: pointer;">+ Tambah Item</button></div>
                     </div>
-                    <div class="sku-list-card" style="width: 100%;"><h3>Daftar Item Surat Pesanan (PO)</h3><div class="table-responsive"><table><thead><tr><th>Jenis Barang</th><th>Kode Warna Latela</th><th>Kode Warna Vendor</th><th>Vendor</th><th>Kode Vendor</th><th>Nama Kain</th><th style="text-align: right;">Jumlah Order</th></tr></thead><tbody id="tbody-procurement-list"></tbody></table></div></div>
+
+                    <div class="sku-list-card" style="width: 100%;">
+                        <h3>Daftar Item Surat Pesanan (PO)</h3>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Jenis Barang</th>
+                                        <th>Kode Warna Latela</th>
+                                        <th>Kode Warna Vendor</th>
+                                        <th>Vendor</th>
+                                        <th>Kode Vendor</th>
+                                        <th>Nama Kain</th>
+                                        <th style="text-align: right; padding-right:25px;">Jumlah Order</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-procurement-list">
+                                    <tr>
+                                        <td colspan="7" style="text-align: center; color: #94a3b8; font-style: italic;">Belum ada item ditambahkan ke Surat PO.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </section>
             </div>
             <footer class="status-footer" id="status-bar">Memuat sistem...</footer>
         </main>
     </div>
+
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span class="modal-icon">🔒</span>
+                <h3>Security Authentication</h3>
+            </div>
+            <div class="modal-body">
+                <p>Masukkan password otorisasi untuk mengakses database master Sheets:</p>
+                <input type="password" id="input-ext-password" placeholder="Ketik password di sini...">
+                <span id="modal-error-msg" class="modal-error"></span>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-modal-cancel" class="btn-action btn-gray-outline">Batal</button>
+                <button id="btn-modal-submit" class="btn-action btn-purple-solid">Masuk</button>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>
