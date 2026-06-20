@@ -43,7 +43,6 @@
                     <span class="menu-text">History</span>
                 </button>
                 
-                <!-- 🌟 MENU BARU: PROCUREMENT SESUAI IMAGE_9616E1.PNG -->
                 <button class="menu-item" data-target="procurement">
                     <span class="menu-text">Procurement</span>
                 </button>
@@ -263,11 +262,76 @@
                     </div>
                 </section>
 
-                <!-- 🌟 WADAH HALAMAN BARU: VIEW PROCUREMENT -->
+                <!-- 🌟 SECTION 5: UPDATE WORKSPACE PROCUREMENT SESUAI IMAGE_95AA63.PNG -->
                 <section id="view-procurement" class="content-view">
-                    <h2 class="page-title">Procurement Workspace</h2>
-                    <div class="empty-state-card">
-                        <p>Halaman Procurement sedang dalam pengembangan sistem supply chain.</p>
+                    <h2 class="page-title">Procurement & PO Generator</h2>
+                    
+                    <div class="top-controls-bar" style="background: #ffffff; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px;">
+                        <!-- 1. Dropdown Jenis Barang -->
+                        <div class="control-group">
+                            <span class="group-label">Jenis Barang:</span>
+                            <div class="group-inputs">
+                                <select id="proc-jenis-barang">
+                                    <option value="">-- Pilih Jenis Barang --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 2. Dropdown Kode Warna Latela (Chained) -->
+                        <div class="control-group">
+                            <span class="group-label">Kode Warna Latela:</span>
+                            <div class="group-inputs">
+                                <select id="proc-warna-latela" disabled>
+                                    <option value="">-- Pilih Warna Latela --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 3. Kolom Sisanya Terisi Otomatis (Readonly) -->
+                        <div class="control-group">
+                            <span class="group-label">Detail Otomatis Vendor:</span>
+                            <div class="group-inputs">
+                                <input type="text" id="proc-kode-warna-vendor" placeholder="Kode Warna Vendor" readonly style="background: #f1f5f9; border: 1px solid var(--border-color); height: 32px; padding: 0 10px; font-size: 12px; width: 130px; font-weight:600; border-radius:4px;">
+                                <input type="text" id="proc-vendor" placeholder="Vendor" readonly style="background: #f1f5f9; border: 1px solid var(--border-color); height: 32px; padding: 0 10px; font-size: 12px; width: 120px; font-weight:600; border-radius:4px;">
+                                <input type="text" id="proc-kode-vendor" placeholder="Kode Vendor" readonly style="background: #f1f5f9; border: 1px solid var(--border-color); height: 32px; padding: 0 10px; font-size: 12px; width: 110px; font-weight:600; border-radius:4px;">
+                                <input type="text" id="proc-nama-kain" placeholder="Nama Kain" readonly style="background: #f1f5f9; border: 1px solid var(--border-color); height: 32px; padding: 0 10px; font-size: 12px; width: 130px; font-weight:600; border-radius:4px;">
+                            </div>
+                        </div>
+
+                        <div class="control-group">
+                            <span class="group-label">Jumlah Order:</span>
+                            <div class="group-inputs">
+                                <input type="number" id="proc-qty" placeholder="Qty" min="1" style="width: 65px; height: 32px; padding: 0 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 12px; font-weight: 600;">
+                                <button id="btn-add-proc" class="btn-action btn-pink-solid">+ Item</button>
+                                <button id="btn-export-po" class="btn-action btn-blue-solid">Cetak PO 📄</button>
+                                <button id="btn-reset-po" class="btn-action btn-pink-outline">Reset</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabel Preview Item PO Sesuai image_95aa63.png -->
+                    <div class="sku-list-card" style="width: 100%;">
+                        <h3>Daftar Item Surat Pesanan (PO)</h3>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Jenis Barang</th>
+                                        <th>Kode Warna Latela</th>
+                                        <th>Kode Warna Vendor</th>
+                                        <th>Vendor</th>
+                                        <th>Kode Vendor</th>
+                                        <th>Nama Kain</th>
+                                        <th style="text-align: right; padding-right:25px;">Jumlah Order (Roll)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-procurement-list">
+                                    <tr>
+                                        <td colspan="7" style="text-align: center; color: #94a3b8; font-style: italic;">Belum ada item ditambahkan ke Surat PO.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
 
