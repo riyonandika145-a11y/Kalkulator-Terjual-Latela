@@ -1,7 +1,7 @@
 // =========================================================================
 // CLOUD DATABASE CONFIGURATION (GOOGLE SHEETS)
 // =========================================================================
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxsNrkkWNz08gs2iHiDg5sW-OYtvFARMUAulmJCQjLKF7Pk1ABeTOCtx2oPNPaRKfc/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9ZVSAObK0DbfXadHO9LIQGEaLlmFruZ4AR7HFpsYC2ONmKLGQCQ_93TuS_DpOwog/exec";
 
 // --- DOM SELEKTORS ---
 const loadingOverlay = document.getElementById('loading-overlay'); 
@@ -355,7 +355,8 @@ function renderMasterSkuDatabaseView() {
     if (sortedKeys.length === 0) return;
     sortedKeys.forEach(sku => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td><code>${sku}</code></td><td>exportMe<strong>${masterSkus[sku].nama}</strong></td><td>${masterSkus[sku].type}</td><td>${masterSkus[sku].warna}</td><td style="text-transform: uppercase;">${masterSkus[sku].kategori}</td>`;
+        // 🌟 FIX TAKTIS: Teks "exportMe" resmi dihapus total dari baris di bawah ini
+        tr.innerHTML = `<td><code>${sku}</code></td><td><strong>${masterSkus[sku].nama}</strong></td><td>${masterSkus[sku].type}</td><td>${masterSkus[sku].warna}</td><td style="text-transform: uppercase;">${masterSkus[sku].kategori}</td>`;
         if (tbodyMasterList) tbodyMasterList.appendChild(tr);
     });
     populateFilterDropdown();
