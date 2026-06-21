@@ -42,6 +42,13 @@ const btnSyncCloud = document.getElementById('btn-sync-cloud');
 
 const menuExtension = document.getElementById('menu-extension');
 
+// SELEKTOR WIDGET JAM & CUACA
+const clockTimeEl = document.getElementById('clock-time');
+const clockAmpmEl = document.getElementById('clock-ampm');
+const weatherTempEl = document.getElementById('weather-temp');
+const weatherDescEl = document.getElementById('weather-desc');
+const weatherIconBoxEl = document.getElementById('weather-icon-box');
+
 // SECURE MODAL POP-UP DOM
 const passwordModal = document.getElementById('password-modal');
 const inputExtPassword = document.getElementById('input-ext-password');
@@ -114,7 +121,77 @@ window.addEventListener('DOMContentLoaded', () => {
     fetchHistoryFromCloud(); 
     fetchVendorMappingFromCloud(); 
     initDashboardEmptyChart(); 
+
+    startLiveClock();
+    fetchLiveWeather();
+    setInterval(fetchLiveWeather, 15 * 60 * 1000); // refresh cuaca tiap 15 menit
 });
+
+// =========================================================================
+// WIDGET JAM REAL-TIME
+// =========================================================================
+function startLiveClock() {
+    const render = () => {
+        const now = new Date();
+        let h = now.getHours();
+        const m = now.getMinutes().toString().padStart(2, '0');
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12; if (h === 0) h = 12;
+        if (clockTimeEl) clockTimeEl.innerText = `${h}:${m}`;
+        if (clockAmpmEl) clockAmpmEl.innerText = ampm;
+    };
+    render();
+    setInterval(render, 1000);
+}
+
+// =========================================================================
+// WIDGET CUACA LIVE — Open-Meteo (gratis, tanpa API key) — Lokasi Bandung
+// =========================================================================
+const WEATHER_CODE_MAP = {
+    0: { text: 'Cerah', icon: '☀️' },
+    1: { text: 'Cerah Berawan', icon: '🌤️' },
+    2: { text: 'Berawan Sebagian', icon: '⛅' },
+    3: { text: 'Mendung', icon: '☁️' },
+    45: { text: 'Berkabut', icon: '🌫️' },
+    48: { text: 'Kabut Beku', icon: '🌫️' },
+    51: { text: 'Gerimis Ringan', icon: '🌦️' },
+    53: { text: 'Gerimis', icon: '🌦️' },
+    55: { text: 'Gerimis Lebat', icon: '🌧️' },
+    61: { text: 'Hujan Ringan', icon: '🌧️' },
+    63: { text: 'Hujan', icon: '🌧️' },
+    65: { text: 'Hujan Lebat', icon: '🌧️' },
+    71: { text: 'Salju Ringan', icon: '🌨️' },
+    73: { text: 'Salju', icon: '🌨️' },
+    75: { text: 'Salju Lebat', icon: '🌨️' },
+    80: { text: 'Hujan Sebentar', icon: '🌦️' },
+    81: { text: 'Hujan Deras Sebentar', icon: '🌧️' },
+    82: { text: 'Hujan Sangat Deras', icon: '⛈️' },
+    95: { text: 'Badai Petir', icon: '⛈️' },
+    96: { text: 'Badai Petir + Hujan Es', icon: '⛈️' },
+    99: { text: 'Badai Petir Hebat', icon: '⛈️' }
+};
+
+function fetchLiveWeather() {
+    // Koordinat Bandung, Jawa Barat
+    const lat = -6.9175, lon = 107.6191;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=Asia%2FJakarta`;
+
+    fetch(url)
+        .then(res => { if (!res.ok) throw new Error('Gagal mengambil data cuaca'); return res.json(); })
+        .then(data => {
+            const temp = Math.round(data.current.temperature_2m);
+            const code = data.current.weather_code;
+            const info = WEATHER_CODE_MAP[code] || { text: 'Tidak diketahui', icon: '🌡️' };
+
+            if (weatherTempEl) weatherTempEl.innerText = `${temp}°C`;
+            if (weatherDescEl) weatherDescEl.innerText = info.text;
+            if (weatherIconBoxEl) weatherIconBoxEl.innerText = info.icon;
+        })
+        .catch(() => {
+            if (weatherDescEl) weatherDescEl.innerText = 'Cuaca tidak tersedia';
+            if (weatherIconBoxEl) weatherIconBoxEl.innerText = '🌡️';
+        });
+}
 
 if (btnToggleSidebar) {
     btnToggleSidebar.addEventListener('click', () => {
