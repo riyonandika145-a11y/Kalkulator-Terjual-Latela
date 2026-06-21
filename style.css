@@ -11,25 +11,25 @@
     --blue-main: #2563eb;
     --green-main: #10b981;
 
-    /* 🌸 LIQUID GLASS TOKENS (soft pink) — versi lebih transparan & dramatis */
-    --glass-bg: rgba(255, 255, 255, 0.22);
-    --glass-bg-strong: rgba(255, 255, 255, 0.32);
-    --glass-pink-tint: rgba(236, 72, 153, 0.14);
-    --glass-border: rgba(255, 255, 255, 0.5);
-    --glass-border-pink: rgba(255, 255, 255, 0.45);
-    --glass-blur: blur(28px) saturate(180%);
-    --glass-shadow: 0 8px 32px rgba(236, 72, 153, 0.18), 0 1px 3px rgba(31, 38, 135, 0.1);
-    --glass-shadow-strong: 0 16px 48px rgba(236, 72, 153, 0.25), 0 2px 6px rgba(31, 38, 135, 0.12);
-    --glass-highlight: inset 0 1.5px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.25), inset 0 -8px 16px -8px rgba(236, 72, 153, 0.15);
+    /* 🌸 LIQUID GLASS TOKENS (soft pink) — kontras lebih tegas vs background */
+    --glass-bg: rgba(255, 255, 255, 0.42);
+    --glass-bg-strong: rgba(255, 255, 255, 0.55);
+    --glass-pink-tint: rgba(236, 72, 153, 0.16);
+    --glass-border: rgba(255, 255, 255, 0.75);
+    --glass-border-pink: rgba(255, 255, 255, 0.8);
+    --glass-blur: blur(24px) saturate(160%);
+    --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.15), 0 2px 6px rgba(236, 72, 153, 0.12);
+    --glass-shadow-strong: 0 16px 48px rgba(31, 38, 135, 0.2), 0 3px 8px rgba(236, 72, 153, 0.15);
+    --glass-highlight: inset 0 2px 0 rgba(255, 255, 255, 1), inset 0 0 0 1px rgba(255, 255, 255, 0.4), inset 0 -10px 20px -10px rgba(236, 72, 153, 0.2);
 }
 
-/* Backdrop ambient blobs supaya efek kaca punya sesuatu untuk "membiaskan" */
+/* Backdrop ambient blobs — lebih kecil & pekat agar ada area kontras jelas, bukan gradasi rata */
 body::before {
     content: "";
     position: fixed;
-    top: -15%; left: -15%;
-    width: 60vw; height: 60vw;
-    background: radial-gradient(circle, rgba(236,72,153,0.45), transparent 70%);
+    top: -8%; left: -8%;
+    width: 38vw; height: 38vw;
+    background: radial-gradient(circle, rgba(236,72,153,0.6), transparent 65%);
     border-radius: 50%;
     z-index: 0;
     pointer-events: none;
@@ -37,20 +37,20 @@ body::before {
 body::after {
     content: "";
     position: fixed;
-    bottom: -20%; right: -15%;
-    width: 65vw; height: 65vw;
-    background: radial-gradient(circle, rgba(139,92,246,0.4), transparent 70%);
+    bottom: -10%; right: -8%;
+    width: 42vw; height: 42vw;
+    background: radial-gradient(circle, rgba(139,92,246,0.55), transparent 65%);
     border-radius: 50%;
     z-index: 0;
     pointer-events: none;
 }
-/* Blob tambahan di tengah supaya pembiasan terasa di seluruh layar, bukan cuma pojok */
+/* Blob tambahan di tengah, lebih kecil & lebih pekat supaya jadi titik kontras, bukan menyebar rata */
 .app-container::before {
     content: "";
     position: fixed;
-    top: 30%; left: 40%;
-    width: 40vw; height: 40vw;
-    background: radial-gradient(circle, rgba(244,114,182,0.3), transparent 70%);
+    top: 35%; left: 55%;
+    width: 22vw; height: 22vw;
+    background: radial-gradient(circle, rgba(244,114,182,0.45), transparent 65%);
     border-radius: 50%;
     z-index: 0;
     pointer-events: none;
@@ -370,7 +370,7 @@ select {
 
 .sub-tab {
     padding: 8px 20px;
-    background-color: rgba(226, 232, 240, 0.18);
+    background-color: rgba(226, 232, 240, 0.3);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid var(--glass-border-pink);
@@ -412,19 +412,19 @@ select {
 .sub-table-panel.active { display: block; }
 
 table { width: 100%; border-collapse: collapse; background: transparent; }
-th, td { padding: 11px 18px; border-bottom: 1px solid rgba(255, 255, 255, 0.25); font-size: 13px; text-align: left; }
+th, td { padding: 11px 18px; border-bottom: 1px solid rgba(255, 255, 255, 0.5); font-size: 13px; text-align: left; }
 tbody tr:hover { background-color: rgba(255, 255, 255, 0.18); }
 
 table thead th { 
     position: sticky; 
     top: 0; 
-    background-color: rgba(252, 231, 243, 0.35);
+    background-color: rgba(252, 231, 243, 0.55);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     font-weight: 700; 
     color: #334155; 
     z-index: 10;
-    box-shadow: inset 0 -1px 0 rgba(255,255,255,0.6), inset 0 1px 0 rgba(255,255,255,0.4);
+    box-shadow: inset 0 -1.5px 0 rgba(236,72,153,0.25), inset 0 1.5px 0 rgba(255,255,255,0.7);
 }
 
 .sub-table-panel table td:last-child { text-align: right; font-weight: 700; color: var(--pink-main); padding-right: 25px; }
@@ -452,11 +452,11 @@ table thead th {
     border-radius: 10px;
 }
 .table-responsive table thead th {
-    position: sticky; top: 0; background-color: rgba(252, 231, 243, 0.35);
+    position: sticky; top: 0; background-color: rgba(252, 231, 243, 0.55);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     z-index: 10;
-    box-shadow: inset 0 -1px 0 rgba(255,255,255,0.6), inset 0 1px 0 rgba(255,255,255,0.4);
+    box-shadow: inset 0 -1.5px 0 rgba(236,72,153,0.25), inset 0 1.5px 0 rgba(255,255,255,0.7);
 }
 
 #tbody-master-list td:last-child { text-align: left; font-weight: 600; color: var(--pink-main); }
