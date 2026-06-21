@@ -49,6 +49,11 @@ const weatherTempEl = document.getElementById('weather-temp');
 const weatherDescEl = document.getElementById('weather-desc');
 const weatherIconBoxEl = document.getElementById('weather-icon-box');
 
+// SELEKTOR THEME PICKER
+const btnThemePicker = document.getElementById('btn-theme-picker');
+const themePickerPopup = document.getElementById('theme-picker-popup');
+const themeSwatchButtons = document.querySelectorAll('.theme-swatch');
+
 // SECURE MODAL POP-UP DOM
 const passwordModal = document.getElementById('password-modal');
 const inputExtPassword = document.getElementById('input-ext-password');
@@ -100,6 +105,8 @@ let globalHistoryCloudCache = {};
 
 // --- INITIAL BOOTSTRAP ---
 window.addEventListener('DOMContentLoaded', () => {
+    applyStoredTheme();
+
     const savedSidebarState = localStorage.getItem('sidebarState');
     if (savedSidebarState === 'collapsed' && sidebarElement) {
         sidebarElement.classList.add('collapsed');
@@ -125,6 +132,50 @@ window.addEventListener('DOMContentLoaded', () => {
     startLiveClock();
     fetchLiveWeather();
     setInterval(fetchLiveWeather, 15 * 60 * 1000); // refresh cuaca tiap 15 menit
+});
+
+// =========================================================================
+// THEME PICKER — pilih preset tema, tersimpan di localStorage
+// =========================================================================
+const THEME_STORAGE_KEY = 'latelaThemePreset';
+
+function applyStoredTheme() {
+    const saved = localStorage.getItem(THEME_STORAGE_KEY) || 'default';
+    setActiveTheme(saved, false);
+}
+
+function setActiveTheme(themeName, persist) {
+    if (themeName === 'default') {
+        document.body.removeAttribute('data-theme');
+    } else {
+        document.body.setAttribute('data-theme', themeName);
+    }
+    themeSwatchButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-theme') === themeName);
+    });
+    if (persist) localStorage.setItem(THEME_STORAGE_KEY, themeName);
+}
+
+if (btnThemePicker) {
+    btnThemePicker.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (themePickerPopup) themePickerPopup.classList.toggle('show');
+    });
+}
+
+themeSwatchButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const themeName = btn.getAttribute('data-theme');
+        setActiveTheme(themeName, true);
+        if (themePickerPopup) themePickerPopup.classList.remove('show');
+        updateStatusMessage(`Tema diubah ke "${btn.getAttribute('title')}".`);
+    });
+});
+
+document.addEventListener('click', (e) => {
+    if (themePickerPopup && !themePickerPopup.contains(e.target) && e.target !== btnThemePicker) {
+        themePickerPopup.classList.remove('show');
+    }
 });
 
 // =========================================================================
