@@ -27,6 +27,46 @@
     /* Alias lama (biar tidak ada kode JS yg break) */
     --bg-app: transparent;
     --bg-sidebar: transparent;
+
+    /* Tema background — bisa diubah lewat theme picker */
+    --theme-bg-gradient: linear-gradient(135deg, #0f2f3f 0%, #0a1e2e 45%, #0d1c2a 75%, #0f2230 100%);
+    --theme-ambient-1: rgba(0,180,140,0.12);
+    --theme-ambient-2: rgba(30,100,200,0.10);
+    --theme-accent: #f472b6;
+}
+
+/* =========================================================================
+   PRESET TEMA — dipilih lewat theme picker, tersimpan di localStorage
+   ========================================================================= */
+body[data-theme="midnight"] {
+    --theme-bg-gradient: linear-gradient(135deg, #221b3f 0%, #181230 45%, #150f29 75%, #1c1538 100%);
+    --theme-ambient-1: rgba(124,92,255,0.14);
+    --theme-ambient-2: rgba(167,139,250,0.10);
+    --theme-accent: #a78bfa;
+}
+body[data-theme="rose"] {
+    --theme-bg-gradient: linear-gradient(135deg, #3a1424 0%, #270d1a 45%, #200a16 75%, #2e0f1d 100%);
+    --theme-ambient-1: rgba(244,114,182,0.16);
+    --theme-ambient-2: rgba(190,60,100,0.10);
+    --theme-accent: #f472b6;
+}
+body[data-theme="ocean"] {
+    --theme-bg-gradient: linear-gradient(135deg, #0e2742 0%, #0a1c33 45%, #081627 75%, #0c2038 100%);
+    --theme-ambient-1: rgba(96,165,250,0.16);
+    --theme-ambient-2: rgba(59,130,246,0.10);
+    --theme-accent: #60a5fa;
+}
+body[data-theme="emerald"] {
+    --theme-bg-gradient: linear-gradient(135deg, #0d2b22 0%, #091f19 45%, #071a14 75%, #0a2119 100%);
+    --theme-ambient-1: rgba(52,211,153,0.15);
+    --theme-ambient-2: rgba(16,150,110,0.10);
+    --theme-accent: #34d399;
+}
+body[data-theme="amber"] {
+    --theme-bg-gradient: linear-gradient(135deg, #332111 0%, #26190c 45%, #1f1409 75%, #2a1c0e 100%);
+    --theme-ambient-1: rgba(245,158,11,0.14);
+    --theme-ambient-2: rgba(217,119,6,0.10);
+    --theme-accent: #f59e0b;
 }
 
 * {
@@ -40,11 +80,12 @@
    BACKGROUND — Teal / Navy gradient seperti referensi
    ========================================================================= */
 body {
-    background: linear-gradient(135deg, #0f2f3f 0%, #0a1e2e 45%, #0d1c2a 75%, #0f2230 100%);
+    background: var(--theme-bg-gradient);
     color: var(--text-main);
     height: 100vh;
     overflow: hidden;
     position: relative;
+    transition: background 0.4s ease;
 }
 
 /* Ambient light blobs */
@@ -52,21 +93,23 @@ body::before {
     content: '';
     position: fixed;
     width: 500px; height: 500px;
-    background: radial-gradient(circle, rgba(0,180,140,0.12) 0%, transparent 70%);
+    background: radial-gradient(circle, var(--theme-ambient-1) 0%, transparent 70%);
     top: -120px; right: -80px;
     border-radius: 50%;
     pointer-events: none;
     z-index: 0;
+    transition: background 0.4s ease;
 }
 body::after {
     content: '';
     position: fixed;
     width: 350px; height: 350px;
-    background: radial-gradient(circle, rgba(30,100,200,0.10) 0%, transparent 70%);
+    background: radial-gradient(circle, var(--theme-ambient-2) 0%, transparent 70%);
     bottom: -60px; left: -60px;
     border-radius: 50%;
     pointer-events: none;
     z-index: 0;
+    transition: background 0.4s ease;
 }
 
 .app-container {
@@ -280,6 +323,88 @@ body::after {
     padding: 12px 14px; font-size: 11px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.sidebar.collapsed .theme-picker-anchor { left: 50%; transform: translateX(-50%); }
+.sidebar.collapsed .theme-picker-popup { left: 0; }
+
+/* =========================================================================
+   THEME PICKER — tombol bulat pojok kiri bawah sidebar
+   ========================================================================= */
+.theme-picker-anchor {
+    margin-top: auto;
+    padding-top: 16px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.btn-theme-dot {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.22);
+    background: conic-gradient(from 180deg, #f472b6, #a78bfa, #60a5fa, #34d399, #f59e0b, #f472b6);
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.25);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    padding: 0;
+}
+.btn-theme-dot:hover {
+    transform: scale(1.10);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.30);
+}
+.btn-theme-dot:active { transform: scale(0.96); }
+
+.theme-picker-popup {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 10px); left: 0;
+    background: #0c1e30;
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 16px;
+    padding: 12px;
+    min-width: 180px;
+    box-shadow: 0 14px 36px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,0,0,0.25);
+    z-index: 500;
+}
+.theme-picker-popup.show { display: block; }
+
+.theme-picker-title {
+    display: block;
+    font-size: 11px; font-weight: 700;
+    color: rgba(180,210,230,0.55);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 10px;
+}
+
+.theme-swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.theme-swatch {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    padding: 3px;
+    cursor: pointer;
+    background: rgba(255,255,255,0.04);
+    transition: border-color 0.15s, transform 0.15s;
+}
+.theme-swatch:hover { transform: translateY(-1px); }
+.theme-swatch.active { border-color: rgba(255,255,255,0.55); }
+
+.swatch-preview {
+    display: block;
+    width: 100%; height: 100%;
+    border-radius: 7px;
+}
+.swatch-default  { background: linear-gradient(135deg, #0f2f3f 0%, #0a1e2e 50%, #0d1c2a 100%); }
+.swatch-midnight { background: linear-gradient(135deg, #221b3f 0%, #181230 50%, #150f29 100%); }
+.swatch-rose     { background: linear-gradient(135deg, #3a1424 0%, #270d1a 50%, #200a16 100%); }
+.swatch-ocean    { background: linear-gradient(135deg, #0e2742 0%, #0a1c33 50%, #081627 100%); }
+.swatch-emerald  { background: linear-gradient(135deg, #0d2b22 0%, #091f19 50%, #071a14 100%); }
+.swatch-amber    { background: linear-gradient(135deg, #332111 0%, #26190c 50%, #1f1409 100%); }
 
 /* =========================================================================
    MAIN CONTENT
