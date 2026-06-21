@@ -24,7 +24,20 @@
             <button id="btn-toggle-sidebar" class="btn-toggle">☰</button>
 
             <div class="brand-section">
-                <img src="logo.jpeg" class="brand-logo" alt="Logo Latela" style="object-fit: contain;">
+                <div class="widget-stack">
+                    <div class="weather-widget" id="weather-widget">
+                        <div class="weather-icon-box" id="weather-icon-box">⛅</div>
+                        <div class="weather-info">
+                            <span class="weather-temp" id="weather-temp">--°C</span>
+                            <span class="weather-desc" id="weather-desc">Memuat...</span>
+                            <span class="weather-loc">📍 Bandung, ID</span>
+                        </div>
+                    </div>
+                    <div class="clock-widget">
+                        <span class="clock-time" id="clock-time">--:--</span>
+                        <span class="clock-ampm" id="clock-ampm">--</span>
+                    </div>
+                </div>
                 <h1 class="brand-title">LATELA</h1>
                 <h2 class="app-subtitle">ORDER MANAGEMENT SYSTEM</h2>
             </div>
@@ -59,10 +72,10 @@
                 
                 <section id="view-dashboard" class="content-view">
                     <h2 class="page-title">Dashboard Overview</h2>
-                    <div class="control-group" style="margin-bottom: 20px; background: #ffffff; padding: 12px 15px; border-radius: 6px; border: 1px solid var(--border-color); display: inline-flex;">
+                    <div class="control-group dashboard-filter-group">
                         <span class="group-label">Filter Produk Dashboard:</span>
                         <div class="group-inputs">
-                            <select id="dash-filter-dropdown" style="min-width: 220px; font-weight: 600;">
+                            <select id="dash-filter-dropdown" class="dash-filter-select">
                                 <option value="all">-- Semua Produk --</option>
                             </select>
                         </div>
@@ -89,7 +102,7 @@
                     <div class="top-controls-bar">
                         <div class="control-group"><span class="group-label">Filter Produk:</span><div class="group-inputs"><select id="filter-dropdown"><option value="all">-- Tampilkan Semua Produk --</option></select><button id="btn-filter-reset" class="btn-action btn-gray-outline">Reset</button></div></div>
                         <div class="control-group"><span class="group-label">File Management:</span><div class="group-inputs"><span id="file-badge" class="badge-file-status">0 File Terupload</span><button id="btn-add-file" class="btn-action btn-pink-solid">+ File</button><button id="btn-file-reset" class="btn-action btn-pink-outline">Reset</button><input type="file" id="file-input" accept=".xlsx, .xls" style="display: none;"></div></div>
-                        <div class="control-group"><span class="group-label">Input Manual:</span><div class="group-inputs"><select id="manual-nama-dropdown"><option value="">-- Pilih Produk --</option></select><select id="manual-type-dropdown" disabled><option value="">-- Type --</option></select><select id="manual-warna-dropdown" disabled><option value="">-- Warna --</option></select><input type="number" id="manual-qty-input" placeholder="Qty" min="1" style="width: 65px; height: 32px; padding: 0 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 12px; font-weight: 600;"><button id="btn-add-manual" class="btn-action btn-pink-solid">+ Manual</button></div></div>
+                        <div class="control-group"><span class="group-label">Input Manual:</span><div class="group-inputs"><select id="manual-nama-dropdown"><option value="">-- Pilih Produk --</option></select><select id="manual-type-dropdown" disabled><option value="">-- Type --</option></select><select id="manual-warna-dropdown" disabled><option value="">-- Warna --</option></select><input type="number" id="manual-qty-input" class="manual-qty-field" placeholder="Qty" min="1"><button id="btn-add-manual" class="btn-action btn-pink-solid">+ Manual</button></div></div>
                         <div class="control-group"><span class="group-label">Data Actions:</span><div class="group-inputs"><button id="btn-save-history" class="btn-action btn-purple-solid">Save History</button><div class="export-dropdown-wrapper"><button id="btn-export-toggle" class="btn-action btn-blue-solid">Export ▾</button><div id="export-menu-items" class="export-dropdown-menu"><button id="btn-export-xlsx">📄 Export .XLSX</button><button id="btn-export-csv">📝 Export .CSV</button></div></div><button id="btn-copy-qty" class="btn-action btn-green-solid">Copy Qty</button></div></div>
                     </div>
                     <div class="workspace-panel">
@@ -115,21 +128,21 @@
 
                 <section id="view-procurement" class="content-view">
                     <h2 class="page-title">Procurement & PO Generator</h2>
-                    <div class="procurement-form-container" style="background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; display: flex; flex-direction: column; gap: 15px;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 12px;">
-                            <div style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 13px; font-weight: 700; color: #475569;">Nomor PO:</span><input type="text" id="proc-no-po" placeholder="Ketik nomor PO..." style="border: 1px solid #cbd5e1; height: 36px; padding: 0 12px; border-radius: 4px;"></div>
-                            <div style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 13px; font-weight: 700; color: #475569;">Tanggal PO:</span><input type="date" id="proc-tanggal-po" style="border: 1px solid #cbd5e1; height: 36px; padding: 0 12px; border-radius: 4px; background: #ffffff;"></div>
+                    <div class="procurement-form-container">
+                        <div class="proc-row-top">
+                            <div class="proc-field-col"><span class="proc-field-label">Nomor PO:</span><input type="text" id="proc-no-po" placeholder="Ketik nomor PO..."></div>
+                            <div class="proc-field-col"><span class="proc-field-label">Tanggal PO:</span><input type="date" id="proc-tanggal-po"></div>
                         </div>
-                        <div style="display: grid; grid-template-columns: 70% 30%; gap: 15px; align-items: stretch; border-bottom: 1px dashed #cbd5e1; padding-bottom: 15px;">
-                            <div style="display: flex; flex-direction: column; gap: 8px;"><span style="font-size: 13px; font-weight: 700; color: #475569;">Detail Komponen Vendor:</span>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;"><select id="proc-jenis-barang" style="height: 36px; border: 1px solid #cbd5e1; border-radius: 4px;"><option value="">-- Jenis Barang --</option></select><select id="proc-warna-latela" disabled style="height: 36px; border: 1px solid #cbd5e1; border-radius: 4px;"><option value="">-- Warna Latela --</option></select></div>
-                                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;"><input type="text" id="proc-kode-warna-vendor" placeholder="Kd Warna" readonly style="background: #f8fafc; border: 1px solid #e2e8f0; height: 32px; font-size: 10px; border-radius: 4px; text-align: center;"><input type="text" id="proc-vendor" placeholder="Vendor" readonly style="background: #f8fafc; border: 1px solid #e2e8f0; height: 32px; font-size: 10px; border-radius: 4px; text-align: center;"><input type="text" id="proc-kode-vendor" placeholder="Kd Vendor" readonly style="background: #f8fafc; border: 1px solid #e2e8f0; height: 32px; font-size: 10px; border-radius: 4px; text-align: center;"><input type="text" id="proc-nama-kain" placeholder="Nama Kain" readonly style="background: #f8fafc; border: 1px solid #e2e8f0; height: 32px; font-size: 10px; border-radius: 4px; text-align: center;"></div>
+                        <div class="proc-row-mid">
+                            <div class="proc-vendor-col"><span class="proc-field-label">Detail Komponen Vendor:</span>
+                                <div class="proc-vendor-grid-2"><select id="proc-jenis-barang"><option value="">-- Jenis Barang --</option></select><select id="proc-warna-latela" disabled><option value="">-- Warna Latela --</option></select></div>
+                                <div class="proc-vendor-grid-4"><input type="text" id="proc-kode-warna-vendor" class="proc-readonly-field" placeholder="Kd Warna" readonly><input type="text" id="proc-vendor" class="proc-readonly-field" placeholder="Vendor" readonly><input type="text" id="proc-kode-vendor" class="proc-readonly-field" placeholder="Kd Vendor" readonly><input type="text" id="proc-nama-kain" class="proc-readonly-field" placeholder="Nama Kain" readonly></div>
                             </div>
-                            <div style="display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;"><span style="font-size: 12px; font-weight: 700; color: #475569;">Qty & Satuan:</span>
-                                <div style="display: flex; gap: 5px;"><input type="number" id="proc-qty" placeholder="Qty" min="1" style="width: 60%; height: 36px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 700; text-align: center;"><select id="proc-satuan" style="width: 40%; height: 36px; font-size: 11px; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 4px;"><option value="Roll">Roll</option><option value="Yards">Yards</option><option value="Kg">Kg</option></select></div>
+                            <div class="proc-qty-col"><span class="proc-field-label">Qty & Satuan:</span>
+                                <div class="proc-qty-row"><input type="number" id="proc-qty" placeholder="Qty" min="1" class="proc-qty-input"><select id="proc-satuan" class="proc-satuan-select"><option value="Roll">Roll</option><option value="Yards">Yards</option><option value="Kg">Kg</option></select></div>
                             </div>
                         </div>
-                        <div style="display: flex; justify-content: flex-end; gap: 10px; align-items: center;"><button id="btn-reset-po" style="height: 36px; padding: 0 20px; border: 1px solid #f472b6; color: #f472b6; border-radius: 4px; font-weight: 700; background: transparent; cursor: pointer;">Reset</button><button id="btn-export-po" style="height: 36px; padding: 0 20px; background: #2563eb; color: #fff; border: none; border-radius: 4px; font-weight: 700; cursor: pointer;">Cetak PO 📄</button><button id="btn-add-proc" style="height: 36px; padding: 0 20px; background: #ec4899; color: #fff; border: none; border-radius: 4px; font-weight: 700; cursor: pointer;">+ Tambah Item</button></div>
+                        <div class="proc-row-actions"><button id="btn-reset-po">Reset</button><button id="btn-export-po">Cetak PO 📄</button><button id="btn-add-proc">+ Tambah Item</button></div>
                     </div>
                     <div class="sku-list-card" style="width: 100%;"><h3>Daftar Item Surat Pesanan (PO)</h3><div class="table-responsive"><table><thead><tr><th>Jenis Barang</th><th>Kode Warna Latela</th><th>Kode Warna Vendor</th><th>Vendor</th><th>Kode Vendor</th><th>Nama Kain</th><th style="text-align: right; padding-right:25px;">Jumlah Order</th></tr></thead><tbody id="tbody-procurement-list"></tbody></table></div></div>
                 </section>
