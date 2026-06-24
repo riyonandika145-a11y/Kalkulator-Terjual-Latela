@@ -884,6 +884,20 @@ tr:hover td { background: rgba(255,255,255,0.04); }
     height: 32px; font-size: 10px; text-align: center; width: 100%;
 }
 
+/* Dropdown vendor (muncul hanya saat ada >1 vendor cocok untuk Jenis+Warna yang sama) */
+select#proc-vendor-select.proc-readonly-field {
+    background: rgba(244,114,182,0.08) !important;
+    border: 1px solid rgba(244,114,182,0.35) !important;
+    color: var(--text-main) !important;
+    cursor: pointer;
+    font-weight: 600;
+}
+select#proc-vendor-select.proc-readonly-field:focus {
+    outline: none;
+    border-color: rgba(244,114,182,0.60) !important;
+    box-shadow: 0 0 0 2px rgba(244,114,182,0.18);
+}
+
 .proc-qty-col {
     display: flex; flex-direction: column; justify-content: flex-end; gap: 6px;
     background: rgba(255,255,255,0.04);
