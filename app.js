@@ -91,6 +91,7 @@ const procJenisBarang = document.getElementById('proc-jenis-barang');
 const procWarnaLatela = document.getElementById('proc-warna-latela');
 const procKodeWarnaVendor = document.getElementById('proc-kode-warna-vendor');
 const procVendor = document.getElementById('proc-vendor');
+const procVendorSelect = document.getElementById('proc-vendor-select');
 const procKodeVendor = document.getElementById('proc-kode-vendor');
 const procNamaKain = document.getElementById('proc-nama-kain');
 const procQty = document.getElementById('proc-qty');
@@ -383,17 +384,14 @@ if (procJenisBarang) {
     procJenisBarang.addEventListener('change', () => {
         const selectedJenis = procJenisBarang.value;
         if (procWarnaLatela) procWarnaLatela.innerHTML = '<option value="">-- Pilih Warna Latela --</option>';
-        if (procKodeWarnaVendor) procKodeWarnaVendor.value = ''; 
-        if (procVendor) procVendor.value = ''; 
-        if (procKodeVendor) procKodeVendor.value = ''; 
-        if (procNamaKain) procNamaKain.value = '';
+        kosongkanFieldVendorDetail();
 
         if (!selectedJenis) { if (procWarnaLatela) procWarnaLatela.disabled = true; return; }
 
         let uniqueWarna = new Set();
         globalVendorRawData.forEach(row => {
-            let jenis = row['Jenis Barang'] || row['jenis_barang'] || row['Jenis barang'] || row['JENIS BARANG'];
-            let warna = row['Kode Warna Latela'] || row['kode_warna_latela'] || row['Kode warna latela'] || row['KODE WARNA LATELA'];
+            let jenis = ambilFieldVendor(row, ['Jenis Barang', 'jenis_barang', 'Jenis barang', 'JENIS BARANG']);
+            let warna = ambilFieldVendor(row, ['Kode Warna Latela', 'kode_warna_latela', 'Kode warna latela', 'KODE WARNA LATELA']);
             if (jenis && jenis.toString().trim() === selectedJenis && warna) uniqueWarna.add(warna.toString().trim());
         });
         Array.from(uniqueWarna).sort().forEach(warna => {
@@ -404,29 +402,83 @@ if (procJenisBarang) {
     });
 }
 
+// Helper: baca satu field dari row vendor, coba beberapa kemungkinan nama kolom
+function ambilFieldVendor(row, possibleKeys) {
+    for (const k of possibleKeys) { if (row[k] !== undefined && row[k] !== null && row[k] !== '') return row[k]; }
+    return null;
+}
+
+// Helper: kosongkan semua field detail vendor & kembalikan ke mode input readonly (non-dropdown)
+function kosongkanFieldVendorDetail() {
+    if (procKodeWarnaVendor) procKodeWarnaVendor.value = '';
+    if (procVendor) { procVendor.value = ''; procVendor.style.display = ''; }
+    if (procVendorSelect) { procVendorSelect.style.display = 'none'; procVendorSelect.innerHTML = '<option value="">-- Pilih Vendor --</option>'; }
+    if (procKodeVendor) procKodeVendor.value = '';
+    if (procNamaKain) procNamaKain.value = '';
+}
+
+// Helper: isi field readonly (Kd Warna, Kd Vendor, Nama Kain) dari satu row vendor yang sudah pasti dipilih
+function isiFieldDariRowVendor(row) {
+    if (procKodeWarnaVendor) procKodeWarnaVendor.value = ambilFieldVendor(row, ['Kode Warna Vendor', 'kode_warna_vendor', 'Kode warna vendor']) || '-';
+    if (procKodeVendor) procKodeVendor.value = ambilFieldVendor(row, ['Kode Vendor', 'kode_vendor', 'Kode vendor']) || '-';
+    if (procNamaKain) procNamaKain.value = ambilFieldVendor(row, ['Nama Kain', 'nama_kain', 'Nama kain']) || '-';
+}
+
 if (procWarnaLatela) {
     procWarnaLatela.addEventListener('change', () => {
         const selectedJenis = procJenisBarang ? procJenisBarang.value : '';
         const selectedWarna = procWarnaLatela.value;
-        if (!selectedJenis || !selectedWarna) { 
-            if (procKodeWarnaVendor) procKodeWarnaVendor.value = ''; 
-            if (procVendor) procVendor.value = ''; 
-            if (procKodeVendor) procKodeVendor.value = ''; 
-            if (procNamaKain) procNamaKain.value = ''; 
-            return; 
-        }
+        if (!selectedJenis || !selectedWarna) { kosongkanFieldVendorDetail(); return; }
 
-        const matchedRow = globalVendorRawData.find(row => {
-            let jenis = row['Jenis Barang'] || row['jenis_barang'] || row['Jenis barang'] || row['JENIS BARANG'];
-            let warna = row['Kode Warna Latela'] || row['kode_warna_latela'] || row['Kode warna latela'] || row['KODE WARNA LATELA'];
+        // Cari SEMUA row yang cocok Jenis+Warna (bisa lebih dari 1 vendor untuk kombinasi yang sama)
+        const matchedRows = globalVendorRawData.filter(row => {
+            let jenis = ambilFieldVendor(row, ['Jenis Barang', 'jenis_barang', 'Jenis barang', 'JENIS BARANG']);
+            let warna = ambilFieldVendor(row, ['Kode Warna Latela', 'kode_warna_latela', 'Kode warna latela', 'KODE WARNA LATELA']);
             return jenis && jenis.toString().trim() === selectedJenis && warna && warna.toString().trim() === selectedWarna;
         });
-        if (matchedRow) {
-            if (procKodeWarnaVendor) procKodeWarnaVendor.value = matchedRow['Kode Warna Vendor'] || matchedRow['kode_warna_vendor'] || matchedRow['Kode warna vendor'] || '-';
-            if (procVendor) procVendor.value = matchedRow['Vendor'] || matchedRow['vendor'] || '-';
-            if (procKodeVendor) procKodeVendor.value = matchedRow['Kode Vendor'] || matchedRow['kode_vendor'] || matchedRow['Kode vendor'] || '-';
-            if (procNamaKain) procNamaKain.value = matchedRow['Nama Kain'] || matchedRow['nama_kain'] || matchedRow['Nama kain'] || '-';
+
+        if (matchedRows.length === 0) {
+            kosongkanFieldVendorDetail();
+        } else if (matchedRows.length === 1) {
+            // Hanya 1 vendor cocok -> tampilkan sebagai field readonly seperti biasa, tanpa dropdown
+            if (procVendor) { procVendor.style.display = ''; procVendor.value = ambilFieldVendor(matchedRows[0], ['Vendor', 'vendor']) || '-'; }
+            if (procVendorSelect) { procVendorSelect.style.display = 'none'; procVendorSelect.innerHTML = '<option value="">-- Pilih Vendor --</option>'; }
+            isiFieldDariRowVendor(matchedRows[0]);
+        } else {
+            // Lebih dari 1 vendor cocok -> tampilkan dropdown pilihan vendor, field lain dikosongkan dulu sampai user pilih
+            if (procKodeWarnaVendor) procKodeWarnaVendor.value = '';
+            if (procKodeVendor) procKodeVendor.value = '';
+            if (procNamaKain) procNamaKain.value = '';
+            if (procVendor) procVendor.style.display = 'none';
+            if (procVendorSelect) {
+                procVendorSelect.style.display = '';
+                procVendorSelect.innerHTML = '<option value="">-- Pilih Vendor --</option>';
+                // Nama vendor bisa duplikat di data (mis. vendor sama, baris beda), jadi index disimpan di value agar match-nya presisi ke row yang benar
+                matchedRows.forEach((row, idx) => {
+                    const namaVendor = ambilFieldVendor(row, ['Vendor', 'vendor']) || '-';
+                    const opt = document.createElement('option');
+                    opt.value = String(idx);
+                    opt.innerText = namaVendor;
+                    procVendorSelect.appendChild(opt);
+                });
+                // Simpan referensi rows yang sedang aktif di dropdown ini agar handler change bisa ambil row yang tepat
+                procVendorSelect._matchedRows = matchedRows;
+            }
         }
+    });
+}
+
+if (procVendorSelect) {
+    procVendorSelect.addEventListener('change', () => {
+        const rows = procVendorSelect._matchedRows || [];
+        const idx = procVendorSelect.value;
+        if (idx === '' || !rows[idx]) {
+            if (procKodeWarnaVendor) procKodeWarnaVendor.value = '';
+            if (procKodeVendor) procKodeVendor.value = '';
+            if (procNamaKain) procNamaKain.value = '';
+            return;
+        }
+        isiFieldDariRowVendor(rows[idx]);
     });
 }
 
@@ -435,23 +487,25 @@ if (btnAddProc) {
         const jenisBarang = procJenisBarang ? procJenisBarang.value : ''; 
         const warnaLatela = procWarnaLatela ? procWarnaLatela.value : '';
         const kodeWarnaVendor = procKodeWarnaVendor ? procKodeWarnaVendor.value : ''; 
-        const vendor = procVendor ? procVendor.value : '';
+        // Vendor diambil dari elemen yang sedang aktif: dropdown kalau >1 vendor, input readonly kalau cuma 1
+        const vendorSelectAktif = procVendorSelect && procVendorSelect.style.display !== 'none';
+        const vendor = vendorSelectAktif
+            ? (procVendorSelect.selectedOptions[0] ? procVendorSelect.selectedOptions[0].innerText : '')
+            : (procVendor ? procVendor.value : '');
         const kodeVendor = procKodeVendor ? procKodeVendor.value : ''; 
         const namaKain = procNamaKain ? procNamaKain.value : ''; 
         const qty = procQty ? parseInt(procQty.value, 10) : 0;
         const satuan = procSatuan ? procSatuan.value : 'Roll'; 
 
-        if(!jenisBarang || !warnaLatela || isNaN(qty) || qty <= 0) { updateStatusMessage("⚠️ Gagal: Isi Qty dengan benar."); return; }
+        if (vendorSelectAktif && !procVendorSelect.value) { updateStatusMessage("⚠️ Gagal: Pilih vendor terlebih dahulu (ada lebih dari 1 vendor untuk warna ini)."); return; }
+        if(!jenisBarang || !warnaLatela || !vendor || isNaN(qty) || qty <= 0) { updateStatusMessage("⚠️ Gagal: Isi Qty dengan benar."); return; }
         currentPoBasket.push({ jenisBarang, warnaLatela, kodeWarnaVendor, vendor, kodeVendor, namaKain, qty, satuan });
         renderProcurementTable(); 
 
         // 🔄 RESET FORM SETELAH ITEM DITAMBAHKAN (biar siap input item baru)
         if (procJenisBarang) procJenisBarang.value = '';
         if (procWarnaLatela) { procWarnaLatela.innerHTML = '<option value="">-- Pilih Warna Latela --</option>'; procWarnaLatela.disabled = true; }
-        if (procKodeWarnaVendor) procKodeWarnaVendor.value = '';
-        if (procVendor) procVendor.value = '';
-        if (procKodeVendor) procKodeVendor.value = '';
-        if (procNamaKain) procNamaKain.value = '';
+        kosongkanFieldVendorDetail();
         if (procQty) procQty.value = '';
 
         updateStatusMessage(`Sukses menambah pesanan ${jenisBarang} (${warnaLatela}) ke list PO.`);
@@ -477,10 +531,7 @@ if (btnResetPo) {
         if (procNoPo) procNoPo.value = ''; 
         if (procJenisBarang) procJenisBarang.value = ''; 
         if (procWarnaLatela) { procWarnaLatela.value = ''; procWarnaLatela.disabled = true; }
-        if (procKodeWarnaVendor) procKodeWarnaVendor.value = ''; 
-        if (procVendor) procVendor.value = ''; 
-        if (procKodeVendor) procKodeVendor.value = ''; 
-        if (procNamaKain) procNamaKain.value = ''; 
+        kosongkanFieldVendorDetail();
         if (procQty) procQty.value = '';
         if (procSatuan) procSatuan.value = 'Roll';
         
