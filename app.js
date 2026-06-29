@@ -64,7 +64,7 @@ const weatherIconBoxEl = document.getElementById('weather-icon-box');
 // SELEKTOR THEME PICKER
 const btnThemePicker = document.getElementById('btn-theme-picker');
 const themePickerPopup = document.getElementById('theme-picker-popup');
-const themeSwatchButtons = document.querySelectorAll('.theme-swatch');
+const getThemeSwatchButtons = () => document.querySelectorAll('.theme-swatch');
 
 // SECURE MODAL POP-UP DOM
 const passwordModal = document.getElementById('password-modal');
@@ -163,7 +163,7 @@ function setActiveTheme(themeName, persist) {
     } else {
         document.body.setAttribute('data-theme', themeName);
     }
-    themeSwatchButtons.forEach(btn => {
+    getThemeSwatchButtons().forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('data-theme') === themeName);
     });
     if (persist) localStorage.setItem(THEME_STORAGE_KEY, themeName);
@@ -176,14 +176,16 @@ if (btnThemePicker) {
     });
 }
 
-themeSwatchButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
+if (themePickerPopup) {
+    themePickerPopup.addEventListener('click', (e) => {
+        const btn = e.target.closest('.theme-swatch');
+        if (!btn) return;
         const themeName = btn.getAttribute('data-theme');
         setActiveTheme(themeName, true);
-        if (themePickerPopup) themePickerPopup.classList.remove('show');
+        themePickerPopup.classList.remove('show');
         updateStatusMessage(`Tema diubah ke "${btn.getAttribute('title')}".`);
     });
-});
+}
 
 document.addEventListener('click', (e) => {
     if (themePickerPopup && !themePickerPopup.contains(e.target) && e.target !== btnThemePicker) {
