@@ -5,7 +5,7 @@
 // (supaya data penjualan/SKU/cuaca tetap real-time, tidak basi karena cache)
 // =========================================================================
 
-const CACHE_NAME = 'latela-oms-v1';
+const CACHE_NAME = 'latela-oms-v2';
 const STATIC_ASSETS = [
   './index.html',
   './style.css',
@@ -62,10 +62,15 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // File statis app sendiri — cache-first, fallback ke network kalau belum ada
+  // File statis app sendiri — network-first supaya update selalu kepakai,
+  // fallback ke cache kalau offline / network gagal
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return cached || fetch(event.request);
-    })
+    fetch(event.request)
+      .then((response) => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
