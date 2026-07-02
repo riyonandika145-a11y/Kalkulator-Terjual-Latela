@@ -599,8 +599,7 @@ if (btnExportPo) {
                 isRoll ? item.qty : ''
             ];
         });
-        // Baris kosong tambahan biar konsisten seperti template (kalau item sedikit)
-        while (bodyRows.length < 8) bodyRows.push(['', '', '', '', '', '', '']);
+
 
         doc.autoTable({
             startY: 130,
