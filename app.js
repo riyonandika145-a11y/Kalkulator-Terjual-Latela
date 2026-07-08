@@ -695,23 +695,63 @@ function resetKalkulatorDataState() {
 
 // 4. PARSER LOGIKA EXCEL MANIFEST MARKETPLACE
 if (btnAddFile) btnAddFile.addEventListener('click', () => { if (fileInput) fileInput.click(); });
-if (fileInput) fileInput.addEventListener('change', (e) => processExcelEngine(e.target.files[0]));
+if (fileInput) fileInput.addEventListener('change', (e) => processMultipleFiles(e.target.files));
 
-function processExcelEngine(file) {
-    if (!file) return;
+// Proses banyak file sekaligus (dipilih bersamaan lewat dialog Open),
+// dibaca satu-satu secara berurutan lalu tabel & dashboard di-refresh SEKALI di akhir.
+function processMultipleFiles(fileList) {
+    const files = Array.from(fileList || []);
+    if (files.length === 0) return;
+
+    updateStatusMessage(`Memproses ${files.length} file...`);
+
+    let processedCount = 0;
+    let successCount = 0;
+
+    const processNext = (index) => {
+        if (index >= files.length) {
+            refreshAllTables();
+            updateDashboardMetrics();
+            updateStatusMessage(`Selesai: ${successCount} dari ${files.length} file berhasil diproses.`);
+            if (fileInput) fileInput.value = ""; // reset agar file sama bisa dipilih lagi kalau perlu
+            return;
+        }
+        const file = files[index];
+        readSingleExcelFile(file,
+            (jsonData) => {
+                ekstrakDanHitungPenjualan(jsonData, false); // false = jangan refresh per-file, biar efisien
+                successCount++;
+                processedCount++;
+                processNext(index + 1);
+            },
+            () => {
+                processedCount++;
+                processNext(index + 1);
+            }
+        );
+    };
+    processNext(0);
+}
+
+function readSingleExcelFile(file, onSuccess, onError) {
+    if (!file) { onError(); return; }
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
             const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-            ekstrakDanHitungPenjualan(jsonData);
-        } catch (err) { updateStatusMessage('Gagal memproses file Excel.'); }
+            onSuccess(jsonData);
+        } catch (err) {
+            updateStatusMessage(`Gagal memproses file: ${file.name}`);
+            onError();
+        }
     };
+    reader.onerror = () => { updateStatusMessage(`Gagal membaca file: ${file.name}`); onError(); };
     reader.readAsArrayBuffer(file);
 }
 
-function ekstrakDanHitungPenjualan(data) {
+function ekstrakDanHitungPenjualan(data, doRefresh = true) {
     data.forEach(row => {
         let foundSku = "";
         for (let key in row) {
@@ -732,9 +772,9 @@ function ekstrakDanHitungPenjualan(data) {
             if (globalDataKategori[kategori] && globalDataKategori[kategori][foundSku]) globalDataKategori[kategori][foundSku].qty += rowQty;
         }
     });
-    totalMasterFiles += 1; 
+    totalMasterFiles += 1;
     if (fileBadge) fileBadge.innerText = `${totalMasterFiles} File Terupload`;
-    refreshAllTables(); updateDashboardMetrics();
+    if (doRefresh) { refreshAllTables(); updateDashboardMetrics(); }
 }
 
 function renderSingleTable(dataKategori, tbodyElement) {
