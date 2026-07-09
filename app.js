@@ -752,7 +752,30 @@ function readSingleExcelFile(file, onSuccess, onError) {
 }
 
 function ekstrakDanHitungPenjualan(data, doRefresh = true) {
+    // Deteksi apakah file ini punya kolom "No. Resi" (khas template Shopee)
+    let hasResiColumn = false;
+    if (data.length > 0) {
+        for (let key in data[0]) {
+            let keyClean = key.toString().toLowerCase().replace(/[^a-z0-9]/g, "");
+            if (["noresi", "nomorresi"].includes(keyClean)) { hasResiColumn = true; break; }
+        }
+    }
+
     data.forEach(row => {
+        // Kalau file ini punya kolom No. Resi, baris yang No. Resi-nya masih kosong
+        // (berarti pengiriman belum diatur) dilewati, tidak ikut dihitung.
+        if (hasResiColumn) {
+            let resiValue = "";
+            for (let key in row) {
+                let keyClean = key.toString().toLowerCase().replace(/[^a-z0-9]/g, "");
+                if (["noresi", "nomorresi"].includes(keyClean)) {
+                    resiValue = (row[key] !== undefined && row[key] !== null) ? row[key].toString().trim() : "";
+                    break;
+                }
+            }
+            if (!resiValue) return; // No. Resi kosong -> skip baris ini
+        }
+
         let foundSku = "";
         for (let key in row) {
             if (row[key] !== undefined && row[key] !== null) {
