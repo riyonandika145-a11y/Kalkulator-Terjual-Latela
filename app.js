@@ -38,6 +38,7 @@ const btnExportCsv = document.getElementById('btn-export-csv');
 const tbodyUtama = document.getElementById('tbody-utama');
 const tbodyAksesoris = document.getElementById('tbody-aksesoris');
 const tbodyGradeb = document.getElementById('tbody-gradeb'); 
+const tbodyRandom = document.getElementById('tbody-random');
 const tbodyMasterList = document.getElementById('tbody-master-list');
 const masterSkuCount = document.getElementById('master-sku-count');
 const btnSyncCloud = document.getElementById('btn-sync-cloud');
@@ -94,7 +95,7 @@ const tbodyProcurementList = document.getElementById('tbody-procurement-list');
 
 // --- STATE MANAGEMENT ---
 let masterSkus = {}; 
-let globalDataKategori = { utama: {}, aksesoris: {}, gradeb: {} };
+let globalDataKategori = { utama: {}, aksesoris: {}, gradeb: {}, random: {} };
 let totalMasterFiles = 0;
 let activeFilterText = "all";
 
@@ -329,6 +330,7 @@ function fetchMasterSkusFromCloud() {
                 if (rawKat.includes('utama')) katClean = 'utama';
                 else if (rawKat.includes('aksesoris')) katClean = 'aksesoris';
                 else if (rawKat.includes('grade')) katClean = 'gradeb';
+                else if (rawKat.includes('random')) katClean = 'random';
 
                 if (skuCode) {
                     masterSkus[skuCode.toString().trim()] = {
@@ -683,7 +685,7 @@ function renderMasterSkuDatabaseView() {
 }
 
 function resetKalkulatorDataState() {
-    globalDataKategori = { utama: {}, aksesoris: {}, gradeb: {} };
+    globalDataKategori = { utama: {}, aksesoris: {}, gradeb: {}, random: {} };
     Object.keys(masterSkus).forEach(sku => {
         const kat = masterSkus[sku].kategori;
         if (globalDataKategori[kat]) {
@@ -821,30 +823,32 @@ function refreshAllTables() {
     renderSingleTable(globalDataKategori.utama, tbodyUtama);
     renderSingleTable(globalDataKategori.aksesoris, tbodyAksesoris);
     renderSingleTable(globalDataKategori.gradeb, tbodyGradeb); 
+    renderSingleTable(globalDataKategori.random, tbodyRandom);
 }
 
 // 5. UPDATE GRAPHICS METRICS DASHBOARD
 function updateDashboardMetrics() {
     const targetProduct = dashFilterDropdown ? dashFilterDropdown.value : "all";
-    let qtyUtama = 0, qtyAksesoris = 0, qtyGradeB = 0, skuAktifCount = 0; let productSalesGroup = {};
+    let qtyUtama = 0, qtyAksesoris = 0, qtyGradeB = 0, qtyRandom = 0, skuAktifCount = 0; let productSalesGroup = {};
 
-    const hitung = (dataKategori) => {
+    const hitung = (dataKategori, kategoriKey) => {
         Object.values(dataKategori).forEach(item => {
             if (targetProduct === "all" || item.nama === targetProduct) {
                 if (item.qty > 0) { skuAktifCount++; let name = item.nama.trim().toUpperCase(); productSalesGroup[name] = (productSalesGroup[name] || 0) + item.qty; }
-                if (item.kategori === 'utama') qtyUtama += item.qty;
-                if (item.kategori === 'aksesoris') qtyAksesoris += item.qty;
-                if (item.kategori === 'gradeb') qtyGradeB += item.qty;
+                if (kategoriKey === 'utama') qtyUtama += item.qty;
+                else if (kategoriKey === 'aksesoris') qtyAksesoris += item.qty;
+                else if (kategoriKey === 'gradeb') qtyGradeB += item.qty;
+                else if (kategoriKey === 'random') qtyRandom += item.qty;
             }
         });
     };
-    hitung(globalDataKategori.utama); hitung(globalDataKategori.aksesoris); hitung(globalDataKategori.gradeb);
+    hitung(globalDataKategori.utama, 'utama'); hitung(globalDataKategori.aksesoris, 'aksesoris'); hitung(globalDataKategori.gradeb, 'gradeb'); hitung(globalDataKategori.random, 'random');
 
-    if (dashTotalTerjual) dashTotalTerjual.innerText = (qtyUtama + qtyAksesoris + qtyGradeB).toLocaleString('id-ID');
+    if (dashTotalTerjual) dashTotalTerjual.innerText = (qtyUtama + qtyAksesoris + qtyGradeB + qtyRandom).toLocaleString('id-ID');
     if (dashSkuAktif) dashSkuAktif.innerText = skuAktifCount; 
     if (dashFileCount) dashFileCount.innerText = totalMasterFiles;
 
-    if (salesChartInstance) { salesChartInstance.data.datasets[0].data = [qtyUtama, qtyAksesoris, qtyGradeB]; salesChartInstance.update(); }
+    if (salesChartInstance) { salesChartInstance.data.datasets[0].data = [qtyUtama, qtyAksesoris, qtyGradeB, qtyRandom]; salesChartInstance.update(); }
     if (topProductsChartInstance) {
         let sorted = Object.keys(productSalesGroup).map(k => ({ name: k, qty: productSalesGroup[k] })).sort((a,b) => b.qty - a.qty).slice(0, 5);
         topProductsChartInstance.data.labels = sorted.length ? sorted.map(i => i.name) : ["Kosong"];
@@ -864,7 +868,7 @@ function initDashboardEmptyChart() {
     const sChart = document.getElementById('salesChart');
     const tChart = document.getElementById('trendChart');
     const tpChart = document.getElementById('topProductsChart');
-    if (sChart) salesChartInstance = new Chart(sChart.getContext('2d'), { type: 'bar', data: { labels: ['Produk Utama', 'Aksesoris', 'Grade B'], datasets: [{ data: [0, 0, 0], backgroundColor: ['#ec4899', '#2563eb', '#f59e0b'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+    if (sChart) salesChartInstance = new Chart(sChart.getContext('2d'), { type: 'bar', data: { labels: ['Produk Utama', 'Aksesoris', 'Grade B', 'Random'], datasets: [{ data: [0, 0, 0, 0], backgroundColor: ['#ec4899', '#2563eb', '#f59e0b', '#10b981'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
     if (tChart) trendChartInstance = new Chart(tChart.getContext('2d'), { type: 'line', data: { labels: ['Mulai'], datasets: [{ data: [0], borderColor: '#8b5cf6', fill: true }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
     if (tpChart) topProductsChartInstance = new Chart(tpChart.getContext('2d'), { type: 'bar', data: { labels: ['Menunggu...'], datasets: [{ data: [0], backgroundColor: '#10b981' }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
 }
@@ -903,7 +907,7 @@ if (btnCopyQty) {
 if (btnSaveHistory) {
     btnSaveHistory.addEventListener('click', () => {
         const sum = (o) => Object.values(o).reduce((s, i) => s + i.qty, 0);
-        const tot = sum(globalDataKategori.utama) + sum(globalDataKategori.aksesoris) + sum(globalDataKategori.gradeb);
+        const tot = sum(globalDataKategori.utama) + sum(globalDataKategori.aksesoris) + sum(globalDataKategori.gradeb) + sum(globalDataKategori.random);
         if (tot === 0) return;
 
         updateStatusMessage("Mengirim data harian...");
@@ -966,7 +970,7 @@ function fetchHistoryFromCloud() {
                 try { snap = JSON.parse(cached); } catch (err) { updateStatusMessage('⚠️ Gagal membaca detail data.'); return; }
                 const wb = XLSX.utils.book_new();
                 const fmt = (d) => { let m = [["SKU", "Nama", "Type", "Warna", "Qty"]]; Object.keys(d || {}).sort().forEach(k => m.push([k, d[k].nama, d[k].type, d[k].warna, d[k].qty])); return XLSX.utils.aoa_to_sheet(m); };
-                XLSX.utils.book_append_sheet(wb, fmt(snap.utama), "Produk Utama"); XLSX.utils.book_append_sheet(wb, fmt(snap.aksesoris), "Aksesoris"); XLSX.utils.book_append_sheet(wb, fmt(snap.gradeb), "Grade B");
+                XLSX.utils.book_append_sheet(wb, fmt(snap.utama), "Produk Utama"); XLSX.utils.book_append_sheet(wb, fmt(snap.aksesoris), "Aksesoris"); XLSX.utils.book_append_sheet(wb, fmt(snap.gradeb), "Grade B"); XLSX.utils.book_append_sheet(wb, fmt(snap.random), "Random");
                 XLSX.writeFile(wb, `Laporan_Cloud_${e.target.getAttribute('data-waktu').replace(/[^a-zA-Z0-9]/g, "_")}.xlsx`);
             });
         });
@@ -976,14 +980,14 @@ function fetchHistoryFromCloud() {
 function generateMasterArrayFormat() {
     let m = [["Kategori", "SKU", "Nama", "Type", "Warna", "Qty"]];
     const ins = (n, o) => Object.keys(o).sort().forEach(k => m.push([n, k, o[k].nama, o[k].type, o[k].warna, o[k].qty]));
-    ins("PRODUK UTAMA", globalDataKategori.utama); ins("AKSESORIS", globalDataKategori.aksesoris); ins("GRADE B", globalDataKategori.gradeb); return m;
+    ins("PRODUK UTAMA", globalDataKategori.utama); ins("AKSESORIS", globalDataKategori.aksesoris); ins("GRADE B", globalDataKategori.gradeb); ins("RANDOM", globalDataKategori.random); return m;
 }
 
 if (btnExportXlsx) {
     btnExportXlsx.addEventListener('click', () => {
         const wb = XLSX.utils.book_new();
         const fmt = (d) => { let m = [["SKU", "Nama", "Type", "Warna", "Qty"]]; Object.keys(d).sort().forEach(k => m.push([k, d[k].nama, d[k].type, d[k].warna, d[k].qty])); return XLSX.utils.aoa_to_sheet(m); };
-        XLSX.utils.book_append_sheet(wb, fmt(globalDataKategori.utama), "Produk Utama"); XLSX.utils.book_append_sheet(wb, fmt(globalDataKategori.aksesoris), "Aksesoris"); XLSX.utils.book_append_sheet(wb, fmt(globalDataKategori.gradeb), "Grade B");
+        XLSX.utils.book_append_sheet(wb, fmt(globalDataKategori.utama), "Produk Utama"); XLSX.utils.book_append_sheet(wb, fmt(globalDataKategori.aksesoris), "Aksesoris"); XLSX.utils.book_append_sheet(wb, fmt(globalDataKategori.gradeb), "Grade B"); XLSX.utils.book_append_sheet(wb, fmt(globalDataKategori.random), "Random");
         XLSX.writeFile(wb, `Laporan_Tabs_${new Date().toISOString().slice(0,10)}.xlsx`);
     });
 }
