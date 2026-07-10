@@ -106,10 +106,151 @@ let salesChartInstance = null;
 let trendChartInstance = null;      
 let topProductsChartInstance = null; 
 let globalHistoryCloudCache = {};
+let globalPoListCache = [];
+let globalUserListCache = [];
+
+// --- LOGIN & SESSION ---
+const loginOverlay = document.getElementById('login-overlay');
+const appContainer = document.getElementById('app-container');
+const loginUsername = document.getElementById('login-username');
+const loginPassword = document.getElementById('login-password');
+const loginErrorMsg = document.getElementById('login-error-msg');
+const btnLoginSubmit = document.getElementById('btn-login-submit');
+const btnLogout = document.getElementById('btn-logout');
+const userSessionName = document.getElementById('user-session-name');
+const userSessionRole = document.getElementById('user-session-role');
+const menuKelolaAkun = document.getElementById('menu-kelola-akun');
+
+// SELEKTOR KELOLA AKUN
+const akunUsername = document.getElementById('akun-username');
+const akunNama = document.getElementById('akun-nama');
+const akunPassword = document.getElementById('akun-password');
+const akunRole = document.getElementById('akun-role');
+const btnSimpanAkun = document.getElementById('btn-simpan-akun');
+const btnRefreshAkun = document.getElementById('btn-refresh-akun');
+
+function getSession() {
+    try { return JSON.parse(localStorage.getItem('latelaSession') || 'null'); } catch (err) { return null; }
+}
+function setSession(sess) { localStorage.setItem('latelaSession', JSON.stringify(sess)); }
+function clearSession() { localStorage.removeItem('latelaSession'); }
+
+function showApp() {
+    if (loginOverlay) loginOverlay.style.display = 'none';
+    if (appContainer) appContainer.style.display = '';
+}
+function showLogin() {
+    if (loginOverlay) loginOverlay.style.display = 'flex';
+    if (appContainer) appContainer.style.display = 'none';
+}
+
+function applyRoleUI() {
+    const sess = getSession();
+    const isFullAccess = sess && sess.role === 'full';
+    if (userSessionName) userSessionName.innerText = sess ? sess.nama : '-';
+    if (userSessionRole) userSessionRole.innerText = sess ? (isFullAccess ? 'Akses Penuh' : 'Akses Terbatas') : '-';
+    if (menuKelolaAkun) menuKelolaAkun.style.display = isFullAccess ? '' : 'none';
+}
+
+if (btnLoginSubmit) {
+    btnLoginSubmit.addEventListener('click', () => {
+        const u = loginUsername ? loginUsername.value.trim() : '';
+        const p = loginPassword ? loginPassword.value : '';
+        if (!u || !p) { if (loginErrorMsg) loginErrorMsg.innerText = 'Username & password wajib diisi.'; return; }
+        if (loginErrorMsg) loginErrorMsg.innerText = 'Memeriksa...';
+        btnLoginSubmit.disabled = true;
+
+        const payload = new URLSearchParams();
+        payload.append('action', 'login'); payload.append('username', u); payload.append('password', p);
+        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
+            .then(res => res.json())
+            .then(result => {
+                btnLoginSubmit.disabled = false;
+                if (result && result.success) {
+                    setSession({ username: u, nama: result.nama, role: result.role });
+                    if (loginErrorMsg) loginErrorMsg.innerText = '';
+                    if (loginUsername) loginUsername.value = ''; if (loginPassword) loginPassword.value = '';
+                    showApp(); applyRoleUI();
+                    bootstrapAfterLogin();
+                } else {
+                    if (loginErrorMsg) loginErrorMsg.innerText = (result && result.message) || 'Username atau password salah.';
+                }
+            })
+            .catch(() => { btnLoginSubmit.disabled = false; if (loginErrorMsg) loginErrorMsg.innerText = 'Gagal menghubungi server, cek koneksi.'; });
+    });
+}
+if (loginPassword) loginPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter' && btnLoginSubmit) btnLoginSubmit.click(); });
+
+if (btnLogout) {
+    btnLogout.addEventListener('click', () => { clearSession(); showLogin(); });
+}
+
+// Dipanggil sekali setelah login sukses (baik langsung login, atau session lama masih valid)
+function bootstrapAfterLogin() {
+    fetchPoListFromCloud();
+    if (getSession() && getSession().role === 'full') fetchUsers();
+}
+
+// --- KELOLA AKUN (khusus Akses Penuh) ---
+function fetchUsers() {
+    const tbody = document.getElementById('tbody-akun-list');
+    if (!tbody) return;
+    fetch(`${GOOGLE_SCRIPT_URL}?action=fetch_users`).then(res => res.json()).then(list => {
+        globalUserListCache = Array.isArray(list) ? list : [];
+        if (!globalUserListCache.length) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada akun.</td></tr>`; return; }
+        tbody.innerHTML = '';
+        globalUserListCache.forEach(u => {
+            const roleLabel = u.role === 'full' ? 'Akses Penuh' : 'Akses Terbatas';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td><strong>${u.username}</strong></td><td>${u.nama || '-'}</td><td>${roleLabel}</td><td><button class="btn-action btn-gray-outline btn-hapus-akun" data-username="${u.username}">🗑️ Hapus</button></td>`;
+            tbody.appendChild(tr);
+        });
+        tbody.querySelectorAll('.btn-hapus-akun').forEach(btn => btn.addEventListener('click', () => deleteUser(btn.getAttribute('data-username'))));
+    }).catch(() => { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data akun.</td></tr>`; });
+}
+
+if (btnSimpanAkun) {
+    btnSimpanAkun.addEventListener('click', () => {
+        const u = akunUsername ? akunUsername.value.trim() : '';
+        const n = akunNama ? akunNama.value.trim() : '';
+        const p = akunPassword ? akunPassword.value : '';
+        const r = akunRole ? akunRole.value : 'terbatas';
+        if (!u || !n || !p) { updateStatusMessage('⚠️ Username, Nama, dan Password wajib diisi.'); return; }
+
+        updateStatusMessage('Menyimpan akun...');
+        const payload = new URLSearchParams();
+        payload.append('action', 'save_user'); payload.append('username', u); payload.append('nama', n); payload.append('password', p); payload.append('role', r);
+        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
+            .then(res => res.json())
+            .then(() => {
+                updateStatusMessage(`Akun "${u}" berhasil disimpan.`);
+                if (akunUsername) akunUsername.value = ''; if (akunNama) akunNama.value = ''; if (akunPassword) akunPassword.value = ''; if (akunRole) akunRole.value = 'terbatas';
+                fetchUsers();
+            })
+            .catch(() => updateStatusMessage('⚠️ Gagal menyimpan akun.'));
+    });
+}
+
+function deleteUser(username) {
+    if (!confirm(`Yakin ingin menghapus akun "${username}"?`)) return;
+    const payload = new URLSearchParams();
+    payload.append('action', 'delete_user'); payload.append('username', username);
+    fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
+        .then(res => res.json())
+        .then(() => { updateStatusMessage(`Akun "${username}" berhasil dihapus.`); fetchUsers(); })
+        .catch(() => updateStatusMessage('⚠️ Gagal menghapus akun.'));
+}
+
+if (btnRefreshAkun) btnRefreshAkun.addEventListener('click', fetchUsers);
 
 // --- INITIAL BOOTSTRAP ---
 window.addEventListener('DOMContentLoaded', () => {
     applyStoredTheme();
+
+    // 🔒 CEK SESI LOGIN DULU SEBELUM APP DITAMPILKAN
+    const existingSession = getSession();
+    if (existingSession) { showApp(); applyRoleUI(); bootstrapAfterLogin(); }
+    else { showLogin(); }
 
     const savedSidebarState = localStorage.getItem('sidebarState');
     if (savedSidebarState === 'collapsed' && sidebarElement) {
@@ -540,112 +681,190 @@ if (btnResetPo) {
     });
 }
 
+function generatePoPdf(noPoValue, rawSelectedDate, vendorHeader, items) {
+    let formattedDate = '-';
+    if (rawSelectedDate) {
+        const parts = rawSelectedDate.split('-');
+        if (parts.length === 3) formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const marginLeft = 28.35; // 1 cm
+    const marginRight = 28.35; // 1 cm
+    const contentWidth = pageWidth - marginLeft - marginRight;
+
+    // --- HEADER: NAMA PERUSAHAAN (KIRI) & JUDUL (KANAN) ---
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
+    doc.text('CV ARSA (ARSATEX)', marginLeft, 50);
+    doc.text('ORDER PEMBELIAN', pageWidth - marginRight, 50, { align: 'right' });
+
+    // --- ALAMAT (KIRI) ---
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+    doc.text('Jl. Majalaya No. 47', marginLeft, 70);
+    doc.text('Kp Majalaya Rt 001/002 Kel/Kec. Majalaya', marginLeft, 84);
+    doc.text('Bandung. Jawa Barat', marginLeft, 98);
+    doc.text('No Tlp :', marginLeft, 112);
+
+    // --- INFO PO (KANAN) ---
+    const infoLabelX = pageWidth - marginRight - 230;
+    const infoColonX = pageWidth - marginRight - 140;
+    const infoValueX = pageWidth - marginRight - 132;
+    doc.text('Nomor PO', infoLabelX, 70); doc.text(':', infoColonX, 70); doc.text(noPoValue || '-', infoValueX, 70);
+    doc.text('Tanggal', infoLabelX, 84); doc.text(':', infoColonX, 84); doc.text(formattedDate, infoValueX, 84);
+    doc.text('Vendor', infoLabelX, 98); doc.text(':', infoColonX, 98); doc.text(vendorHeader, infoValueX, 98);
+
+    // --- TABEL ITEM (sesuai struktur template: NO | NAMA PRODUK | WARNA | KODE VENDOR | YDS | KG | ROLL) ---
+    const bodyRows = items.map((item, idx) => {
+        const isYds = item.satuan === 'Yards';
+        const isKg = item.satuan === 'Kg';
+        const isRoll = item.satuan === 'Roll';
+        return [
+            idx + 1,
+            item.namaKain || '-',
+            item.warnaLatela || '-',
+            item.kodeWarnaVendor || '-',
+            isYds ? item.qty : '',
+            isKg ? item.qty : '',
+            isRoll ? item.qty : ''
+        ];
+    });
+
+
+    doc.autoTable({
+        startY: 130,
+        margin: { left: marginLeft, right: marginRight },
+        head: [
+            [
+                { content: 'NO', rowSpan: 2 },
+                { content: 'NAMA PRODUK', rowSpan: 2 },
+                { content: 'KODE WARNA', colSpan: 2, styles: { halign: 'center' } },
+                { content: 'QUANTITY', colSpan: 3, styles: { halign: 'center' } }
+            ],
+            ['WARNA', 'KODE VENDOR', 'YDS', 'KG', 'ROLL']
+        ],
+        body: bodyRows,
+        theme: 'grid',
+        styles: { fontSize: 9, halign: 'center', valign: 'middle', lineColor: [0,0,0], lineWidth: 0.75, minCellHeight: 24, textColor: [0,0,0] },
+        headStyles: { fillColor: [20,20,20], textColor: [255,255,255], fontStyle: 'bold' },
+        columnStyles: {
+            0: { cellWidth: 30 },
+            1: { cellWidth: contentWidth - (30 + 90 + 90 + 50 + 50 + 50) },
+            2: { cellWidth: 90 },
+            3: { cellWidth: 90 },
+            4: { cellWidth: 50 },
+            5: { cellWidth: 50 },
+            6: { cellWidth: 50 }
+        }
+    });
+
+    // --- TANDA TANGAN ---
+    const finalY = doc.lastAutoTable.finalY + 60;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
+    const signLeftCenterX = marginLeft + (contentWidth * 0.15);
+    const signRightCenterX = marginLeft + (contentWidth * 0.85);
+    doc.text('CV ARSA', signLeftCenterX, finalY, { align: 'center' });
+    doc.text(vendorHeader, signRightCenterX, finalY, { align: 'center' });
+
+    // GAMBAR TANDA TANGAN CV ARSA (ditempatkan di antara nama & garis titik-titik, posisi center)
+    const sigWidth = 110;
+    const sigHeight = 40.07;
+    doc.addImage(SIGNATURE_CV_ARSA_BASE64, 'PNG', signLeftCenterX - (sigWidth / 2), finalY + 4, sigWidth, sigHeight);
+
+    doc.text('(……………………………)', signLeftCenterX, finalY + 60, { align: 'center' });
+    doc.text('(……………………………)', signRightCenterX, finalY + 60, { align: 'center' });
+
+    doc.save(`CV_Arsa_Surat_PO_${noPoValue || new Date().toISOString().slice(0,10)}.pdf`);
+}
+
+// 🔒 SEKARANG PO HARUS DI-APPROVE DULU SEBELUM BISA DICETAK.
+// Tombol ini submit PO ke cloud (status Pending), bukan cetak PDF langsung.
 if (btnExportPo) {
     btnExportPo.addEventListener('click', () => {
         if(currentPoBasket.length === 0) { updateStatusMessage("⚠️ Belum ada item di list PO."); return; }
         const noPoValue = procNoPo ? procNoPo.value.trim() : '';
-
-        // FORMAT TANGGAL YANG DIPILIH USER
-        let rawSelectedDate = procTanggalPo ? procTanggalPo.value : '';
-        let formattedDate = '-';
-        if (rawSelectedDate) {
-            const parts = rawSelectedDate.split('-');
-            if (parts.length === 3) formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
-        }
-
-        // VENDOR DI HEADER DIAMBIL DARI ITEM PERTAMA DI LIST
+        const rawSelectedDate = procTanggalPo ? procTanggalPo.value : '';
+        if (!noPoValue) { updateStatusMessage("⚠️ Nomor PO wajib diisi sebelum submit."); return; }
         const vendorHeader = currentPoBasket[0].vendor || '-';
+        const sessionUser = getSession();
 
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const marginLeft = 28.35; // 1 cm
-        const marginRight = 28.35; // 1 cm
-        const contentWidth = pageWidth - marginLeft - marginRight;
+        updateStatusMessage("Mengirim PO untuk approval...");
+        const payload = new URLSearchParams();
+        payload.append('action', 'submit_po');
+        payload.append('id', `PO-${Date.now()}`);
+        payload.append('noPo', noPoValue);
+        payload.append('tanggal', rawSelectedDate);
+        payload.append('vendor', vendorHeader);
+        payload.append('items', JSON.stringify(currentPoBasket));
+        payload.append('dibuatOleh', sessionUser ? sessionUser.nama : '-');
+        payload.append('status', 'Pending');
 
-        // --- HEADER: NAMA PERUSAHAAN (KIRI) & JUDUL (KANAN) ---
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
-        doc.text('CV ARSA (ARSATEX)', marginLeft, 50);
-        doc.text('ORDER PEMBELIAN', pageWidth - marginRight, 50, { align: 'right' });
-
-        // --- ALAMAT (KIRI) ---
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-        doc.text('Jl. Majalaya No. 47', marginLeft, 70);
-        doc.text('Kp Majalaya Rt 001/002 Kel/Kec. Majalaya', marginLeft, 84);
-        doc.text('Bandung. Jawa Barat', marginLeft, 98);
-        doc.text('No Tlp :', marginLeft, 112);
-
-        // --- INFO PO (KANAN) ---
-        const infoLabelX = pageWidth - marginRight - 230;
-        const infoColonX = pageWidth - marginRight - 140;
-        const infoValueX = pageWidth - marginRight - 132;
-        doc.text('Nomor PO', infoLabelX, 70); doc.text(':', infoColonX, 70); doc.text(noPoValue || '-', infoValueX, 70);
-        doc.text('Tanggal', infoLabelX, 84); doc.text(':', infoColonX, 84); doc.text(formattedDate, infoValueX, 84);
-        doc.text('Vendor', infoLabelX, 98); doc.text(':', infoColonX, 98); doc.text(vendorHeader, infoValueX, 98);
-
-        // --- TABEL ITEM (sesuai struktur template: NO | NAMA PRODUK | WARNA | KODE VENDOR | YDS | KG | ROLL) ---
-        const bodyRows = currentPoBasket.map((item, idx) => {
-            const isYds = item.satuan === 'Yards';
-            const isKg = item.satuan === 'Kg';
-            const isRoll = item.satuan === 'Roll';
-            return [
-                idx + 1,
-                item.namaKain || '-',
-                item.warnaLatela || '-',
-                item.kodeWarnaVendor || '-',
-                isYds ? item.qty : '',
-                isKg ? item.qty : '',
-                isRoll ? item.qty : ''
-            ];
-        });
-
-
-        doc.autoTable({
-            startY: 130,
-            margin: { left: marginLeft, right: marginRight },
-            head: [
-                [
-                    { content: 'NO', rowSpan: 2 },
-                    { content: 'NAMA PRODUK', rowSpan: 2 },
-                    { content: 'KODE WARNA', colSpan: 2, styles: { halign: 'center' } },
-                    { content: 'QUANTITY', colSpan: 3, styles: { halign: 'center' } }
-                ],
-                ['WARNA', 'KODE VENDOR', 'YDS', 'KG', 'ROLL']
-            ],
-            body: bodyRows,
-            theme: 'grid',
-            styles: { fontSize: 9, halign: 'center', valign: 'middle', lineColor: [0,0,0], lineWidth: 0.75, minCellHeight: 24, textColor: [0,0,0] },
-            headStyles: { fillColor: [20,20,20], textColor: [255,255,255], fontStyle: 'bold' },
-            columnStyles: {
-                0: { cellWidth: 30 },
-                1: { cellWidth: contentWidth - (30 + 90 + 90 + 50 + 50 + 50) },
-                2: { cellWidth: 90 },
-                3: { cellWidth: 90 },
-                4: { cellWidth: 50 },
-                5: { cellWidth: 50 },
-                6: { cellWidth: 50 }
-            }
-        });
-
-        // --- TANDA TANGAN ---
-        const finalY = doc.lastAutoTable.finalY + 60;
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
-        const signLeftCenterX = marginLeft + (contentWidth * 0.15);
-        const signRightCenterX = marginLeft + (contentWidth * 0.85);
-        doc.text('CV ARSA', signLeftCenterX, finalY, { align: 'center' });
-        doc.text(vendorHeader, signRightCenterX, finalY, { align: 'center' });
-
-        // GAMBAR TANDA TANGAN CV ARSA (ditempatkan di antara nama & garis titik-titik, posisi center)
-        const sigWidth = 110;
-        const sigHeight = 40.07;
-        doc.addImage(SIGNATURE_CV_ARSA_BASE64, 'PNG', signLeftCenterX - (sigWidth / 2), finalY + 4, sigWidth, sigHeight);
-
-        doc.text('(……………………………)', signLeftCenterX, finalY + 60, { align: 'center' });
-        doc.text('(……………………………)', signRightCenterX, finalY + 60, { align: 'center' });
-
-        doc.save(`CV_Arsa_Surat_PO_${noPoValue || new Date().toISOString().slice(0,10)}.pdf`);
-        updateStatusMessage('PDF Surat PO berhasil dicetak & terdownload.');
+        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
+            .then(res => res.json())
+            .then(() => {
+                updateStatusMessage(`PO ${noPoValue} berhasil disubmit, menunggu approval.`);
+                currentPoBasket = []; renderProcurementTable();
+                if (procNoPo) procNoPo.value = '';
+                fetchPoListFromCloud();
+            })
+            .catch(() => updateStatusMessage("⚠️ Gagal submit PO, cek koneksi."));
     });
+}
+
+function fetchPoListFromCloud() {
+    const tbody = document.getElementById('tbody-po-list');
+    if (!tbody) return;
+    fetch(`${GOOGLE_SCRIPT_URL}?action=fetch_po`).then(res => res.json()).then(list => {
+        globalPoListCache = Array.isArray(list) ? list : [];
+        if (!globalPoListCache.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada PO yang disubmit.</td></tr>`; return; }
+
+        const sessionUser = getSession();
+        const isFullAccess = sessionUser && sessionUser.role === 'full';
+
+        tbody.innerHTML = '';
+        globalPoListCache.forEach(po => {
+            const statusApproved = (po.status || '').toLowerCase() === 'approved';
+            const badgeClass = statusApproved ? 'badge-status-approved' : 'badge-status-pending';
+            const badgeText = statusApproved ? 'Approved' : 'Pending';
+
+            let aksiHtml = '';
+            if (!statusApproved && isFullAccess) aksiHtml += `<button class="btn-action btn-purple-solid btn-approve-po" data-id="${po.id}" style="margin-right:6px;">✔️ Approve</button>`;
+            aksiHtml += `<button class="btn-action btn-blue-solid btn-cetak-po" data-id="${po.id}" ${statusApproved ? '' : 'disabled title="PO harus di-approve dulu sebelum bisa dicetak"'}>🖨️ Cetak PDF</button>`;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td><strong>${po.noPo || '-'}</strong></td><td>${po.tanggal || '-'}</td><td>${po.vendor || '-'}</td><td>${po.dibuatOleh || '-'}</td><td><span class="badge-status ${badgeClass}">${badgeText}</span></td><td>${aksiHtml}</td>`;
+            tbody.appendChild(tr);
+        });
+
+        tbody.querySelectorAll('.btn-approve-po').forEach(btn => btn.addEventListener('click', () => approvePo(btn.getAttribute('data-id'))));
+        tbody.querySelectorAll('.btn-cetak-po').forEach(btn => btn.addEventListener('click', () => cetakPoFromList(btn.getAttribute('data-id'))));
+    }).catch(() => { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data PO.</td></tr>`; });
+}
+
+function approvePo(id) {
+    const sessionUser = getSession();
+    updateStatusMessage("Memproses approval...");
+    const payload = new URLSearchParams();
+    payload.append('action', 'approve_po'); payload.append('id', id); payload.append('disetujuiOleh', sessionUser ? sessionUser.nama : '-');
+    fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
+        .then(res => res.json())
+        .then(() => { updateStatusMessage("PO berhasil di-approve."); fetchPoListFromCloud(); })
+        .catch(() => updateStatusMessage("⚠️ Gagal approve PO."));
+}
+
+function cetakPoFromList(id) {
+    const po = (globalPoListCache || []).find(p => p.id === id);
+    if (!po) { updateStatusMessage("⚠️ Data PO tidak ditemukan."); return; }
+    if ((po.status || '').toLowerCase() !== 'approved') { updateStatusMessage("⚠️ PO ini belum di-approve, belum bisa dicetak."); return; }
+    let items = [];
+    try { items = JSON.parse(po.items || '[]'); } catch (err) { updateStatusMessage("⚠️ Gagal membaca data item PO."); return; }
+    generatePoPdf(po.noPo, po.tanggal, po.vendor, items);
+    updateStatusMessage(`PDF PO ${po.noPo} berhasil dicetak & terdownload.`);
+}
+
+if (document.getElementById('btn-refresh-po-list')) {
+    document.getElementById('btn-refresh-po-list').addEventListener('click', fetchPoListFromCloud);
 }
 
 // 3. MENU NAVIGATION LAYER
@@ -653,8 +872,11 @@ menuItems.forEach(item => {
     item.addEventListener('click', () => {
         menuItems.forEach(btn => btn.classList.remove('active')); item.classList.add('active');
         contentViews.forEach(view => view.classList.remove('active'));
-        const targetView = document.getElementById(`view-${item.getAttribute('data-target')}`);
+        const target = item.getAttribute('data-target');
+        const targetView = document.getElementById(`view-${target}`);
         if (targetView) targetView.classList.add('active');
+        if (target === 'procurement') fetchPoListFromCloud();
+        if (target === 'kelolaakun') fetchUsers();
     });
 });
 
