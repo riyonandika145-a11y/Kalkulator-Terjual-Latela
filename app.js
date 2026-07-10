@@ -740,7 +740,11 @@ function readSingleExcelFile(file, onSuccess, onError) {
         try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
-            const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+            // defval: "" -> paksa semua baris punya key yang sama persis dengan header,
+            // walau sel-nya kosong. Tanpa ini, baris dengan sel kosong (misal No. Resi
+            // yang belum diisi) bisa jadi gak punya key itu sama sekali di baris tersebut,
+            // yang bikin deteksi kolom & pengecekan "kosong/tidak" jadi gak reliable.
+            const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
             onSuccess(jsonData);
         } catch (err) {
             updateStatusMessage(`Gagal memproses file: ${file.name}`);
@@ -752,10 +756,12 @@ function readSingleExcelFile(file, onSuccess, onError) {
 }
 
 function ekstrakDanHitungPenjualan(data, doRefresh = true) {
-    // Deteksi apakah file ini punya kolom "No. Resi" (khas template Shopee)
+    // Deteksi apakah file ini punya kolom "No. Resi" (khas template Shopee).
+    // Cek ke semua baris (bukan cuma baris pertama) untuk jaga-jaga kalau ada
+    // baris yang key-nya tidak lengkap.
     let hasResiColumn = false;
-    if (data.length > 0) {
-        for (let key in data[0]) {
+    for (let i = 0; i < data.length && !hasResiColumn; i++) {
+        for (let key in data[i]) {
             let keyClean = key.toString().toLowerCase().replace(/[^a-z0-9]/g, "");
             if (["noresi", "nomorresi"].includes(keyClean)) { hasResiColumn = true; break; }
         }
