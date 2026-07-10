@@ -646,8 +646,8 @@ body::after {
     box-shadow: 0 0 12px rgba(244,114,182,0.35);
 }
 #btn-toggle-icon {
-    width: 18px;
-    height: 18px;
+    width: 26px;
+    height: 26px;
     object-fit: contain;
     display: block;
     transition: transform 0.4s ease;
