@@ -114,7 +114,6 @@ window.addEventListener('DOMContentLoaded', () => {
     const savedSidebarState = localStorage.getItem('sidebarState');
     if (savedSidebarState === 'collapsed' && sidebarElement) {
         sidebarElement.classList.add('collapsed');
-        if (btnToggleSidebar) btnToggleSidebar.innerText = "❯";
     }
 
     // 🌟 INITIALIZE: OTOMATIS KUNCI TANGGAL PO KE HARI INI
@@ -255,10 +254,8 @@ if (btnToggleSidebar) {
         if (!sidebarElement) return;
         sidebarElement.classList.toggle('collapsed');
         if (sidebarElement.classList.contains('collapsed')) {
-            btnToggleSidebar.innerText = "❯";
             localStorage.setItem('sidebarState', 'collapsed');
         } else {
-            btnToggleSidebar.innerText = "☰";
             localStorage.setItem('sidebarState', 'expanded');
         }
     });
