@@ -30,7 +30,19 @@
         </div>
     </div>
 
-    <div class="app-container">
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-card">
+            <img src="logo-flower.png" alt="Latela" class="login-logo">
+            <h2 class="login-title">LATELA</h2>
+            <p class="login-subtitle">Order Management System</p>
+            <input type="text" id="login-username" placeholder="Username" autocomplete="username">
+            <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
+            <span id="login-error-msg"></span>
+            <button id="btn-login-submit" class="btn-action btn-pink-solid" style="width:100%;">Masuk</button>
+        </div>
+    </div>
+
+    <div class="app-container" id="app-container">
         <aside class="sidebar">
             <button id="btn-toggle-sidebar" class="btn-toggle"><img src="logo-flower.png" alt="Menu" id="btn-toggle-icon"></button>
 
@@ -71,11 +83,23 @@
                 <button class="menu-item" data-target="procurement">
                     <span class="menu-text">Procurement</span>
                 </button>
+
+                <button class="menu-item" data-target="kelolaakun" id="menu-kelola-akun" style="display:none;">
+                    <span class="menu-text">Kelola Akun</span>
+                </button>
                 
                 <a href="https://docs.google.com/spreadsheets/d/1b67HBw0kqhxMR8gaFTvLcuhOuFrTCdD-6md0N1PiXkU/edit?gid=0#gid=0" target="_blank" class="menu-item-external" id="menu-extension">
                     <span class="menu-text">Extension</span>
                 </a>
             </nav>
+
+            <div class="user-session-box">
+                <div class="user-session-info">
+                    <span class="user-session-name" id="user-session-name">-</span>
+                    <span class="user-session-role" id="user-session-role">-</span>
+                </div>
+                <button id="btn-logout" class="btn-action btn-gray-outline" style="width:100%; margin-top:8px;">Logout</button>
+            </div>
 
             <div class="theme-picker-anchor">
                 <button id="btn-theme-picker" class="btn-theme-dot" title="Ubah tema warna" aria-label="Ubah tema warna"></button>
@@ -184,9 +208,27 @@
                                 <div class="proc-qty-row"><input type="number" id="proc-qty" placeholder="Qty" min="1" class="proc-qty-input"><select id="proc-satuan" class="proc-satuan-select"><option value="Roll">Roll</option><option value="Yards">Yards</option><option value="Kg">Kg</option></select></div>
                             </div>
                         </div>
-                        <div class="proc-row-actions"><button id="btn-reset-po">Reset</button><button id="btn-export-po">Cetak PO 📄</button><button id="btn-add-proc">+ Tambah Item</button></div>
+                        <div class="proc-row-actions"><button id="btn-reset-po">Reset</button><button id="btn-export-po">Submit ke List PO 📤</button><button id="btn-add-proc">+ Tambah Item</button></div>
                     </div>
                     <div class="sku-list-card" style="width: 100%;"><h3>Daftar Item Surat Pesanan (PO)</h3><div class="table-responsive"><table><thead><tr><th>Jenis Barang</th><th>Kode Warna Latela</th><th>Kode Warna Vendor</th><th>Vendor</th><th>Kode Vendor</th><th>Nama Kain</th><th style="text-align: right; padding-right:25px;">Jumlah Order</th></tr></thead><tbody id="tbody-procurement-list"></tbody></table></div></div>
+
+                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Daftar PO & Status Approval</h3><button id="btn-refresh-po-list" class="btn-action btn-pink-outline">🔄 Refresh</button></div><div class="table-responsive"><table><thead><tr><th>No PO</th><th>Tanggal</th><th>Vendor</th><th>Dibuat Oleh</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tbody-po-list"><tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data PO...</td></tr></tbody></table></div></div>
+                </section>
+
+                <section id="view-kelolaakun" class="content-view">
+                    <h2 class="page-title">Kelola Akun Pengguna</h2>
+                    <div class="procurement-form-container">
+                        <div class="proc-row-top">
+                            <div class="proc-field-col"><span class="proc-field-label">Username:</span><input type="text" id="akun-username" placeholder="Username..."></div>
+                            <div class="proc-field-col"><span class="proc-field-label">Nama:</span><input type="text" id="akun-nama" placeholder="Nama lengkap..."></div>
+                        </div>
+                        <div class="proc-row-top">
+                            <div class="proc-field-col"><span class="proc-field-label">Password:</span><input type="password" id="akun-password" placeholder="Password..."></div>
+                            <div class="proc-field-col"><span class="proc-field-label">Role:</span><select id="akun-role"><option value="terbatas">Akses Terbatas</option><option value="full">Akses Penuh</option></select></div>
+                        </div>
+                        <div class="proc-row-actions"><button id="btn-simpan-akun" class="btn-action btn-pink-solid">💾 Simpan Akun</button></div>
+                    </div>
+                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Daftar Akun</h3><button id="btn-refresh-akun" class="btn-action btn-pink-outline">🔄 Refresh</button></div><div class="table-responsive"><table><thead><tr><th>Username</th><th>Nama</th><th>Role</th><th>Aksi</th></tr></thead><tbody id="tbody-akun-list"><tr><td colspan="4" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data akun...</td></tr></tbody></table></div></div>
                 </section>
             </div>
             <footer class="status-footer" id="status-bar">Memuat sistem...</footer>
