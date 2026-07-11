@@ -118,7 +118,6 @@ const loginErrorMsg = document.getElementById('login-error-msg');
 const btnLoginSubmit = document.getElementById('btn-login-submit');
 const btnLogout = document.getElementById('btn-logout');
 const userSessionName = document.getElementById('user-session-name');
-const userSessionRole = document.getElementById('user-session-role');
 const menuKelolaAkun = document.getElementById('menu-kelola-akun');
 
 // SELEKTOR KELOLA AKUN
@@ -148,7 +147,6 @@ function applyRoleUI() {
     const sess = getSession();
     const isFullAccess = sess && sess.role === 'full';
     if (userSessionName) userSessionName.innerText = sess ? sess.nama : '-';
-    if (userSessionRole) userSessionRole.innerText = sess ? (isFullAccess ? 'Akses Penuh' : 'Akses Terbatas') : '-';
     if (menuKelolaAkun) menuKelolaAkun.style.display = isFullAccess ? '' : 'none';
 }
 
@@ -829,6 +827,50 @@ if (btnExportPo) {
     });
 }
 
+// 🔧 Format tanggal mentah dari Google Sheets (bisa berupa objek Date, ISO string,
+// atau teks biasa "yyyy-mm-dd") jadi tampilan rapi "DD/MM/YYYY" untuk ditampilkan di tabel.
+function formatTanggalDisplay(raw) {
+    if (!raw) return '-';
+    let dateStr = '';
+    if (raw instanceof Date) {
+        const yyyy = raw.getFullYear(); const mm = String(raw.getMonth() + 1).padStart(2, '0'); const dd = String(raw.getDate()).padStart(2, '0');
+        dateStr = `${yyyy}-${mm}-${dd}`;
+    } else { dateStr = raw.toString().slice(0, 10); }
+    const parts = dateStr.split('-');
+    return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
+}
+
+const poDetailModal = document.getElementById('po-detail-modal');
+const poDetailTitle = document.getElementById('po-detail-title');
+const tbodyPoDetailItems = document.getElementById('tbody-po-detail-items');
+const btnPoDetailClose = document.getElementById('btn-po-detail-close');
+
+function openPoDetailModal(id) {
+    const po = (globalPoListCache || []).find(p => p.id === id);
+    if (!po) { updateStatusMessage("⚠️ Data PO tidak ditemukan."); return; }
+
+    let items = [];
+    try { items = typeof po.items === 'string' ? JSON.parse(po.items || '[]') : (po.items || []); } catch (err) { items = []; }
+
+    if (poDetailTitle) poDetailTitle.innerText = `#${po.noPo || '-'}`;
+    if (tbodyPoDetailItems) {
+        if (!items.length) {
+            tbodyPoDetailItems.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Data item kosong.</td></tr>`;
+        } else {
+            tbodyPoDetailItems.innerHTML = items.map(item => `<tr>
+                <td>${item.jenisBarang !== undefined && item.jenisBarang !== null ? String(item.jenisBarang) : '-'}</td>
+                <td>${item.warnaLatela !== undefined && item.warnaLatela !== null ? String(item.warnaLatela) : '-'}</td>
+                <td>${item.kodeWarnaVendor !== undefined && item.kodeWarnaVendor !== null ? String(item.kodeWarnaVendor) : '-'}</td>
+                <td>${item.namaKain !== undefined && item.namaKain !== null ? String(item.namaKain) : '-'}</td>
+                <td style="text-align:right;">${item.qty !== undefined && item.qty !== null ? String(item.qty) : '-'} ${item.satuan ? String(item.satuan) : ''}</td>
+            </tr>`).join('');
+        }
+    }
+    if (poDetailModal) poDetailModal.classList.add('show');
+}
+if (btnPoDetailClose) btnPoDetailClose.addEventListener('click', () => { if (poDetailModal) poDetailModal.classList.remove('show'); });
+if (poDetailModal) poDetailModal.addEventListener('click', (e) => { if (e.target === poDetailModal) poDetailModal.classList.remove('show'); });
+
 function fetchPoListFromCloud() {
     const tbody = document.getElementById('tbody-po-list');
     if (!tbody) return;
@@ -858,9 +900,11 @@ function fetchPoListFromCloud() {
             aksiHtml += `<button class="btn-action btn-blue-solid btn-cetak-po" data-id="${po.id}" ${statusApproved ? '' : 'disabled title="PO harus di-approve dulu sebelum bisa dicetak"'}>🖨️ Cetak PDF</button>`;
 
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td><strong>${po.noPo || '-'}</strong></td><td>${po.tanggal || '-'}</td><td>${po.vendor || '-'}</td><td>${po.dibuatOleh || '-'}</td><td><span class="badge-status ${badgeClass}">${badgeText}</span></td><td>${aksiHtml}</td>`;
+            tr.innerHTML = `<td><strong class="po-no-clickable" data-id="${po.id}" style="cursor:pointer; text-decoration:underline; color:var(--pink-main);">${po.noPo || '-'}</strong></td><td>${formatTanggalDisplay(po.tanggal)}</td><td>${po.vendor || '-'}</td><td>${po.dibuatOleh || '-'}</td><td><span class="badge-status ${badgeClass}">${badgeText}</span></td><td>${aksiHtml}</td>`;
             tbody.appendChild(tr);
         });
+
+        tbody.querySelectorAll('.po-no-clickable').forEach(el => el.addEventListener('click', () => openPoDetailModal(el.getAttribute('data-id'))));
 
         tbody.querySelectorAll('.dropdown-aksi-po').forEach(sel => sel.addEventListener('change', () => {
             const id = sel.getAttribute('data-id');
