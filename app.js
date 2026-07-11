@@ -683,8 +683,19 @@ if (btnResetPo) {
 
 function generatePoPdf(noPoValue, rawSelectedDate, vendorHeader, items) {
     let formattedDate = '-';
-    if (rawSelectedDate) {
-        const parts = rawSelectedDate.split('-');
+    // 🔧 Google Sheets kadang otomatis mengubah teks tanggal jadi objek Date beneran.
+    // Normalize dulu jadi string "yyyy-mm-dd" biar aman diproses, apapun bentuk aslinya.
+    let dateStr = '';
+    if (rawSelectedDate instanceof Date) {
+        const yyyy = rawSelectedDate.getFullYear();
+        const mm = String(rawSelectedDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(rawSelectedDate.getDate()).padStart(2, '0');
+        dateStr = `${yyyy}-${mm}-${dd}`;
+    } else if (rawSelectedDate) {
+        dateStr = rawSelectedDate.toString().slice(0, 10); // ambil 10 karakter pertama (yyyy-mm-dd), buang jam kalau ada format ISO lengkap
+    }
+    if (dateStr) {
+        const parts = dateStr.split('-');
         if (parts.length === 3) formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
     }
 
@@ -824,12 +835,20 @@ function fetchPoListFromCloud() {
 
         tbody.innerHTML = '';
         globalPoListCache.forEach(po => {
-            const statusApproved = (po.status || '').toLowerCase() === 'approved';
-            const badgeClass = statusApproved ? 'badge-status-approved' : 'badge-status-pending';
-            const badgeText = statusApproved ? 'Approved' : 'Pending';
+            const statusLower = (po.status || '').toLowerCase();
+            const statusApproved = statusLower === 'approved';
+            const statusRejected = statusLower === 'rejected';
+            const badgeClass = statusApproved ? 'badge-status-approved' : (statusRejected ? 'badge-status-rejected' : 'badge-status-pending');
+            const badgeText = statusApproved ? 'Approved' : (statusRejected ? 'Rejected' : 'Pending');
 
             let aksiHtml = '';
-            if (!statusApproved && isFullAccess) aksiHtml += `<button class="btn-action btn-purple-solid btn-approve-po" data-id="${po.id}" style="margin-right:6px;">✔️ Approve</button>`;
+            if (statusLower === 'pending' && isFullAccess) {
+                aksiHtml += `<select class="dropdown-aksi-po" data-id="${po.id}" style="margin-right:6px;">
+                    <option value="">-- Pilih Aksi --</option>
+                    <option value="Approved">✔️ Approve</option>
+                    <option value="Rejected">❌ Reject</option>
+                </select>`;
+            }
             aksiHtml += `<button class="btn-action btn-blue-solid btn-cetak-po" data-id="${po.id}" ${statusApproved ? '' : 'disabled title="PO harus di-approve dulu sebelum bisa dicetak"'}>🖨️ Cetak PDF</button>`;
 
             const tr = document.createElement('tr');
@@ -837,30 +856,46 @@ function fetchPoListFromCloud() {
             tbody.appendChild(tr);
         });
 
-        tbody.querySelectorAll('.btn-approve-po').forEach(btn => btn.addEventListener('click', () => approvePo(btn.getAttribute('data-id'))));
+        tbody.querySelectorAll('.dropdown-aksi-po').forEach(sel => sel.addEventListener('change', () => {
+            const id = sel.getAttribute('data-id');
+            const val = sel.value;
+            if (!val) return;
+            if (val === 'Approved') updatePoStatus(id, 'Approved');
+            else if (val === 'Rejected') { if (confirm('Yakin mau reject PO ini?')) updatePoStatus(id, 'Rejected'); else sel.value = ''; }
+        }));
         tbody.querySelectorAll('.btn-cetak-po').forEach(btn => btn.addEventListener('click', () => cetakPoFromList(btn.getAttribute('data-id'))));
     }).catch(() => { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data PO.</td></tr>`; });
 }
 
-function approvePo(id) {
+function updatePoStatus(id, status) {
     const sessionUser = getSession();
-    updateStatusMessage("Memproses approval...");
+    updateStatusMessage(status === 'Approved' ? "Memproses approval..." : "Memproses reject...");
     const payload = new URLSearchParams();
-    payload.append('action', 'approve_po'); payload.append('id', id); payload.append('disetujuiOleh', sessionUser ? sessionUser.nama : '-');
+    payload.append('action', 'update_po_status'); payload.append('id', id); payload.append('status', status); payload.append('diprosesOleh', sessionUser ? sessionUser.nama : '-');
     fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
         .then(res => res.json())
-        .then(() => { updateStatusMessage("PO berhasil di-approve."); fetchPoListFromCloud(); })
-        .catch(() => updateStatusMessage("⚠️ Gagal approve PO."));
+        .then(() => { updateStatusMessage(status === 'Approved' ? "PO berhasil di-approve." : "PO berhasil di-reject."); fetchPoListFromCloud(); })
+        .catch(() => updateStatusMessage("⚠️ Gagal memproses PO."));
 }
 
 function cetakPoFromList(id) {
     const po = (globalPoListCache || []).find(p => p.id === id);
     if (!po) { updateStatusMessage("⚠️ Data PO tidak ditemukan."); return; }
     if ((po.status || '').toLowerCase() !== 'approved') { updateStatusMessage("⚠️ PO ini belum di-approve, belum bisa dicetak."); return; }
+
     let items = [];
-    try { items = JSON.parse(po.items || '[]'); } catch (err) { updateStatusMessage("⚠️ Gagal membaca data item PO."); return; }
-    generatePoPdf(po.noPo, po.tanggal, po.vendor, items);
-    updateStatusMessage(`PDF PO ${po.noPo} berhasil dicetak & terdownload.`);
+    try {
+        items = typeof po.items === 'string' ? JSON.parse(po.items || '[]') : (po.items || []);
+    } catch (err) { updateStatusMessage("⚠️ Gagal membaca data item PO (format items tidak valid)."); console.error(err); return; }
+    if (!Array.isArray(items) || items.length === 0) { updateStatusMessage("⚠️ Data item PO kosong/rusak, tidak bisa dicetak."); return; }
+
+    try {
+        generatePoPdf(po.noPo, po.tanggal, po.vendor, items);
+        updateStatusMessage(`PDF PO ${po.noPo} berhasil dicetak & terdownload.`);
+    } catch (err) {
+        updateStatusMessage("⚠️ Gagal membuat PDF, cek console (F12) untuk detail error.");
+        console.error('Gagal generatePoPdf:', err);
+    }
 }
 
 if (document.getElementById('btn-refresh-po-list')) {
