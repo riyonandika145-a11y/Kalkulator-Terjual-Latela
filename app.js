@@ -682,8 +682,14 @@ if (btnResetPo) {
 }
 
 function generatePoPdf(noPoValue, rawSelectedDate, vendorHeader, items) {
+    // 🔧 Google Sheets kadang otomatis mengubah teks yang "kelihatan kayak angka" (misal
+    // Nomor PO "202") jadi tipe data Number beneran. jsPDF cuma nerima string murni untuk
+    // doc.text(), jadi semua nilai yang bakal ditulis WAJIB dipaksa jadi string dulu.
+    noPoValue = noPoValue !== undefined && noPoValue !== null ? String(noPoValue) : '';
+    vendorHeader = vendorHeader !== undefined && vendorHeader !== null ? String(vendorHeader) : '-';
+
     let formattedDate = '-';
-    // 🔧 Google Sheets kadang otomatis mengubah teks tanggal jadi objek Date beneran.
+    // Google Sheets kadang juga otomatis mengubah teks tanggal jadi objek Date beneran.
     // Normalize dulu jadi string "yyyy-mm-dd" biar aman diproses, apapun bentuk aslinya.
     let dateStr = '';
     if (rawSelectedDate instanceof Date) {
@@ -733,9 +739,9 @@ function generatePoPdf(noPoValue, rawSelectedDate, vendorHeader, items) {
         const isRoll = item.satuan === 'Roll';
         return [
             idx + 1,
-            item.namaKain || '-',
-            item.warnaLatela || '-',
-            item.kodeWarnaVendor || '-',
+            item.namaKain !== undefined && item.namaKain !== null && item.namaKain !== '' ? String(item.namaKain) : '-',
+            item.warnaLatela !== undefined && item.warnaLatela !== null && item.warnaLatela !== '' ? String(item.warnaLatela) : '-',
+            item.kodeWarnaVendor !== undefined && item.kodeWarnaVendor !== null && item.kodeWarnaVendor !== '' ? String(item.kodeWarnaVendor) : '-',
             isYds ? item.qty : '',
             isKg ? item.qty : '',
             isRoll ? item.qty : ''
