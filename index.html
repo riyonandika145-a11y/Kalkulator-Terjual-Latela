@@ -96,7 +96,6 @@
             <div class="user-session-box">
                 <div class="user-session-info">
                     <span class="user-session-name" id="user-session-name">-</span>
-                    <span class="user-session-role" id="user-session-role">-</span>
                 </div>
                 <button id="btn-logout" class="btn-action btn-gray-outline" style="width:100%; margin-top:8px;">Logout</button>
             </div>
@@ -236,6 +235,8 @@
     </div>
 
     <div id="password-modal" class="modal-overlay"><div class="modal-card"><div class="modal-header">🔒 <h3>Security Authentication</h3></div><div class="modal-body"><p>Masukkan password otorisasi:</p><input type="password" id="input-ext-password" placeholder="Password..."><span id="modal-error-msg"></span></div><div class="modal-footer"><button id="btn-modal-cancel">Batal</button><button id="btn-modal-submit">Masuk</button></div></div></div>
+
+    <div id="po-detail-modal" class="modal-overlay"><div class="modal-card" style="max-width:640px;"><div class="modal-header">📦 <h3>Detail Item PO <span id="po-detail-title"></span></h3></div><div class="modal-body"><div class="table-responsive"><table><thead><tr><th>Jenis Barang</th><th>Warna Latela</th><th>Kode Warna Vendor</th><th>Nama Kain</th><th style="text-align:right;">Qty</th></tr></thead><tbody id="tbody-po-detail-items"></tbody></table></div></div><div class="modal-footer"><button id="btn-po-detail-close">Tutup</button></div></div></div>
     <script src="app.js"></script>
 </body>
 </html>
