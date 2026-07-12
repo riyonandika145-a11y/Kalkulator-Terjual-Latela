@@ -1,5 +1,16 @@
 
 // =========================================================================
+// PWA: REGISTRASI SERVICE WORKER (biar bisa di-install jadi app desktop)
+// =========================================================================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(() => console.log('Service Worker terdaftar.'))
+            .catch((err) => console.error('Gagal daftar Service Worker:', err));
+    });
+}
+
+// =========================================================================
 // CLOUD DATABASE CONFIGURATION (GOOGLE SHEETS)
 // =========================================================================
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9ZVSAObK0DbfXadHO9LIQGEaLlmFruZ4AR7HFpsYC2ONmKLGQCQ_93TuS_DpOwog/exec";
