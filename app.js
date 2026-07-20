@@ -288,7 +288,7 @@ function renderBarangTable(list) {
     list.forEach(b => {
         const hargaFmt = (b.harga !== undefined && b.harga !== null && b.harga !== '') ? `Rp ${Number(b.harga).toLocaleString('id-ID')}` : '-';
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${b.namaProduk || '-'}</td><td>${b.variasi || '-'}</td><td>${b.toko || '-'}</td><td>${b.vendor || '-'}</td><td>${b.kodeVendor || '-'}</td><td style="text-align:right;">${hargaFmt}</td><td style="text-align:right;">${b.leadTime !== undefined && b.leadTime !== null ? b.leadTime : '-'}</td><td style="text-align:center; position:relative;">
+        tr.innerHTML = `<td>${b.namaProduk || '-'}</td><td>${b.variasi || '-'}</td><td>${b.toko || '-'}</td><td>${b.vendor || '-'}</td><td>${b.kodeVendor || '-'}</td><td style="text-align:right;">${hargaFmt}</td><td style="text-align:right;">${b.leadTime !== undefined && b.leadTime !== null && b.leadTime !== '' ? `${b.leadTime} Hari` : '-'}</td><td style="text-align:center; position:relative;">
             <button class="btn-aksi-titik3" data-rowindex="${b.rowIndex}">⋮</button>
             <div class="dropdown-aksi-titik3" data-rowindex="${b.rowIndex}">
                 <button class="dropdown-item-edit" data-rowindex="${b.rowIndex}">Edit</button>
