@@ -822,10 +822,10 @@ body::after {
 }
 
 .content-view { display: none; height: 100%; }
-#view-kalkulator.active, #view-mastersku.active {
+#view-kalkulator.active, #view-mastersku.active, #view-barang.active {
     display: flex; flex-direction: column;
 }
-#view-dashboard.active, #view-history.active, #view-procurement.active, #view-kelolaakun.active, #view-barang.active {
+#view-dashboard.active, #view-history.active, #view-procurement.active, #view-kelolaakun.active {
     display: block; overflow-y: auto; padding-bottom: 40px;
 }
 
@@ -1486,4 +1486,55 @@ select#proc-vendor-select.proc-readonly-field:focus {
 
 .btn-cetak-po:disabled, .btn-cetak-po[disabled] {
     opacity: 0.4; cursor: not-allowed; filter: grayscale(1);
+}
+
+/* =========================================================================
+   MENU AKSI TITIK-3 (dropdown Edit/Hapus di tabel Data Barang)
+   ========================================================================= */
+.btn-aksi-titik3 {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.06);
+    color: var(--text-main);
+    font-size: 16px; font-weight: 700;
+    cursor: pointer;
+    line-height: 1;
+    transition: background 0.15s;
+}
+.btn-aksi-titik3:hover { background: rgba(244,114,182,0.20); border-color: var(--pink-main); }
+
+.dropdown-aksi-titik3 {
+    display: none;
+    position: absolute;
+    top: 38px; right: 0;
+    background: rgba(15,32,48,0.98);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 12px;
+    min-width: 140px;
+    padding: 6px;
+    z-index: 100;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    text-align: left;
+}
+.dropdown-aksi-titik3.show { display: block; }
+.dropdown-aksi-titik3 button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 8px 10px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-main);
+    font-size: 13px;
+    cursor: pointer;
+}
+.dropdown-aksi-titik3 button:hover { background: rgba(255,255,255,0.08); }
+.dropdown-aksi-titik3 .dropdown-item-hapus:hover { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+body[data-theme="light"] .dropdown-aksi-titik3 {
+    background: #ffffff;
+    border-color: rgba(0,0,0,0.10);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
 }
