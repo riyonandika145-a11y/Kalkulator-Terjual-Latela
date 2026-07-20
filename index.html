@@ -236,7 +236,14 @@
 
                 <section id="view-barang" class="content-view">
                     <h2 class="page-title">Data Barang</h2>
-                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Daftar Barang (Harga_Update)</h3><div><button id="btn-tambah-barang" class="btn-action btn-pink-solid" style="margin-right:8px;">+ Tambah Barang</button><button id="btn-refresh-barang" class="btn-action btn-pink-outline">🔄 Refresh</button></div></div><div class="table-responsive"><table><thead><tr><th>Nama Produk</th><th>Variasi</th><th>Toko</th><th>Vendor</th><th>Kode Vendor</th><th style="text-align:right;">Harga</th><th style="text-align:right;">LeadTime (Days)</th><th>Aksi</th></tr></thead><tbody id="tbody-barang-list"><tr><td colspan="8" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data barang...</td></tr></tbody></table></div></div>
+                    <div class="sku-list-card" style="width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px; gap:10px; flex-wrap:wrap;">
+                            <h3 style="margin: 0;">Daftar Barang (Harga_Update)</h3>
+                            <input type="text" id="search-barang" placeholder="🔍 Cari nama produk, vendor, toko..." style="flex:1; min-width:200px; max-width:320px; height:36px; padding:0 14px; border-radius:10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16); color:var(--text-main); font-size:13px;">
+                            <div><button id="btn-tambah-barang" class="btn-action btn-pink-solid" style="margin-right:8px;">+ Tambah Barang</button><button id="btn-refresh-barang" class="btn-action btn-pink-outline">🔄 Refresh</button></div>
+                        </div>
+                        <div class="table-responsive"><table><thead><tr><th>Nama Produk</th><th>Variasi</th><th>Toko</th><th>Vendor</th><th>Kode Vendor</th><th style="text-align:right;">Harga</th><th style="text-align:right;">LeadTime (Days)</th><th style="text-align:center;">Aksi</th></tr></thead><tbody id="tbody-barang-list"><tr><td colspan="8" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data barang...</td></tr></tbody></table></div>
+                    </div>
                 </section>
             </div>
             <footer class="status-footer" id="status-bar">Memuat sistem...</footer>
