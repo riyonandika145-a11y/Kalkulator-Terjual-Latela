@@ -276,17 +276,58 @@ function fetchBarangList() {
     tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data barang...</td></tr>`;
     fetch(`${GOOGLE_SCRIPT_URL}?action=fetch_barang`).then(res => res.json()).then(list => {
         globalBarangListCache = Array.isArray(list) ? list : [];
-        if (!globalBarangListCache.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada data barang.</td></tr>`; return; }
-        tbody.innerHTML = '';
-        globalBarangListCache.forEach(b => {
-            const hargaFmt = (b.harga !== undefined && b.harga !== null && b.harga !== '') ? Number(b.harga).toLocaleString('id-ID') : '-';
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${b.namaProduk || '-'}</td><td>${b.variasi || '-'}</td><td>${b.toko || '-'}</td><td>${b.vendor || '-'}</td><td>${b.kodeVendor || '-'}</td><td style="text-align:right;">${hargaFmt}</td><td style="text-align:right;">${b.leadTime !== undefined && b.leadTime !== null ? b.leadTime : '-'}</td><td><button class="btn-action btn-pink-outline btn-edit-barang" data-rowindex="${b.rowIndex}" style="margin-right:6px;">✏️ Edit</button><button class="btn-action btn-gray-outline btn-hapus-barang" data-rowindex="${b.rowIndex}">🗑️ Hapus</button></td>`;
-            tbody.appendChild(tr);
-        });
-        tbody.querySelectorAll('.btn-edit-barang').forEach(btn => btn.addEventListener('click', () => openBarangEditModal(btn.getAttribute('data-rowindex'))));
-        tbody.querySelectorAll('.btn-hapus-barang').forEach(btn => btn.addEventListener('click', () => deleteBarang(btn.getAttribute('data-rowindex'))));
+        renderBarangTable(globalBarangListCache);
     }).catch(() => { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data barang.</td></tr>`; });
+}
+
+function renderBarangTable(list) {
+    const tbody = document.getElementById('tbody-barang-list');
+    if (!tbody) return;
+    if (!list.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#94a3b8; font-style:italic;">Tidak ada data yang cocok.</td></tr>`; return; }
+    tbody.innerHTML = '';
+    list.forEach(b => {
+        const hargaFmt = (b.harga !== undefined && b.harga !== null && b.harga !== '') ? Number(b.harga).toLocaleString('id-ID') : '-';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${b.namaProduk || '-'}</td><td>${b.variasi || '-'}</td><td>${b.toko || '-'}</td><td>${b.vendor || '-'}</td><td>${b.kodeVendor || '-'}</td><td style="text-align:right;">${hargaFmt}</td><td style="text-align:right;">${b.leadTime !== undefined && b.leadTime !== null ? b.leadTime : '-'}</td><td style="text-align:center; position:relative;">
+            <button class="btn-aksi-titik3" data-rowindex="${b.rowIndex}">⋮</button>
+            <div class="dropdown-aksi-titik3" data-rowindex="${b.rowIndex}">
+                <button class="dropdown-item-edit" data-rowindex="${b.rowIndex}">✏️ Edit</button>
+                <button class="dropdown-item-hapus" data-rowindex="${b.rowIndex}">🗑️ Hapus</button>
+            </div>
+        </td>`;
+        tbody.appendChild(tr);
+    });
+
+    // Toggle dropdown pas titik-3 diklik (tutup dropdown lain yang lagi kebuka)
+    tbody.querySelectorAll('.btn-aksi-titik3').forEach(btn => btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const dropdown = btn.nextElementSibling;
+        const isOpen = dropdown.classList.contains('show');
+        document.querySelectorAll('.dropdown-aksi-titik3.show').forEach(d => d.classList.remove('show'));
+        if (!isOpen) dropdown.classList.add('show');
+    }));
+    tbody.querySelectorAll('.dropdown-item-edit').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.dropdown-aksi-titik3.show').forEach(d => d.classList.remove('show')); openBarangEditModal(btn.getAttribute('data-rowindex')); }));
+    tbody.querySelectorAll('.dropdown-item-hapus').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.dropdown-aksi-titik3.show').forEach(d => d.classList.remove('show')); deleteBarang(btn.getAttribute('data-rowindex')); }));
+}
+
+// Tutup semua dropdown titik-3 kalau klik di luar area itu
+document.addEventListener('click', () => { document.querySelectorAll('.dropdown-aksi-titik3.show').forEach(d => d.classList.remove('show')); });
+
+// --- SEARCH BARANG (filter live dari cache, gak perlu fetch ulang) ---
+const searchBarangInput = document.getElementById('search-barang');
+if (searchBarangInput) {
+    searchBarangInput.addEventListener('input', () => {
+        const q = searchBarangInput.value.trim().toLowerCase();
+        if (!q) { renderBarangTable(globalBarangListCache); return; }
+        const filtered = globalBarangListCache.filter(b =>
+            (b.namaProduk || '').toString().toLowerCase().includes(q) ||
+            (b.variasi || '').toString().toLowerCase().includes(q) ||
+            (b.toko || '').toString().toLowerCase().includes(q) ||
+            (b.vendor || '').toString().toLowerCase().includes(q) ||
+            (b.kodeVendor || '').toString().toLowerCase().includes(q)
+        );
+        renderBarangTable(filtered);
+    });
 }
 
 const barangEditModalTitle = document.getElementById('barang-edit-modal-title');
