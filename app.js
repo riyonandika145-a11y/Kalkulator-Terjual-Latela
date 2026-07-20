@@ -214,7 +214,7 @@ function fetchUsers() {
         globalUserListCache.forEach(u => {
             const roleLabel = u.role === 'full' ? 'Akses Penuh' : 'Akses Terbatas';
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td><strong>${u.username}</strong></td><td>${u.nama || '-'}</td><td>${roleLabel}</td><td><button class="btn-action btn-gray-outline btn-hapus-akun" data-username="${u.username}">🗑️ Hapus</button></td>`;
+            tr.innerHTML = `<td><strong>${u.username}</strong></td><td>${u.nama || '-'}</td><td>${roleLabel}</td><td><button class="btn-action btn-gray-outline btn-hapus-akun" data-username="${u.username}">Hapus</button></td>`;
             tbody.appendChild(tr);
         });
         tbody.querySelectorAll('.btn-hapus-akun').forEach(btn => btn.addEventListener('click', () => deleteUser(btn.getAttribute('data-username'))));
@@ -227,7 +227,7 @@ if (btnSimpanAkun) {
         const n = akunNama ? akunNama.value.trim() : '';
         const p = akunPassword ? akunPassword.value : '';
         const r = akunRole ? akunRole.value : 'terbatas';
-        if (!u || !n || !p) { updateStatusMessage('⚠️ Username, Nama, dan Password wajib diisi.'); return; }
+        if (!u || !n || !p) { updateStatusMessage('(!) Username, Nama, dan Password wajib diisi.'); return; }
 
         updateStatusMessage('Menyimpan akun...');
         const payload = new URLSearchParams();
@@ -239,7 +239,7 @@ if (btnSimpanAkun) {
                 if (akunUsername) akunUsername.value = ''; if (akunNama) akunNama.value = ''; if (akunPassword) akunPassword.value = ''; if (akunRole) akunRole.value = 'terbatas';
                 fetchUsers();
             })
-            .catch(() => updateStatusMessage('⚠️ Gagal menyimpan akun.'));
+            .catch(() => updateStatusMessage('(!) Gagal menyimpan akun.'));
     });
 }
 
@@ -250,7 +250,7 @@ function deleteUser(username) {
     fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
         .then(res => res.json())
         .then(() => { updateStatusMessage(`Akun "${username}" berhasil dihapus.`); fetchUsers(); })
-        .catch(() => updateStatusMessage('⚠️ Gagal menghapus akun.'));
+        .catch(() => updateStatusMessage('(!) Gagal menghapus akun.'));
 }
 
 if (btnRefreshAkun) btnRefreshAkun.addEventListener('click', fetchUsers);
@@ -286,13 +286,13 @@ function renderBarangTable(list) {
     if (!list.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#94a3b8; font-style:italic;">Tidak ada data yang cocok.</td></tr>`; return; }
     tbody.innerHTML = '';
     list.forEach(b => {
-        const hargaFmt = (b.harga !== undefined && b.harga !== null && b.harga !== '') ? Number(b.harga).toLocaleString('id-ID') : '-';
+        const hargaFmt = (b.harga !== undefined && b.harga !== null && b.harga !== '') ? `Rp ${Number(b.harga).toLocaleString('id-ID')}` : '-';
         const tr = document.createElement('tr');
         tr.innerHTML = `<td>${b.namaProduk || '-'}</td><td>${b.variasi || '-'}</td><td>${b.toko || '-'}</td><td>${b.vendor || '-'}</td><td>${b.kodeVendor || '-'}</td><td style="text-align:right;">${hargaFmt}</td><td style="text-align:right;">${b.leadTime !== undefined && b.leadTime !== null ? b.leadTime : '-'}</td><td style="text-align:center; position:relative;">
             <button class="btn-aksi-titik3" data-rowindex="${b.rowIndex}">⋮</button>
             <div class="dropdown-aksi-titik3" data-rowindex="${b.rowIndex}">
-                <button class="dropdown-item-edit" data-rowindex="${b.rowIndex}">✏️ Edit</button>
-                <button class="dropdown-item-hapus" data-rowindex="${b.rowIndex}">🗑️ Hapus</button>
+                <button class="dropdown-item-edit" data-rowindex="${b.rowIndex}">Edit</button>
+                <button class="dropdown-item-hapus" data-rowindex="${b.rowIndex}">Hapus</button>
             </div>
         </td>`;
         tbody.appendChild(tr);
@@ -334,7 +334,7 @@ const barangEditModalTitle = document.getElementById('barang-edit-modal-title');
 
 function openBarangEditModal(rowIndex) {
     const b = (globalBarangListCache || []).find(x => String(x.rowIndex) === String(rowIndex));
-    if (!b) { updateStatusMessage("⚠️ Data barang tidak ditemukan."); return; }
+    if (!b) { updateStatusMessage("(!) Data barang tidak ditemukan."); return; }
     if (barangEditModalTitle) barangEditModalTitle.innerText = 'Edit Barang';
     if (barangEditRowIndex) barangEditRowIndex.value = b.rowIndex;
     if (barangEditNama) barangEditNama.value = b.namaProduk || '';
@@ -375,7 +375,7 @@ function deleteBarang(rowIndex) {
     fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
         .then(res => res.json())
         .then(() => { updateStatusMessage('Barang berhasil dihapus.'); fetchBarangList(); })
-        .catch(() => updateStatusMessage('⚠️ Gagal menghapus barang.'));
+        .catch(() => updateStatusMessage('(!) Gagal menghapus barang.'));
 }
 
 if (btnBarangEditCancel) btnBarangEditCancel.addEventListener('click', () => { if (barangEditModal) barangEditModal.classList.remove('show'); });
@@ -606,7 +606,7 @@ function eksekusiVerifikasiPasswordModal() {
         if (menuExtension) window.open(menuExtension.href, '_blank'); 
         updateStatusMessage("Otorisasi sukses. Database utama berhasil dibuka.");
     } else {
-        if (modalErrorMsg) modalErrorMsg.innerText = "⚠️ Password salah! Akses ditolak sistem.";
+        if (modalErrorMsg) modalErrorMsg.innerText = "(!) Password salah! Akses ditolak sistem.";
         updateStatusMessage("Akses ditolak: Percobaan masuk salah.");
     }
 }
@@ -662,7 +662,7 @@ function fetchMasterSkusFromCloud() {
             resetKalkulatorDataState();
         })
         .catch(err => {
-            if (tbodyMasterList) tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #dc2626; font-weight: bold; padding: 20px;">⚠️ SISTEM EROR: ${err.message}</td></tr>`;
+            if (tbodyMasterList) tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #dc2626; font-weight: bold; padding: 20px;">(!) SISTEM EROR: ${err.message}</td></tr>`;
         })
         .finally(() => { if (loadingOverlay) setTimeout(() => { loadingOverlay.classList.add('fade-out'); }, 300); });
 }
@@ -806,8 +806,8 @@ if (btnAddProc) {
         const qty = procQty ? parseInt(procQty.value, 10) : 0;
         const satuan = procSatuan ? procSatuan.value : 'Roll'; 
 
-        if (vendorSelectAktif && !procVendorSelect.value) { updateStatusMessage("⚠️ Gagal: Pilih vendor terlebih dahulu (ada lebih dari 1 vendor untuk warna ini)."); return; }
-        if(!jenisBarang || !warnaLatela || !vendor || isNaN(qty) || qty <= 0) { updateStatusMessage("⚠️ Gagal: Isi Qty dengan benar."); return; }
+        if (vendorSelectAktif && !procVendorSelect.value) { updateStatusMessage("(!) Gagal: Pilih vendor terlebih dahulu (ada lebih dari 1 vendor untuk warna ini)."); return; }
+        if(!jenisBarang || !warnaLatela || !vendor || isNaN(qty) || qty <= 0) { updateStatusMessage("(!) Gagal: Isi Qty dengan benar."); return; }
         currentPoBasket.push({ jenisBarang, warnaLatela, kodeWarnaVendor, vendor, kodeVendor, namaKain, qty, satuan });
         renderProcurementTable(); 
 
@@ -975,10 +975,10 @@ function generatePoPdf(noPoValue, rawSelectedDate, vendorHeader, items) {
 // Tombol ini submit PO ke cloud (status Pending), bukan cetak PDF langsung.
 if (btnExportPo) {
     btnExportPo.addEventListener('click', () => {
-        if(currentPoBasket.length === 0) { updateStatusMessage("⚠️ Belum ada item di list PO."); return; }
+        if(currentPoBasket.length === 0) { updateStatusMessage("(!) Belum ada item di list PO."); return; }
         const noPoValue = procNoPo ? procNoPo.value.trim() : '';
         const rawSelectedDate = procTanggalPo ? procTanggalPo.value : '';
-        if (!noPoValue) { updateStatusMessage("⚠️ Nomor PO wajib diisi sebelum submit."); return; }
+        if (!noPoValue) { updateStatusMessage("(!) Nomor PO wajib diisi sebelum submit."); return; }
         const vendorHeader = currentPoBasket[0].vendor || '-';
         const sessionUser = getSession();
 
@@ -1001,7 +1001,7 @@ if (btnExportPo) {
                 if (procNoPo) procNoPo.value = '';
                 fetchPoListFromCloud();
             })
-            .catch(() => updateStatusMessage("⚠️ Gagal submit PO, cek koneksi."));
+            .catch(() => updateStatusMessage("(!) Gagal submit PO, cek koneksi."));
     });
 }
 
@@ -1025,7 +1025,7 @@ const btnPoDetailClose = document.getElementById('btn-po-detail-close');
 
 function openPoDetailModal(id) {
     const po = (globalPoListCache || []).find(p => p.id === id);
-    if (!po) { updateStatusMessage("⚠️ Data PO tidak ditemukan."); return; }
+    if (!po) { updateStatusMessage("(!) Data PO tidak ditemukan."); return; }
 
     let items = [];
     try { items = typeof po.items === 'string' ? JSON.parse(po.items || '[]') : (po.items || []); } catch (err) { items = []; }
@@ -1071,11 +1071,11 @@ function fetchPoListFromCloud() {
             if (statusLower === 'pending' && isFullAccess) {
                 aksiHtml += `<select class="dropdown-aksi-po" data-id="${po.id}" style="margin-right:6px;">
                     <option value="">-- Pilih Aksi --</option>
-                    <option value="Approved">✔️ Approve</option>
-                    <option value="Rejected">❌ Reject</option>
+                    <option value="Approved">Approve</option>
+                    <option value="Rejected">Reject</option>
                 </select>`;
             }
-            aksiHtml += `<button class="btn-action btn-blue-solid btn-cetak-po" data-id="${po.id}" ${statusApproved ? '' : 'disabled title="PO harus di-approve dulu sebelum bisa dicetak"'}>🖨️ Cetak PDF</button>`;
+            aksiHtml += `<button class="btn-action btn-blue-solid btn-cetak-po" data-id="${po.id}" ${statusApproved ? '' : 'disabled title="PO harus di-approve dulu sebelum bisa dicetak"'}>Cetak PDF</button>`;
 
             const tr = document.createElement('tr');
             tr.innerHTML = `<td><strong class="po-no-clickable" data-id="${po.id}" style="cursor:pointer; text-decoration:underline; color:var(--pink-main);">${po.noPo || '-'}</strong></td><td>${formatTanggalDisplay(po.tanggal)}</td><td>${po.vendor || '-'}</td><td>${po.dibuatOleh || '-'}</td><td><span class="badge-status ${badgeClass}">${badgeText}</span></td><td>${aksiHtml}</td>`;
@@ -1103,25 +1103,25 @@ function updatePoStatus(id, status) {
     fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
         .then(res => res.json())
         .then(() => { updateStatusMessage(status === 'Approved' ? "PO berhasil di-approve." : "PO berhasil di-reject."); fetchPoListFromCloud(); })
-        .catch(() => updateStatusMessage("⚠️ Gagal memproses PO."));
+        .catch(() => updateStatusMessage("(!) Gagal memproses PO."));
 }
 
 function cetakPoFromList(id) {
     const po = (globalPoListCache || []).find(p => p.id === id);
-    if (!po) { updateStatusMessage("⚠️ Data PO tidak ditemukan."); return; }
-    if ((po.status || '').toLowerCase() !== 'approved') { updateStatusMessage("⚠️ PO ini belum di-approve, belum bisa dicetak."); return; }
+    if (!po) { updateStatusMessage("(!) Data PO tidak ditemukan."); return; }
+    if ((po.status || '').toLowerCase() !== 'approved') { updateStatusMessage("(!) PO ini belum di-approve, belum bisa dicetak."); return; }
 
     let items = [];
     try {
         items = typeof po.items === 'string' ? JSON.parse(po.items || '[]') : (po.items || []);
-    } catch (err) { updateStatusMessage("⚠️ Gagal membaca data item PO (format items tidak valid)."); console.error(err); return; }
-    if (!Array.isArray(items) || items.length === 0) { updateStatusMessage("⚠️ Data item PO kosong/rusak, tidak bisa dicetak."); return; }
+    } catch (err) { updateStatusMessage("(!) Gagal membaca data item PO (format items tidak valid)."); console.error(err); return; }
+    if (!Array.isArray(items) || items.length === 0) { updateStatusMessage("(!) Data item PO kosong/rusak, tidak bisa dicetak."); return; }
 
     try {
         generatePoPdf(po.noPo, po.tanggal, po.vendor, items);
         updateStatusMessage(`PDF PO ${po.noPo} berhasil dicetak & terdownload.`);
     } catch (err) {
-        updateStatusMessage("⚠️ Gagal membuat PDF, cek console (F12) untuk detail error.");
+        updateStatusMessage("(!) Gagal membuat PDF, cek console (F12) untuk detail error.");
         console.error('Gagal generatePoPdf:', err);
     }
 }
@@ -1448,9 +1448,9 @@ function fetchHistoryFromCloud() {
         document.querySelectorAll('.btn-download-history').forEach(b => {
             b.addEventListener('click', (e) => {
                 const cached = globalHistoryCloudCache[e.target.getAttribute('data-waktu')];
-                if (!cached) { updateStatusMessage('⚠️ Detail data tidak tersedia untuk riwayat ini.'); return; }
+                if (!cached) { updateStatusMessage('(!) Detail data tidak tersedia untuk riwayat ini.'); return; }
                 let snap;
-                try { snap = JSON.parse(cached); } catch (err) { updateStatusMessage('⚠️ Gagal membaca detail data.'); return; }
+                try { snap = JSON.parse(cached); } catch (err) { updateStatusMessage('(!) Gagal membaca detail data.'); return; }
                 const wb = XLSX.utils.book_new();
                 const fmt = (d) => { let m = [["SKU", "Nama", "Type", "Warna", "Qty"]]; Object.keys(d || {}).sort().forEach(k => m.push([k, d[k].nama, d[k].type, d[k].warna, d[k].qty])); return XLSX.utils.aoa_to_sheet(m); };
                 XLSX.utils.book_append_sheet(wb, fmt(snap.utama), "Produk Utama"); XLSX.utils.book_append_sheet(wb, fmt(snap.aksesoris), "Aksesoris"); XLSX.utils.book_append_sheet(wb, fmt(snap.gradeb), "Grade B"); XLSX.utils.book_append_sheet(wb, fmt(snap.random), "Random");
