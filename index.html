@@ -171,7 +171,7 @@
                         <div class="control-group"><span class="group-label">Filter Produk:</span><div class="group-inputs"><select id="filter-dropdown"><option value="all">-- Tampilkan Semua Produk --</option></select><button id="btn-filter-reset" class="btn-action btn-gray-outline">Reset</button></div></div>
                         <div class="control-group"><span class="group-label">File Management:</span><div class="group-inputs"><span id="file-badge" class="badge-file-status">0 File Terupload</span><button id="btn-add-file" class="btn-action btn-pink-solid">+ File</button><button id="btn-file-reset" class="btn-action btn-pink-outline">Reset</button><input type="file" id="file-input" accept=".xlsx, .xls" multiple style="display: none;"></div></div>
                         <div class="control-group"><span class="group-label">Input Manual:</span><div class="group-inputs"><select id="manual-nama-dropdown"><option value="">-- Pilih Produk --</option></select><select id="manual-type-dropdown" disabled><option value="">-- Type --</option></select><select id="manual-warna-dropdown" disabled><option value="">-- Warna --</option></select><input type="number" id="manual-qty-input" class="manual-qty-field" placeholder="Qty" min="1"><button id="btn-add-manual" class="btn-action btn-pink-solid">+ Manual</button></div></div>
-                        <div class="control-group"><span class="group-label">Data Actions:</span><div class="group-inputs"><button id="btn-save-history" class="btn-action btn-purple-solid">Save History</button><div class="export-dropdown-wrapper"><button id="btn-export-toggle" class="btn-action btn-blue-solid">Export ▾</button><div id="export-menu-items" class="export-dropdown-menu"><button id="btn-export-xlsx">📄 Export .XLSX</button><button id="btn-export-csv">📝 Export .CSV</button></div></div><button id="btn-copy-qty" class="btn-action btn-green-solid">Copy Qty</button></div></div>
+                        <div class="control-group"><span class="group-label">Data Actions:</span><div class="group-inputs"><button id="btn-save-history" class="btn-action btn-purple-solid">Save History</button><div class="export-dropdown-wrapper"><button id="btn-export-toggle" class="btn-action btn-blue-solid">Export ▾</button><div id="export-menu-items" class="export-dropdown-menu"><button id="btn-export-xlsx">Export .XLSX</button><button id="btn-export-csv">Export .CSV</button></div></div><button id="btn-copy-qty" class="btn-action btn-green-solid">Copy Qty</button></div></div>
                     </div>
                     <div class="workspace-panel">
                         <div class="sub-tabs-container"><button class="sub-tab active" data-category="utama">PRODUK UTAMA</button><button class="sub-tab" data-category="aksesoris">AKSESORIS</button><button class="sub-tab" data-category="gradeb">GRADE B</button><button class="sub-tab" data-category="random">RANDOM</button></div>
@@ -186,7 +186,7 @@
 
                 <section id="view-mastersku" class="content-view">
                     <h2 class="page-title">Master Data SKU Cloud Database</h2>
-                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Total: <span id="master-sku-count">0</span> SKU</h3><button id="btn-sync-cloud" class="btn-action btn-pink-outline">🔄 Sync</button></div>
+                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Total: <span id="master-sku-count">0</span> SKU</h3><button id="btn-sync-cloud" class="btn-action btn-pink-outline">Sync</button></div>
                     <div class="table-responsive"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th>Kategori</th></tr></thead><tbody id="tbody-master-list"></tbody></table></div></div>
                 </section>
 
@@ -211,11 +211,11 @@
                                 <div class="proc-qty-row"><input type="number" id="proc-qty" placeholder="Qty" min="1" class="proc-qty-input"><select id="proc-satuan" class="proc-satuan-select"><option value="Roll">Roll</option><option value="Yards">Yards</option><option value="Kg">Kg</option></select></div>
                             </div>
                         </div>
-                        <div class="proc-row-actions"><button id="btn-reset-po">Reset</button><button id="btn-export-po">Submit ke List PO 📤</button><button id="btn-add-proc">+ Tambah Item</button></div>
+                        <div class="proc-row-actions"><button id="btn-reset-po">Reset</button><button id="btn-export-po">Submit ke List PO</button><button id="btn-add-proc">+ Tambah Item</button></div>
                     </div>
                     <div class="sku-list-card" style="width: 100%;"><h3>Daftar Item Surat Pesanan (PO)</h3><div class="table-responsive"><table><thead><tr><th>Jenis Barang</th><th>Kode Warna Latela</th><th>Kode Warna Vendor</th><th>Vendor</th><th>Kode Vendor</th><th>Nama Kain</th><th style="text-align: right; padding-right:25px;">Jumlah Order</th></tr></thead><tbody id="tbody-procurement-list"></tbody></table></div></div>
 
-                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Daftar PO & Status Approval</h3><button id="btn-refresh-po-list" class="btn-action btn-pink-outline">🔄 Refresh</button></div><div class="table-responsive"><table><thead><tr><th>No PO</th><th>Tanggal</th><th>Vendor</th><th>Dibuat Oleh</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tbody-po-list"><tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data PO...</td></tr></tbody></table></div></div>
+                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Daftar PO & Status Approval</h3><button id="btn-refresh-po-list" class="btn-action btn-pink-outline">Refresh</button></div><div class="table-responsive"><table><thead><tr><th>No PO</th><th>Tanggal</th><th>Vendor</th><th>Dibuat Oleh</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tbody-po-list"><tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data PO...</td></tr></tbody></table></div></div>
                 </section>
 
                 <section id="view-kelolaakun" class="content-view">
@@ -229,9 +229,9 @@
                             <div class="proc-field-col"><span class="proc-field-label">Password:</span><input type="password" id="akun-password" placeholder="Password..."></div>
                             <div class="proc-field-col"><span class="proc-field-label">Role:</span><select id="akun-role"><option value="terbatas">Akses Terbatas</option><option value="full">Akses Penuh</option></select></div>
                         </div>
-                        <div class="proc-row-actions"><button id="btn-simpan-akun" class="btn-action btn-pink-solid">💾 Simpan Akun</button></div>
+                        <div class="proc-row-actions"><button id="btn-simpan-akun" class="btn-action btn-pink-solid">Simpan Akun</button></div>
                     </div>
-                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Daftar Akun</h3><button id="btn-refresh-akun" class="btn-action btn-pink-outline">🔄 Refresh</button></div><div class="table-responsive"><table><thead><tr><th>Username</th><th>Nama</th><th>Role</th><th>Aksi</th></tr></thead><tbody id="tbody-akun-list"><tr><td colspan="4" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data akun...</td></tr></tbody></table></div></div>
+                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Daftar Akun</h3><button id="btn-refresh-akun" class="btn-action btn-pink-outline">Refresh</button></div><div class="table-responsive"><table><thead><tr><th>Username</th><th>Nama</th><th>Role</th><th>Aksi</th></tr></thead><tbody id="tbody-akun-list"><tr><td colspan="4" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data akun...</td></tr></tbody></table></div></div>
                 </section>
 
                 <section id="view-barang" class="content-view">
@@ -239,10 +239,10 @@
                     <div class="sku-list-card" style="width: 100%;">
                         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px; gap:10px; flex-wrap:wrap;">
                             <h3 style="margin: 0;">Daftar Barang (Harga_Update)</h3>
-                            <input type="text" id="search-barang" placeholder="🔍 Cari nama produk, vendor, toko..." style="flex:1; min-width:200px; max-width:320px; height:36px; padding:0 14px; border-radius:10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16); color:var(--text-main); font-size:13px;">
-                            <div><button id="btn-tambah-barang" class="btn-action btn-pink-solid" style="margin-right:8px;">+ Tambah Barang</button><button id="btn-refresh-barang" class="btn-action btn-pink-outline">🔄 Refresh</button></div>
+                            <input type="text" id="search-barang" placeholder="Cari nama produk, vendor, toko..." style="flex:1; min-width:200px; max-width:320px; height:36px; padding:0 14px; border-radius:10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16); color:var(--text-main); font-size:13px;">
+                            <div><button id="btn-tambah-barang" class="btn-action btn-pink-solid" style="margin-right:8px;">+ Tambah Barang</button><button id="btn-refresh-barang" class="btn-action btn-pink-outline">Refresh</button></div>
                         </div>
-                        <div class="table-responsive"><table><thead><tr><th>Nama Produk</th><th>Variasi</th><th>Toko</th><th>Vendor</th><th>Kode Vendor</th><th style="text-align:right;">Harga</th><th style="text-align:right;">LeadTime (Days)</th><th style="text-align:center;">Aksi</th></tr></thead><tbody id="tbody-barang-list"><tr><td colspan="8" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data barang...</td></tr></tbody></table></div>
+                        <div class="table-responsive"><table><thead><tr><th>Nama Produk</th><th>Variasi</th><th>Toko</th><th>Vendor</th><th>Kode Vendor</th><th style="text-align:right;">Harga (Rp)</th><th style="text-align:right;">LeadTime (Days)</th><th style="text-align:center;">Aksi</th></tr></thead><tbody id="tbody-barang-list"><tr><td colspan="8" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data barang...</td></tr></tbody></table></div>
                     </div>
                 </section>
             </div>
@@ -250,21 +250,21 @@
         </main>
     </div>
 
-    <div id="password-modal" class="modal-overlay"><div class="modal-card"><div class="modal-header">🔒 <h3>Security Authentication</h3></div><div class="modal-body"><p>Masukkan password otorisasi:</p><input type="password" id="input-ext-password" placeholder="Password..."><span id="modal-error-msg"></span></div><div class="modal-footer"><button id="btn-modal-cancel">Batal</button><button id="btn-modal-submit">Masuk</button></div></div></div>
+    <div id="password-modal" class="modal-overlay"><div class="modal-card"><div class="modal-header"><h3>Security Authentication</h3></div><div class="modal-body"><p>Masukkan password otorisasi:</p><input type="password" id="input-ext-password" placeholder="Password..."><span id="modal-error-msg"></span></div><div class="modal-footer"><button id="btn-modal-cancel">Batal</button><button id="btn-modal-submit">Masuk</button></div></div></div>
 
-    <div id="po-detail-modal" class="modal-overlay"><div class="modal-card" style="max-width:640px;"><div class="modal-header">📦 <h3>Detail Item PO <span id="po-detail-title"></span></h3></div><div class="modal-body"><div class="table-responsive"><table><thead><tr><th>Jenis Barang</th><th>Warna Latela</th><th>Kode Warna Vendor</th><th>Nama Kain</th><th style="text-align:right;">Qty</th></tr></thead><tbody id="tbody-po-detail-items"></tbody></table></div></div><div class="modal-footer"><button id="btn-po-detail-close">Tutup</button></div></div></div>
+    <div id="po-detail-modal" class="modal-overlay"><div class="modal-card" style="max-width:640px;"><div class="modal-header"><h3>Detail Item PO <span id="po-detail-title"></span></h3></div><div class="modal-body"><div class="table-responsive"><table><thead><tr><th>Jenis Barang</th><th>Warna Latela</th><th>Kode Warna Vendor</th><th>Nama Kain</th><th style="text-align:right;">Qty</th></tr></thead><tbody id="tbody-po-detail-items"></tbody></table></div></div><div class="modal-footer"><button id="btn-po-detail-close">Tutup</button></div></div></div>
 
-    <div id="barang-edit-modal" class="modal-overlay"><div class="modal-card" style="max-width:480px;"><div class="modal-header">✏️ <h3 id="barang-edit-modal-title">Edit Barang</h3></div><div class="modal-body">
+    <div id="barang-edit-modal" class="modal-overlay"><div class="modal-card" style="max-width:480px;"><div class="modal-header"><h3 id="barang-edit-modal-title">Edit Barang</h3></div><div class="modal-body">
         <input type="hidden" id="barang-edit-rowindex">
         <p style="margin-bottom:6px;">Nama Produk:</p><input type="text" id="barang-edit-nama" placeholder="Nama Produk...">
         <p style="margin-bottom:6px; margin-top:10px;">Variasi:</p><input type="text" id="barang-edit-variasi" placeholder="Variasi...">
         <p style="margin-bottom:6px; margin-top:10px;">Toko:</p><input type="text" id="barang-edit-toko" placeholder="Toko...">
         <p style="margin-bottom:6px; margin-top:10px;">Vendor:</p><input type="text" id="barang-edit-vendor" placeholder="Vendor...">
         <p style="margin-bottom:6px; margin-top:10px;">Kode Vendor:</p><input type="text" id="barang-edit-kodevendor" placeholder="Kode Vendor...">
-        <p style="margin-bottom:6px; margin-top:10px;">Harga:</p><input type="number" id="barang-edit-harga" placeholder="Harga...">
+        <p style="margin-bottom:6px; margin-top:10px;">Harga (Rp):</p><input type="number" id="barang-edit-harga" placeholder="Harga...">
         <p style="margin-bottom:6px; margin-top:10px;">LeadTime (Days):</p><input type="number" id="barang-edit-leadtime" placeholder="LeadTime (Days)...">
         <span id="barang-edit-error-msg"></span>
-    </div><div class="modal-footer"><button id="btn-barang-edit-cancel">Batal</button><button id="btn-barang-edit-save">💾 Simpan</button></div></div></div>
+    </div><div class="modal-footer"><button id="btn-barang-edit-cancel">Batal</button><button id="btn-barang-edit-save">Simpan</button></div></div></div>
     <script src="app.js"></script>
 </body>
 </html>
