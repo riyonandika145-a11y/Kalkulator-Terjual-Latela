@@ -265,6 +265,7 @@ const barangEditToko = document.getElementById('barang-edit-toko');
 const barangEditVendor = document.getElementById('barang-edit-vendor');
 const barangEditKodeVendor = document.getElementById('barang-edit-kodevendor');
 const barangEditHarga = document.getElementById('barang-edit-harga');
+const barangEditSatuan = document.getElementById('barang-edit-satuan');
 const barangEditLeadtime = document.getElementById('barang-edit-leadtime');
 const barangEditErrorMsg = document.getElementById('barang-edit-error-msg');
 const btnBarangEditSave = document.getElementById('btn-barang-edit-save');
@@ -288,7 +289,7 @@ function renderBarangTable(list) {
     list.forEach(b => {
         const hargaFmt = (b.harga !== undefined && b.harga !== null && b.harga !== '') ? `Rp ${Number(b.harga).toLocaleString('id-ID')}` : '-';
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${b.namaProduk || '-'}</td><td>${b.variasi || '-'}</td><td>${b.toko || '-'}</td><td>${b.vendor || '-'}</td><td>${b.kodeVendor || '-'}</td><td style="text-align:right;">${hargaFmt}</td><td style="text-align:right;">${b.leadTime !== undefined && b.leadTime !== null && b.leadTime !== '' ? `${b.leadTime} Hari` : '-'}</td><td style="text-align:center; position:relative;">
+        tr.innerHTML = `<td>${b.namaProduk || '-'}</td><td>${b.variasi || '-'}</td><td>${b.toko || '-'}</td><td>${b.vendor || '-'}</td><td>${b.kodeVendor || '-'}</td><td style="text-align:right;">${hargaFmt}</td><td>${b.satuan || '-'}</td><td style="text-align:right;">${b.leadTime !== undefined && b.leadTime !== null && b.leadTime !== '' ? `${b.leadTime} Hari` : '-'}</td><td style="text-align:center; position:relative;">
             <button class="btn-aksi-titik3" data-rowindex="${b.rowIndex}">⋮</button>
             <div class="dropdown-aksi-titik3" data-rowindex="${b.rowIndex}">
                 <button class="dropdown-item-edit" data-rowindex="${b.rowIndex}">Edit</button>
@@ -343,6 +344,7 @@ function openBarangEditModal(rowIndex) {
     if (barangEditVendor) barangEditVendor.value = b.vendor || '';
     if (barangEditKodeVendor) barangEditKodeVendor.value = b.kodeVendor || '';
     if (barangEditHarga) barangEditHarga.value = b.harga || '';
+    if (barangEditSatuan) barangEditSatuan.value = b.satuan || 'Pcs';
     if (barangEditLeadtime) barangEditLeadtime.value = b.leadTime || '';
     if (barangEditErrorMsg) barangEditErrorMsg.innerText = '';
     if (barangEditModal) barangEditModal.classList.add('show');
@@ -359,6 +361,7 @@ function openBarangAddModal() {
     if (barangEditVendor) barangEditVendor.value = '';
     if (barangEditKodeVendor) barangEditKodeVendor.value = '';
     if (barangEditHarga) barangEditHarga.value = '';
+    if (barangEditSatuan) barangEditSatuan.value = 'Pcs';
     if (barangEditLeadtime) barangEditLeadtime.value = '';
     if (barangEditErrorMsg) barangEditErrorMsg.innerText = '';
     if (barangEditModal) barangEditModal.classList.add('show');
@@ -399,6 +402,7 @@ if (btnBarangEditSave) {
         payload.append('vendor', barangEditVendor ? barangEditVendor.value.trim() : '');
         payload.append('kodeVendor', barangEditKodeVendor ? barangEditKodeVendor.value.trim() : '');
         payload.append('harga', barangEditHarga ? barangEditHarga.value : '');
+        payload.append('satuan', barangEditSatuan ? barangEditSatuan.value : 'Pcs');
         payload.append('leadTime', barangEditLeadtime ? barangEditLeadtime.value : '');
 
         fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
