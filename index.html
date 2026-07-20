@@ -242,7 +242,7 @@
                             <input type="text" id="search-barang" placeholder="Cari nama produk, vendor, toko..." style="flex:1; min-width:200px; max-width:320px; height:36px; padding:0 14px; border-radius:10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16); color:var(--text-main); font-size:13px;">
                             <div><button id="btn-tambah-barang" class="btn-action btn-pink-solid" style="margin-right:8px;">+ Tambah Barang</button><button id="btn-refresh-barang" class="btn-action btn-pink-outline">Refresh</button></div>
                         </div>
-                        <div class="table-responsive"><table><thead><tr><th>Nama Produk</th><th>Variasi</th><th>Toko</th><th>Vendor</th><th>Kode Vendor</th><th style="text-align:right;">Harga (Rp)</th><th style="text-align:right;">LeadTime (Days)</th><th style="text-align:center;">Aksi</th></tr></thead><tbody id="tbody-barang-list"><tr><td colspan="8" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data barang...</td></tr></tbody></table></div>
+                        <div class="table-responsive"><table><thead><tr><th>Nama Produk</th><th>Variasi</th><th>Toko</th><th>Vendor</th><th>Kode Vendor</th><th style="text-align:right;">Harga (Rp)</th><th>Satuan</th><th style="text-align:right;">LeadTime (Days)</th><th style="text-align:center;">Aksi</th></tr></thead><tbody id="tbody-barang-list"><tr><td colspan="9" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data barang...</td></tr></tbody></table></div>
                     </div>
                 </section>
             </div>
@@ -262,6 +262,7 @@
         <p style="margin-bottom:6px; margin-top:10px;">Vendor:</p><input type="text" id="barang-edit-vendor" placeholder="Vendor...">
         <p style="margin-bottom:6px; margin-top:10px;">Kode Vendor:</p><input type="text" id="barang-edit-kodevendor" placeholder="Kode Vendor...">
         <p style="margin-bottom:6px; margin-top:10px;">Harga (Rp):</p><input type="number" id="barang-edit-harga" placeholder="Harga...">
+        <p style="margin-bottom:6px; margin-top:10px;">Satuan:</p><select id="barang-edit-satuan"><option value="Pcs">Pcs</option><option value="Kg">Kg</option><option value="Roll">Roll</option><option value="Yards">Yards</option><option value="Pack">Pack</option><option value="Lusin">Lusin</option></select>
         <p style="margin-bottom:6px; margin-top:10px;">LeadTime (Days):</p><input type="number" id="barang-edit-leadtime" placeholder="LeadTime (Days)...">
         <span id="barang-edit-error-msg"></span>
     </div><div class="modal-footer"><button id="btn-barang-edit-cancel">Batal</button><button id="btn-barang-edit-save">Simpan</button></div></div></div>
