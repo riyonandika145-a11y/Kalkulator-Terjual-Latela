@@ -119,6 +119,7 @@ let topProductsChartInstance = null;
 let globalHistoryCloudCache = {};
 let globalPoListCache = [];
 let globalUserListCache = [];
+let globalBarangListCache = [];
 
 // --- LOGIN & SESSION ---
 const loginOverlay = document.getElementById('login-overlay');
@@ -130,6 +131,7 @@ const btnLoginSubmit = document.getElementById('btn-login-submit');
 const btnLogout = document.getElementById('btn-logout');
 const userSessionName = document.getElementById('user-session-name');
 const menuKelolaAkun = document.getElementById('menu-kelola-akun');
+const menuBarang = document.getElementById('menu-barang');
 
 // SELEKTOR KELOLA AKUN
 const akunUsername = document.getElementById('akun-username');
@@ -159,6 +161,7 @@ function applyRoleUI() {
     const isFullAccess = sess && sess.role === 'full';
     if (userSessionName) userSessionName.innerText = sess ? sess.nama : '-';
     if (menuKelolaAkun) menuKelolaAkun.style.display = isFullAccess ? '' : 'none';
+    if (menuBarang) menuBarang.style.display = isFullAccess ? '' : 'none';
 }
 
 if (btnLoginSubmit) {
@@ -251,6 +254,129 @@ function deleteUser(username) {
 }
 
 if (btnRefreshAkun) btnRefreshAkun.addEventListener('click', fetchUsers);
+
+// --- BARANG (khusus Akses Penuh) ---
+const btnRefreshBarang = document.getElementById('btn-refresh-barang');
+const barangEditModal = document.getElementById('barang-edit-modal');
+const barangEditRowIndex = document.getElementById('barang-edit-rowindex');
+const barangEditNama = document.getElementById('barang-edit-nama');
+const barangEditVariasi = document.getElementById('barang-edit-variasi');
+const barangEditToko = document.getElementById('barang-edit-toko');
+const barangEditVendor = document.getElementById('barang-edit-vendor');
+const barangEditKodeVendor = document.getElementById('barang-edit-kodevendor');
+const barangEditHarga = document.getElementById('barang-edit-harga');
+const barangEditLeadtime = document.getElementById('barang-edit-leadtime');
+const barangEditErrorMsg = document.getElementById('barang-edit-error-msg');
+const btnBarangEditSave = document.getElementById('btn-barang-edit-save');
+const btnBarangEditCancel = document.getElementById('btn-barang-edit-cancel');
+
+function fetchBarangList() {
+    const tbody = document.getElementById('tbody-barang-list');
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data barang...</td></tr>`;
+    fetch(`${GOOGLE_SCRIPT_URL}?action=fetch_barang`).then(res => res.json()).then(list => {
+        globalBarangListCache = Array.isArray(list) ? list : [];
+        if (!globalBarangListCache.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada data barang.</td></tr>`; return; }
+        tbody.innerHTML = '';
+        globalBarangListCache.forEach(b => {
+            const hargaFmt = (b.harga !== undefined && b.harga !== null && b.harga !== '') ? Number(b.harga).toLocaleString('id-ID') : '-';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${b.namaProduk || '-'}</td><td>${b.variasi || '-'}</td><td>${b.toko || '-'}</td><td>${b.vendor || '-'}</td><td>${b.kodeVendor || '-'}</td><td style="text-align:right;">${hargaFmt}</td><td style="text-align:right;">${b.leadTime !== undefined && b.leadTime !== null ? b.leadTime : '-'}</td><td><button class="btn-action btn-pink-outline btn-edit-barang" data-rowindex="${b.rowIndex}" style="margin-right:6px;">✏️ Edit</button><button class="btn-action btn-gray-outline btn-hapus-barang" data-rowindex="${b.rowIndex}">🗑️ Hapus</button></td>`;
+            tbody.appendChild(tr);
+        });
+        tbody.querySelectorAll('.btn-edit-barang').forEach(btn => btn.addEventListener('click', () => openBarangEditModal(btn.getAttribute('data-rowindex'))));
+        tbody.querySelectorAll('.btn-hapus-barang').forEach(btn => btn.addEventListener('click', () => deleteBarang(btn.getAttribute('data-rowindex'))));
+    }).catch(() => { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data barang.</td></tr>`; });
+}
+
+const barangEditModalTitle = document.getElementById('barang-edit-modal-title');
+
+function openBarangEditModal(rowIndex) {
+    const b = (globalBarangListCache || []).find(x => String(x.rowIndex) === String(rowIndex));
+    if (!b) { updateStatusMessage("⚠️ Data barang tidak ditemukan."); return; }
+    if (barangEditModalTitle) barangEditModalTitle.innerText = 'Edit Barang';
+    if (barangEditRowIndex) barangEditRowIndex.value = b.rowIndex;
+    if (barangEditNama) barangEditNama.value = b.namaProduk || '';
+    if (barangEditVariasi) barangEditVariasi.value = b.variasi || '';
+    if (barangEditToko) barangEditToko.value = b.toko || '';
+    if (barangEditVendor) barangEditVendor.value = b.vendor || '';
+    if (barangEditKodeVendor) barangEditKodeVendor.value = b.kodeVendor || '';
+    if (barangEditHarga) barangEditHarga.value = b.harga || '';
+    if (barangEditLeadtime) barangEditLeadtime.value = b.leadTime || '';
+    if (barangEditErrorMsg) barangEditErrorMsg.innerText = '';
+    if (barangEditModal) barangEditModal.classList.add('show');
+}
+
+// Mode TAMBAH: buka modal yang sama tapi kosong, rowIndex dikosongin
+// (dipakai sebagai penanda "ini data baru" pas disimpan nanti)
+function openBarangAddModal() {
+    if (barangEditModalTitle) barangEditModalTitle.innerText = 'Tambah Barang';
+    if (barangEditRowIndex) barangEditRowIndex.value = '';
+    if (barangEditNama) barangEditNama.value = '';
+    if (barangEditVariasi) barangEditVariasi.value = '';
+    if (barangEditToko) barangEditToko.value = '';
+    if (barangEditVendor) barangEditVendor.value = '';
+    if (barangEditKodeVendor) barangEditKodeVendor.value = '';
+    if (barangEditHarga) barangEditHarga.value = '';
+    if (barangEditLeadtime) barangEditLeadtime.value = '';
+    if (barangEditErrorMsg) barangEditErrorMsg.innerText = '';
+    if (barangEditModal) barangEditModal.classList.add('show');
+}
+const btnTambahBarang = document.getElementById('btn-tambah-barang');
+if (btnTambahBarang) btnTambahBarang.addEventListener('click', openBarangAddModal);
+
+function deleteBarang(rowIndex) {
+    const b = (globalBarangListCache || []).find(x => String(x.rowIndex) === String(rowIndex));
+    if (!confirm(`Yakin ingin menghapus barang "${b ? b.namaProduk : ''}"? Aksi ini gak bisa dibatalin.`)) return;
+    updateStatusMessage('Menghapus data barang...');
+    const payload = new URLSearchParams();
+    payload.append('action', 'delete_barang'); payload.append('rowIndex', rowIndex);
+    fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
+        .then(res => res.json())
+        .then(() => { updateStatusMessage('Barang berhasil dihapus.'); fetchBarangList(); })
+        .catch(() => updateStatusMessage('⚠️ Gagal menghapus barang.'));
+}
+
+if (btnBarangEditCancel) btnBarangEditCancel.addEventListener('click', () => { if (barangEditModal) barangEditModal.classList.remove('show'); });
+if (barangEditModal) barangEditModal.addEventListener('click', (e) => { if (e.target === barangEditModal) barangEditModal.classList.remove('show'); });
+
+if (btnBarangEditSave) {
+    btnBarangEditSave.addEventListener('click', () => {
+        const rowIndex = barangEditRowIndex ? barangEditRowIndex.value : '';
+        const namaValue = barangEditNama ? barangEditNama.value.trim() : '';
+        if (!namaValue) { if (barangEditErrorMsg) barangEditErrorMsg.innerText = 'Nama Produk wajib diisi.'; return; }
+
+        btnBarangEditSave.disabled = true;
+        if (barangEditErrorMsg) barangEditErrorMsg.innerText = 'Menyimpan...';
+
+        const payload = new URLSearchParams();
+        payload.append('action', rowIndex ? 'update_barang' : 'create_barang');
+        if (rowIndex) payload.append('rowIndex', rowIndex);
+        payload.append('namaProduk', namaValue);
+        payload.append('variasi', barangEditVariasi ? barangEditVariasi.value.trim() : '');
+        payload.append('toko', barangEditToko ? barangEditToko.value.trim() : '');
+        payload.append('vendor', barangEditVendor ? barangEditVendor.value.trim() : '');
+        payload.append('kodeVendor', barangEditKodeVendor ? barangEditKodeVendor.value.trim() : '');
+        payload.append('harga', barangEditHarga ? barangEditHarga.value : '');
+        payload.append('leadTime', barangEditLeadtime ? barangEditLeadtime.value : '');
+
+        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
+            .then(res => res.json())
+            .then((result) => {
+                btnBarangEditSave.disabled = false;
+                if (result && result.success) {
+                    if (barangEditModal) barangEditModal.classList.remove('show');
+                    updateStatusMessage(rowIndex ? 'Data barang berhasil diupdate.' : 'Barang baru berhasil ditambahkan.');
+                    fetchBarangList();
+                } else {
+                    if (barangEditErrorMsg) barangEditErrorMsg.innerText = (result && result.message) || 'Gagal menyimpan.';
+                }
+            })
+            .catch(() => { btnBarangEditSave.disabled = false; if (barangEditErrorMsg) barangEditErrorMsg.innerText = 'Gagal menghubungi server.'; });
+    });
+}
+
+if (btnRefreshBarang) btnRefreshBarang.addEventListener('click', fetchBarangList);
 
 // --- INITIAL BOOTSTRAP ---
 window.addEventListener('DOMContentLoaded', () => {
@@ -973,6 +1099,7 @@ menuItems.forEach(item => {
         if (targetView) targetView.classList.add('active');
         if (target === 'procurement') fetchPoListFromCloud();
         if (target === 'kelolaakun') fetchUsers();
+        if (target === 'barang') fetchBarangList();
     });
 });
 
