@@ -1538,3 +1538,5 @@ body[data-theme="light"] .dropdown-aksi-titik3 {
     border-color: rgba(0,0,0,0.10);
     box-shadow: 0 10px 30px rgba(0,0,0,0.15);
 }
+body[data-theme="light"] .dropdown-aksi-titik3 button:hover { background: rgba(0,0,0,0.06); }
+body[data-theme="light"] .dropdown-aksi-titik3 .dropdown-item-hapus:hover { background: rgba(239,68,68,0.12); }
