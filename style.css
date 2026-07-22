@@ -722,7 +722,7 @@ body::after {
     align-items: center;
 }
 .sidebar.collapsed .theme-picker-popup { left: 0; }
-.sidebar.collapsed .help-picker-popup { right: -6px; }
+.sidebar.collapsed .help-picker-popup { left: 0; right: auto; }
 
 /* Kotak nama user disederhanain: nama disembunyikan, Logout jadi tombol ikon bulat kecil */
 .sidebar.collapsed .user-session-info { display: none; }
