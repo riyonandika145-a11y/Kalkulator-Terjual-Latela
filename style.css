@@ -714,8 +714,31 @@ body::after {
     padding: 12px 14px; font-size: 11px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.sidebar.collapsed .theme-picker-anchor { left: 50%; transform: translateX(-50%); }
+
+/* Footer (tema + bantuan) jadi ditumpuk vertikal biar gak numpuk/overlap di lebar 70px */
+.sidebar.collapsed .sidebar-footer-row {
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
 .sidebar.collapsed .theme-picker-popup { left: 0; }
+.sidebar.collapsed .help-picker-popup { right: -6px; }
+
+/* Kotak nama user disederhanain: nama disembunyikan, Logout jadi tombol ikon bulat kecil */
+.sidebar.collapsed .user-session-info { display: none; }
+.sidebar.collapsed .user-session-box { padding: 12px 0; display: flex; justify-content: center; }
+.sidebar.collapsed #btn-logout {
+    width: 34px; height: 34px;
+    padding: 0;
+    margin-top: 0 !important;
+    border-radius: 50%;
+    font-size: 0;
+    display: flex; align-items: center; justify-content: center;
+}
+.sidebar.collapsed #btn-logout::before {
+    content: "\21B6";
+    font-size: 15px;
+}
 
 /* =========================================================================
    THEME PICKER — tombol bulat pojok kiri bawah sidebar
