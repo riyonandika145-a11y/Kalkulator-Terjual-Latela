@@ -728,7 +728,7 @@ body::after {
 .sidebar.collapsed .user-session-info { display: none; }
 .sidebar.collapsed .user-session-box { padding: 12px 0; display: flex; justify-content: center; }
 .sidebar.collapsed #btn-logout {
-    width: 34px; height: 34px;
+    width: 34px !important; height: 34px;
     padding: 0;
     margin-top: 0 !important;
     border-radius: 50%;
