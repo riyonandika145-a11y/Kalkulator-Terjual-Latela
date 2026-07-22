@@ -720,9 +720,16 @@ body::after {
 /* =========================================================================
    THEME PICKER — tombol bulat pojok kiri bawah sidebar
    ========================================================================= */
-.theme-picker-anchor {
+.sidebar-footer-row {
     margin-top: auto;
     padding-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.theme-picker-anchor {
     position: relative;
     flex-shrink: 0;
 }
@@ -742,6 +749,69 @@ body::after {
     box-shadow: 0 4px 14px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.30);
 }
 .btn-theme-dot:active { transform: scale(0.96); }
+
+/* =========================================================================
+   HELP BUTTON — tombol tanda tanya pojok kanan bawah sidebar (Download Guide)
+   ========================================================================= */
+.help-picker-anchor { position: relative; flex-shrink: 0; }
+
+.btn-help-dot {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.22);
+    background: rgba(255,255,255,0.08);
+    color: var(--text-main);
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.14);
+    transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+    padding: 0;
+}
+.btn-help-dot:hover {
+    background: rgba(244,114,182,0.20);
+    border-color: var(--pink-main);
+    transform: scale(1.10);
+}
+.btn-help-dot:active { transform: scale(0.96); }
+
+.help-picker-popup {
+    display: none;
+    position: absolute;
+    bottom: 40px; right: 0;
+    background: rgba(15,32,48,0.98);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 12px;
+    padding: 6px;
+    min-width: 160px;
+    z-index: 200;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+.help-picker-popup.show { display: block; }
+.help-popup-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 9px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-main);
+    font-size: 13px;
+    cursor: pointer;
+}
+.help-popup-item:hover { background: rgba(244,114,182,0.14); }
+
+body[data-theme="light"] .help-picker-popup {
+    background: #ffffff;
+    border-color: rgba(0,0,0,0.10);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+body[data-theme="light"] .btn-help-dot {
+    background: rgba(0,0,0,0.05);
+    border-color: rgba(0,0,0,0.14);
+    color: rgba(30,50,80,0.80);
+}
 
 .theme-picker-popup {
     display: none;
