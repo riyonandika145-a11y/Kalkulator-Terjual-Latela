@@ -66,6 +66,9 @@ const weatherIconBoxEl = document.getElementById('weather-icon-box');
 // SELEKTOR THEME PICKER
 const btnThemePicker = document.getElementById('btn-theme-picker');
 const themePickerPopup = document.getElementById('theme-picker-popup');
+const btnHelpPicker = document.getElementById('btn-help-picker');
+const helpPickerPopup = document.getElementById('help-picker-popup');
+const btnDownloadGuide = document.getElementById('btn-download-guide');
 const getThemeSwatchButtons = () => document.querySelectorAll('.theme-swatch');
 
 // SECURE MODAL POP-UP DOM
@@ -502,7 +505,30 @@ document.addEventListener('click', (e) => {
     if (themePickerPopup && !themePickerPopup.contains(e.target) && e.target !== btnThemePicker) {
         themePickerPopup.classList.remove('show');
     }
+    if (helpPickerPopup && !helpPickerPopup.contains(e.target) && e.target !== btnHelpPicker) {
+        helpPickerPopup.classList.remove('show');
+    }
 });
+
+if (btnHelpPicker) {
+    btnHelpPicker.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (helpPickerPopup) helpPickerPopup.classList.toggle('show');
+    });
+}
+
+if (btnDownloadGuide) {
+    btnDownloadGuide.addEventListener('click', () => {
+        const link = document.createElement('a');
+        link.href = 'Panduan-Latela-OMS.pdf';
+        link.download = 'Panduan Latela Order Management System.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        if (helpPickerPopup) helpPickerPopup.classList.remove('show');
+        updateStatusMessage('Mengunduh panduan penggunaan (PDF)...');
+    });
+}
 
 // =========================================================================
 // WIDGET JAM REAL-TIME
