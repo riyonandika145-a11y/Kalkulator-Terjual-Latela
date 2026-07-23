@@ -632,7 +632,7 @@ body::after {
     color: var(--text-main);
     cursor: pointer;
     position: absolute;
-    top: 12px; right: 12px;
+    top: 12px; right: -14px;
     width: 28px; height: 28px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
