@@ -976,9 +976,10 @@ input[type="password"] {
     transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
     -webkit-appearance: none;
     appearance: none;
-    cursor: pointer;
     outline: none;
 }
+input[type="number"], input[type="text"], input[type="date"], input[type="password"] { cursor: text; }
+select { cursor: pointer; }
 select { padding-right: 26px; }
 select:focus,
 input:focus {
