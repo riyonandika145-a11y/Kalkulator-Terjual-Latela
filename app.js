@@ -123,6 +123,7 @@ let globalHistoryCloudCache = {};
 let globalPoListCache = [];
 let globalUserListCache = [];
 let globalBarangListCache = [];
+let globalPembelianListCache = [];
 
 // --- LOGIN & SESSION ---
 const loginOverlay = document.getElementById('login-overlay');
@@ -135,6 +136,7 @@ const btnLogout = document.getElementById('btn-logout');
 const userSessionName = document.getElementById('user-session-name');
 const menuKelolaAkun = document.getElementById('menu-kelola-akun');
 const menuBarang = document.getElementById('menu-barang');
+const menuPembelian = document.getElementById('menu-pembelian');
 
 // SELEKTOR KELOLA AKUN
 const akunUsername = document.getElementById('akun-username');
@@ -165,6 +167,7 @@ function applyRoleUI() {
     if (userSessionName) userSessionName.innerText = sess ? sess.nama : '-';
     if (menuKelolaAkun) menuKelolaAkun.style.display = isFullAccess ? '' : 'none';
     if (menuBarang) menuBarang.style.display = isFullAccess ? '' : 'none';
+    if (menuPembelian) menuPembelian.style.display = isFullAccess ? '' : 'none';
 }
 
 if (btnLoginSubmit) {
@@ -425,6 +428,282 @@ if (btnBarangEditSave) {
 }
 
 if (btnRefreshBarang) btnRefreshBarang.addEventListener('click', fetchBarangList);
+
+// --- HISTORI PEMBELIAN (khusus Akses Penuh) ---
+// Setiap submit di sini otomatis nulis ke 2 spreadsheet sekaligus di Google Sheets:
+// Payment Tracking & Purchasing Control (masing-masing pakai appendRow, jadi
+// otomatis masuk ke baris kosong paling bawah tanpa perlu ngecek manual).
+const pembelianNoPo = document.getElementById('pembelian-nopo');
+const pembelianBarang = document.getElementById('pembelian-barang');
+const pembelianKode = document.getElementById('pembelian-kode');
+const pembelianVariasi = document.getElementById('pembelian-variasi');
+const pembelianQty = document.getElementById('pembelian-qty');
+const pembelianSatuan = document.getElementById('pembelian-satuan');
+const pembelianTanggal = document.getElementById('pembelian-tanggal');
+const pembelianRequestor = document.getElementById('pembelian-requestor');
+const pembelianExpense = document.getElementById('pembelian-expense');
+const pembelianStatusBayar = document.getElementById('pembelian-status-bayar');
+const pembelianStatusPurchasing = document.getElementById('pembelian-status-purchasing');
+const pembelianTanggalComplete = document.getElementById('pembelian-tanggal-complete');
+const pembelianNotes = document.getElementById('pembelian-notes');
+const btnTambahPembelian = document.getElementById('btn-tambah-pembelian');
+const btnResetPembelian = document.getElementById('btn-reset-pembelian');
+const btnRefreshPembelian = document.getElementById('btn-refresh-pembelian');
+const searchPembelianInput = document.getElementById('search-pembelian');
+
+function resetFormPembelian() {
+    if (pembelianNoPo) pembelianNoPo.value = '';
+    if (pembelianBarang) pembelianBarang.value = '';
+    if (pembelianKode) pembelianKode.value = '';
+    if (pembelianVariasi) pembelianVariasi.value = '';
+    if (pembelianQty) pembelianQty.value = '';
+    if (pembelianSatuan) pembelianSatuan.value = 'Pcs';
+    if (pembelianRequestor) pembelianRequestor.value = '';
+    if (pembelianExpense) pembelianExpense.value = '';
+    if (pembelianStatusBayar) pembelianStatusBayar.value = 'Belum Bayar';
+    if (pembelianStatusPurchasing) pembelianStatusPurchasing.value = 'On Order';
+    if (pembelianTanggalComplete) pembelianTanggalComplete.value = '';
+    if (pembelianNotes) pembelianNotes.value = '';
+    if (pembelianTanggal) {
+        const hariIni = new Date();
+        const yyyy = hariIni.getFullYear();
+        const mm = String(hariIni.getMonth() + 1).padStart(2, '0');
+        const dd = String(hariIni.getDate()).padStart(2, '0');
+        pembelianTanggal.value = `${yyyy}-${mm}-${dd}`;
+    }
+}
+resetFormPembelian();
+if (btnResetPembelian) btnResetPembelian.addEventListener('click', resetFormPembelian);
+
+if (btnTambahPembelian) {
+    btnTambahPembelian.addEventListener('click', () => {
+        const noPo = pembelianNoPo ? pembelianNoPo.value.trim() : '';
+        const barang = pembelianBarang ? pembelianBarang.value.trim() : '';
+        if (!noPo || !barang) { updateStatusMessage('(!) No. PO dan Barang wajib diisi.'); return; }
+
+        btnTambahPembelian.disabled = true;
+        updateStatusMessage('Menyimpan ke Payment Tracking & Purchasing Control...');
+
+        const payload = new URLSearchParams();
+        payload.append('action', 'submit_pembelian');
+        payload.append('noPo', noPo);
+        payload.append('barang', barang);
+        payload.append('kode', pembelianKode ? pembelianKode.value.trim() : '');
+        payload.append('variasi', pembelianVariasi ? pembelianVariasi.value.trim() : '');
+        payload.append('qty', pembelianQty ? pembelianQty.value : '');
+        payload.append('satuan', pembelianSatuan ? pembelianSatuan.value : 'Pcs');
+        payload.append('tanggalPengajuan', pembelianTanggal ? pembelianTanggal.value : '');
+        payload.append('requestor', pembelianRequestor ? pembelianRequestor.value.trim() : '');
+        payload.append('expense', pembelianExpense ? pembelianExpense.value : '');
+        payload.append('statusPembayaran', pembelianStatusBayar ? pembelianStatusBayar.value : 'Belum Bayar');
+        payload.append('statusPurchasing', pembelianStatusPurchasing ? pembelianStatusPurchasing.value : 'On Order');
+        payload.append('tanggalComplete', pembelianTanggalComplete ? pembelianTanggalComplete.value : '');
+        payload.append('notes', pembelianNotes ? pembelianNotes.value.trim() : '');
+
+        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
+            .then(res => res.json())
+            .then((result) => {
+                btnTambahPembelian.disabled = false;
+                if (result && result.success) {
+                    updateStatusMessage(`Histori pembelian "${barang}" berhasil disimpan ke kedua sheet.`);
+                    resetFormPembelian();
+                    fetchPembelianList();
+                } else {
+                    updateStatusMessage('(!) ' + ((result && result.message) || 'Gagal menyimpan histori pembelian.'));
+                }
+            })
+            .catch(() => { btnTambahPembelian.disabled = false; updateStatusMessage('(!) Gagal menghubungi server.'); });
+    });
+}
+
+function fetchPembelianList() {
+    const tbody = document.getElementById('tbody-pembelian-list');
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data histori pembelian...</td></tr>`;
+    fetch(`${GOOGLE_SCRIPT_URL}?action=fetch_pembelian`).then(res => res.json()).then(list => {
+        globalPembelianListCache = Array.isArray(list) ? list : [];
+        renderPembelianTable(globalPembelianListCache);
+    }).catch(() => { tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data histori pembelian.</td></tr>`; });
+}
+
+function badgeClassStatusBayar(status) {
+    const s = (status || '').toLowerCase();
+    if (s === 'sudah bayar') return 'badge-status-approved';
+    if (s === 'hold') return 'badge-status-rejected';
+    return 'badge-status-pending';
+}
+function badgeClassStatusPurchasing(status) {
+    const s = (status || '').toLowerCase();
+    if (s === 'complete') return 'badge-status-approved';
+    if (s === 'close') return 'badge-status-rejected';
+    return 'badge-status-pending';
+}
+
+function renderPembelianTable(list) {
+    const tbody = document.getElementById('tbody-pembelian-list');
+    if (!tbody) return;
+    if (!list.length) { tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:#94a3b8; font-style:italic;">Tidak ada data yang cocok.</td></tr>`; return; }
+    tbody.innerHTML = '';
+    list.forEach(p => {
+        const expenseFmt = (p.expense !== undefined && p.expense !== null && p.expense !== '') ? `Rp ${Number(p.expense).toLocaleString('id-ID')}` : '-';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><strong>${p.noPo || '-'}</strong></td><td>${p.barang || '-'}</td><td>${p.kode || '-'}</td><td>${p.variasi || '-'}</td><td style="text-align:right;">${p.qty !== undefined && p.qty !== null && p.qty !== '' ? p.qty : '-'}</td><td>${p.satuan || '-'}</td><td>${formatTanggalDisplay(p.tanggalPengajuan)}</td><td>${p.requestor || '-'}</td><td style="text-align:right;">${expenseFmt}</td><td><span class="badge-status ${badgeClassStatusBayar(p.statusPembayaran)}">${p.statusPembayaran || '-'}</span></td><td><span class="badge-status ${badgeClassStatusPurchasing(p.statusPurchasing)}">${p.statusPurchasing || '-'}</span></td><td>${p.tanggalComplete ? formatTanggalDisplay(p.tanggalComplete) : '-'}</td><td>${p.notes || '-'}</td><td style="text-align:center; position:relative;">
+            <button class="btn-aksi-titik3" data-rowindex="${p.rowIndex}">&#8942;</button>
+            <div class="dropdown-aksi-titik3" data-rowindex="${p.rowIndex}">
+                <button class="dropdown-item-edit-pembelian" data-rowindex="${p.rowIndex}">Edit</button>
+                <button class="dropdown-item-hapus-pembelian" data-rowindex="${p.rowIndex}">Hapus</button>
+            </div>
+        </td>`;
+        tbody.appendChild(tr);
+    });
+    tbody.querySelectorAll('.btn-aksi-titik3').forEach(btn => btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const dropdown = btn.nextElementSibling;
+        const isOpen = dropdown.classList.contains('show');
+        document.querySelectorAll('.dropdown-aksi-titik3.show').forEach(d => d.classList.remove('show'));
+        if (!isOpen) dropdown.classList.add('show');
+    }));
+    tbody.querySelectorAll('.dropdown-item-edit-pembelian').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.dropdown-aksi-titik3.show').forEach(d => d.classList.remove('show')); openPembelianEditModal(btn.getAttribute('data-rowindex')); }));
+    tbody.querySelectorAll('.dropdown-item-hapus-pembelian').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.dropdown-aksi-titik3.show').forEach(d => d.classList.remove('show')); deletePembelian(btn.getAttribute('data-rowindex')); }));
+}
+
+if (searchPembelianInput) {
+    searchPembelianInput.addEventListener('input', () => {
+        const q = searchPembelianInput.value.trim().toLowerCase();
+        if (!q) { renderPembelianTable(globalPembelianListCache); return; }
+        const filtered = globalPembelianListCache.filter(p =>
+            (p.noPo || '').toString().toLowerCase().includes(q) ||
+            (p.barang || '').toString().toLowerCase().includes(q) ||
+            (p.requestor || '').toString().toLowerCase().includes(q) ||
+            (p.variasi || '').toString().toLowerCase().includes(q)
+        );
+        renderPembelianTable(filtered);
+    });
+}
+
+// --- MODAL EDIT HISTORI PEMBELIAN ---
+const pembelianEditModal = document.getElementById('pembelian-edit-modal');
+const pembelianEditRowIndex = document.getElementById('pembelian-edit-rowindex');
+const pembelianEditOriginalNoPo = document.getElementById('pembelian-edit-original-nopo');
+const pembelianEditOriginalBarang = document.getElementById('pembelian-edit-original-barang');
+const pembelianEditOriginalVariasi = document.getElementById('pembelian-edit-original-variasi');
+const pembelianEditNoPo = document.getElementById('pembelian-edit-nopo');
+const pembelianEditBarang = document.getElementById('pembelian-edit-barang');
+const pembelianEditKode = document.getElementById('pembelian-edit-kode');
+const pembelianEditVariasi = document.getElementById('pembelian-edit-variasi');
+const pembelianEditQty = document.getElementById('pembelian-edit-qty');
+const pembelianEditSatuan = document.getElementById('pembelian-edit-satuan');
+const pembelianEditTanggal = document.getElementById('pembelian-edit-tanggal');
+const pembelianEditRequestor = document.getElementById('pembelian-edit-requestor');
+const pembelianEditExpense = document.getElementById('pembelian-edit-expense');
+const pembelianEditStatusBayar = document.getElementById('pembelian-edit-status-bayar');
+const pembelianEditStatusPurchasing = document.getElementById('pembelian-edit-status-purchasing');
+const pembelianEditTanggalComplete = document.getElementById('pembelian-edit-tanggal-complete');
+const pembelianEditNotes = document.getElementById('pembelian-edit-notes');
+const pembelianEditErrorMsg = document.getElementById('pembelian-edit-error-msg');
+const btnPembelianEditSave = document.getElementById('btn-pembelian-edit-save');
+const btnPembelianEditCancel = document.getElementById('btn-pembelian-edit-cancel');
+
+function openPembelianEditModal(rowIndex) {
+    const p = (globalPembelianListCache || []).find(x => String(x.rowIndex) === String(rowIndex));
+    if (!p) { updateStatusMessage('(!) Data histori pembelian tidak ditemukan.'); return; }
+    if (pembelianEditRowIndex) pembelianEditRowIndex.value = p.rowIndex;
+    if (pembelianEditOriginalNoPo) pembelianEditOriginalNoPo.value = p.noPo || '';
+    if (pembelianEditOriginalBarang) pembelianEditOriginalBarang.value = p.barang || '';
+    if (pembelianEditOriginalVariasi) pembelianEditOriginalVariasi.value = p.variasi || '';
+    if (pembelianEditNoPo) pembelianEditNoPo.value = p.noPo || '';
+    if (pembelianEditBarang) pembelianEditBarang.value = p.barang || '';
+    if (pembelianEditKode) pembelianEditKode.value = p.kode || '';
+    if (pembelianEditVariasi) pembelianEditVariasi.value = p.variasi || '';
+    if (pembelianEditQty) pembelianEditQty.value = p.qty || '';
+    if (pembelianEditSatuan) pembelianEditSatuan.value = p.satuan || 'Pcs';
+    if (pembelianEditTanggal) pembelianEditTanggal.value = normalizeDateForInput(p.tanggalPengajuan);
+    if (pembelianEditRequestor) pembelianEditRequestor.value = p.requestor || '';
+    if (pembelianEditExpense) pembelianEditExpense.value = p.expense || '';
+    if (pembelianEditStatusBayar) pembelianEditStatusBayar.value = p.statusPembayaran || 'Belum Bayar';
+    if (pembelianEditStatusPurchasing) pembelianEditStatusPurchasing.value = p.statusPurchasing || 'On Order';
+    if (pembelianEditTanggalComplete) pembelianEditTanggalComplete.value = normalizeDateForInput(p.tanggalComplete);
+    if (pembelianEditNotes) pembelianEditNotes.value = p.notes || '';
+    if (pembelianEditErrorMsg) pembelianEditErrorMsg.innerText = '';
+    if (pembelianEditModal) pembelianEditModal.classList.add('show');
+}
+
+function normalizeDateForInput(raw) {
+    if (!raw) return '';
+    if (raw instanceof Date) {
+        const yyyy = raw.getFullYear(); const mm = String(raw.getMonth() + 1).padStart(2, '0'); const dd = String(raw.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+    return raw.toString().slice(0, 10);
+}
+
+if (btnPembelianEditCancel) btnPembelianEditCancel.addEventListener('click', () => { if (pembelianEditModal) pembelianEditModal.classList.remove('show'); });
+if (pembelianEditModal) pembelianEditModal.addEventListener('click', (e) => { if (e.target === pembelianEditModal) pembelianEditModal.classList.remove('show'); });
+
+if (btnPembelianEditSave) {
+    btnPembelianEditSave.addEventListener('click', () => {
+        const rowIndex = pembelianEditRowIndex ? pembelianEditRowIndex.value : '';
+        if (!rowIndex) { if (pembelianEditErrorMsg) pembelianEditErrorMsg.innerText = 'Data tidak valid.'; return; }
+        const noPo = pembelianEditNoPo ? pembelianEditNoPo.value.trim() : '';
+        const barang = pembelianEditBarang ? pembelianEditBarang.value.trim() : '';
+        if (!noPo || !barang) { if (pembelianEditErrorMsg) pembelianEditErrorMsg.innerText = 'No. PO dan Barang wajib diisi.'; return; }
+
+        btnPembelianEditSave.disabled = true;
+        if (pembelianEditErrorMsg) pembelianEditErrorMsg.innerText = 'Menyimpan...';
+
+        const payload = new URLSearchParams();
+        payload.append('action', 'update_pembelian');
+        payload.append('rowIndex', rowIndex);
+        payload.append('originalNoPo', pembelianEditOriginalNoPo ? pembelianEditOriginalNoPo.value : '');
+        payload.append('originalBarang', pembelianEditOriginalBarang ? pembelianEditOriginalBarang.value : '');
+        payload.append('originalVariasi', pembelianEditOriginalVariasi ? pembelianEditOriginalVariasi.value : '');
+        payload.append('noPo', noPo);
+        payload.append('barang', barang);
+        payload.append('kode', pembelianEditKode ? pembelianEditKode.value.trim() : '');
+        payload.append('variasi', pembelianEditVariasi ? pembelianEditVariasi.value.trim() : '');
+        payload.append('qty', pembelianEditQty ? pembelianEditQty.value : '');
+        payload.append('satuan', pembelianEditSatuan ? pembelianEditSatuan.value : 'Pcs');
+        payload.append('tanggalPengajuan', pembelianEditTanggal ? pembelianEditTanggal.value : '');
+        payload.append('requestor', pembelianEditRequestor ? pembelianEditRequestor.value.trim() : '');
+        payload.append('expense', pembelianEditExpense ? pembelianEditExpense.value : '');
+        payload.append('statusPembayaran', pembelianEditStatusBayar ? pembelianEditStatusBayar.value : 'Belum Bayar');
+        payload.append('statusPurchasing', pembelianEditStatusPurchasing ? pembelianEditStatusPurchasing.value : 'On Order');
+        payload.append('tanggalComplete', pembelianEditTanggalComplete ? pembelianEditTanggalComplete.value : '');
+        payload.append('notes', pembelianEditNotes ? pembelianEditNotes.value.trim() : '');
+
+        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
+            .then(res => res.json())
+            .then((result) => {
+                btnPembelianEditSave.disabled = false;
+                if (result && result.success) {
+                    if (pembelianEditModal) pembelianEditModal.classList.remove('show');
+                    updateStatusMessage('Histori pembelian berhasil diupdate di kedua sheet.');
+                    fetchPembelianList();
+                } else {
+                    if (pembelianEditErrorMsg) pembelianEditErrorMsg.innerText = (result && result.message) || 'Gagal menyimpan.';
+                }
+            })
+            .catch(() => { btnPembelianEditSave.disabled = false; if (pembelianEditErrorMsg) pembelianEditErrorMsg.innerText = 'Gagal menghubungi server.'; });
+    });
+}
+
+function deletePembelian(rowIndex) {
+    const p = (globalPembelianListCache || []).find(x => String(x.rowIndex) === String(rowIndex));
+    if (!confirm(`Yakin ingin menghapus histori pembelian "${p ? p.barang : ''}"? Ini akan menghapus baris terkait di KEDUA sheet (Payment Tracking & Purchasing Control).`)) return;
+    updateStatusMessage('Menghapus data...');
+    const payload = new URLSearchParams();
+    payload.append('action', 'delete_pembelian');
+    payload.append('rowIndex', rowIndex);
+    payload.append('noPo', p ? p.noPo : '');
+    payload.append('barang', p ? p.barang : '');
+    payload.append('variasi', p ? p.variasi : '');
+    fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
+        .then(res => res.json())
+        .then(() => { updateStatusMessage('Histori pembelian berhasil dihapus.'); fetchPembelianList(); })
+        .catch(() => updateStatusMessage('(!) Gagal menghapus data.'));
+}
+
+if (btnRefreshPembelian) btnRefreshPembelian.addEventListener('click', fetchPembelianList);
 
 // --- INITIAL BOOTSTRAP ---
 window.addEventListener('DOMContentLoaded', () => {
@@ -1171,6 +1450,7 @@ menuItems.forEach(item => {
         if (target === 'procurement') fetchPoListFromCloud();
         if (target === 'kelolaakun') fetchUsers();
         if (target === 'barang') fetchBarangList();
+        if (target === 'pembelian') fetchPembelianList();
     });
 });
 
