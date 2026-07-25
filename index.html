@@ -91,6 +91,10 @@
                 <button class="menu-item" data-target="barang" id="menu-barang" style="display:none;">
                     <span class="menu-text">Barang</span>
                 </button>
+
+                <button class="menu-item" data-target="pembelian" id="menu-pembelian" style="display:none;">
+                    <span class="menu-text">Histori Pembelian</span>
+                </button>
                 
                 <a href="https://docs.google.com/spreadsheets/d/1b67HBw0kqhxMR8gaFTvLcuhOuFrTCdD-6md0N1PiXkU/edit?gid=0#gid=0" target="_blank" class="menu-item-external" id="menu-extension">
                     <span class="menu-text">Extension</span>
@@ -254,6 +258,49 @@
                         <div class="table-responsive"><table><thead><tr><th>Nama Produk</th><th>Variasi</th><th>Toko</th><th>Vendor</th><th>Kode Vendor</th><th style="text-align:right;">Harga (Rp)</th><th>Satuan</th><th style="text-align:right;">LeadTime (Days)</th><th style="text-align:center;">Aksi</th></tr></thead><tbody id="tbody-barang-list"><tr><td colspan="9" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data barang...</td></tr></tbody></table></div>
                     </div>
                 </section>
+
+                <section id="view-pembelian" class="content-view">
+                    <h2 class="page-title">Histori Pembelian</h2>
+                    <div class="procurement-form-container">
+                        <div class="proc-row-top">
+                            <div class="proc-field-col"><span class="proc-field-label">No. PO:</span><input type="text" id="pembelian-nopo" placeholder="Contoh: PO_000197"></div>
+                            <div class="proc-field-col"><span class="proc-field-label">Barang:</span><input type="text" id="pembelian-barang" placeholder="Nama barang..."></div>
+                        </div>
+                        <div class="proc-row-top">
+                            <div class="proc-field-col"><span class="proc-field-label">Kode:</span><input type="text" id="pembelian-kode" placeholder="Kode barang (opsional)..."></div>
+                            <div class="proc-field-col"><span class="proc-field-label">Variasi:</span><input type="text" id="pembelian-variasi" placeholder="Variasi/warna..."></div>
+                        </div>
+                        <div class="proc-row-top">
+                            <div class="proc-field-col"><span class="proc-field-label">Qty:</span><input type="number" id="pembelian-qty" placeholder="Jumlah..."></div>
+                            <div class="proc-field-col"><span class="proc-field-label">Satuan:</span><select id="pembelian-satuan"><option value="Pcs">Pcs</option><option value="Kg">Kg</option><option value="Roll">Roll</option><option value="Yards">Yards</option><option value="Pack">Pack</option><option value="Lusin">Lusin</option></select></div>
+                        </div>
+                        <div class="proc-row-top">
+                            <div class="proc-field-col"><span class="proc-field-label">Tanggal Pengajuan:</span><input type="date" id="pembelian-tanggal"></div>
+                            <div class="proc-field-col"><span class="proc-field-label">Requestor:</span><input type="text" id="pembelian-requestor" placeholder="Nama requestor..."></div>
+                        </div>
+                        <div class="proc-row-top">
+                            <div class="proc-field-col"><span class="proc-field-label">Total Bayar (Rp):</span><input type="number" id="pembelian-expense" placeholder="Total bayar..."></div>
+                            <div class="proc-field-col"><span class="proc-field-label">Status Pembayaran:</span><select id="pembelian-status-bayar"><option value="Belum Bayar">Belum Bayar</option><option value="Sudah Bayar">Sudah Bayar</option><option value="Hold">Hold</option></select></div>
+                        </div>
+                        <div class="proc-row-top">
+                            <div class="proc-field-col"><span class="proc-field-label">Status Purchasing:</span><select id="pembelian-status-purchasing"><option value="On Order">On Order</option><option value="Complete">Complete</option><option value="Close">Close</option></select></div>
+                            <div class="proc-field-col"><span class="proc-field-label">Tanggal Complete:</span><input type="date" id="pembelian-tanggal-complete"></div>
+                        </div>
+                        <div class="proc-row-top">
+                            <div class="proc-field-col" style="flex:1 1 100%;"><span class="proc-field-label">Notes:</span><input type="text" id="pembelian-notes" placeholder="Catatan (opsional)..."></div>
+                        </div>
+                        <div class="proc-row-actions"><button id="btn-reset-pembelian">Reset</button><button id="btn-tambah-pembelian">+ Tambah ke Histori</button></div>
+                    </div>
+
+                    <div class="sku-list-card" style="width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px; gap:10px; flex-wrap:wrap;">
+                            <h3 style="margin: 0;">Daftar Histori Pembelian</h3>
+                            <input type="text" id="search-pembelian" placeholder="Cari No. PO, barang, requestor..." style="flex:1; min-width:200px; max-width:320px; height:36px; padding:0 14px; border-radius:10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16); color:var(--text-main); font-size:13px;">
+                            <button id="btn-refresh-pembelian" class="btn-action btn-pink-outline">Refresh</button>
+                        </div>
+                        <div class="table-responsive"><table><thead><tr><th>No. PO</th><th>Barang</th><th>Kode</th><th>Variasi</th><th style="text-align:right;">Qty</th><th>Satuan</th><th>Tgl Pengajuan</th><th>Requestor</th><th style="text-align:right;">Total (Rp)</th><th>Status Bayar</th><th>Status Purchasing</th><th>Tgl Complete</th><th>Notes</th><th style="text-align:center;">Aksi</th></tr></thead><tbody id="tbody-pembelian-list"><tr><td colspan="14" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data histori pembelian...</td></tr></tbody></table></div>
+                    </div>
+                </section>
             </div>
             <footer class="status-footer" id="status-bar">Memuat sistem...</footer>
         </main>
@@ -262,6 +309,27 @@
     <div id="password-modal" class="modal-overlay"><div class="modal-card"><div class="modal-header"><h3>Security Authentication</h3></div><div class="modal-body"><p>Masukkan password otorisasi:</p><input type="password" id="input-ext-password" placeholder="Password..."><span id="modal-error-msg"></span></div><div class="modal-footer"><button id="btn-modal-cancel">Batal</button><button id="btn-modal-submit">Masuk</button></div></div></div>
 
     <div id="po-detail-modal" class="modal-overlay"><div class="modal-card" style="max-width:640px;"><div class="modal-header"><h3>Detail Item PO <span id="po-detail-title"></span></h3></div><div class="modal-body"><div class="table-responsive"><table><thead><tr><th>Jenis Barang</th><th>Warna Latela</th><th>Kode Warna Vendor</th><th>Nama Kain</th><th style="text-align:right;">Qty</th></tr></thead><tbody id="tbody-po-detail-items"></tbody></table></div></div><div class="modal-footer"><button id="btn-po-detail-close">Tutup</button></div></div></div>
+
+    <div id="pembelian-edit-modal" class="modal-overlay"><div class="modal-card" style="max-width:480px;"><div class="modal-header"><h3>Edit Histori Pembelian</h3></div><div class="modal-body">
+        <input type="hidden" id="pembelian-edit-rowindex">
+        <input type="hidden" id="pembelian-edit-original-nopo">
+        <input type="hidden" id="pembelian-edit-original-barang">
+        <input type="hidden" id="pembelian-edit-original-variasi">
+        <p style="margin-bottom:6px;">No. PO:</p><input type="text" id="pembelian-edit-nopo" placeholder="No. PO...">
+        <p style="margin-bottom:6px; margin-top:10px;">Barang:</p><input type="text" id="pembelian-edit-barang" placeholder="Nama barang...">
+        <p style="margin-bottom:6px; margin-top:10px;">Kode:</p><input type="text" id="pembelian-edit-kode" placeholder="Kode...">
+        <p style="margin-bottom:6px; margin-top:10px;">Variasi:</p><input type="text" id="pembelian-edit-variasi" placeholder="Variasi...">
+        <p style="margin-bottom:6px; margin-top:10px;">Qty:</p><input type="number" id="pembelian-edit-qty" placeholder="Qty...">
+        <p style="margin-bottom:6px; margin-top:10px;">Satuan:</p><select id="pembelian-edit-satuan"><option value="Pcs">Pcs</option><option value="Kg">Kg</option><option value="Roll">Roll</option><option value="Yards">Yards</option><option value="Pack">Pack</option><option value="Lusin">Lusin</option></select>
+        <p style="margin-bottom:6px; margin-top:10px;">Tanggal Pengajuan:</p><input type="date" id="pembelian-edit-tanggal">
+        <p style="margin-bottom:6px; margin-top:10px;">Requestor:</p><input type="text" id="pembelian-edit-requestor" placeholder="Requestor...">
+        <p style="margin-bottom:6px; margin-top:10px;">Total Bayar (Rp):</p><input type="number" id="pembelian-edit-expense" placeholder="Total bayar...">
+        <p style="margin-bottom:6px; margin-top:10px;">Status Pembayaran:</p><select id="pembelian-edit-status-bayar"><option value="Belum Bayar">Belum Bayar</option><option value="Sudah Bayar">Sudah Bayar</option><option value="Hold">Hold</option></select>
+        <p style="margin-bottom:6px; margin-top:10px;">Status Purchasing:</p><select id="pembelian-edit-status-purchasing"><option value="On Order">On Order</option><option value="Complete">Complete</option><option value="Close">Close</option></select>
+        <p style="margin-bottom:6px; margin-top:10px;">Tanggal Complete:</p><input type="date" id="pembelian-edit-tanggal-complete">
+        <p style="margin-bottom:6px; margin-top:10px;">Notes:</p><input type="text" id="pembelian-edit-notes" placeholder="Catatan...">
+        <span id="pembelian-edit-error-msg"></span>
+    </div><div class="modal-footer"><button id="btn-pembelian-edit-cancel">Batal</button><button id="btn-pembelian-edit-save">Simpan</button></div></div></div>
 
     <div id="barang-edit-modal" class="modal-overlay"><div class="modal-card" style="max-width:480px;"><div class="modal-header"><h3 id="barang-edit-modal-title">Edit Barang</h3></div><div class="modal-body">
         <input type="hidden" id="barang-edit-rowindex">
