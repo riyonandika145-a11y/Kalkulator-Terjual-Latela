@@ -919,7 +919,7 @@ body[data-theme="light"] .btn-help-dot {
 }
 
 .content-view { display: none; height: 100%; }
-#view-kalkulator.active, #view-mastersku.active, #view-barang.active {
+#view-kalkulator.active, #view-mastersku.active, #view-barang.active, #view-pembelian.active {
     display: flex; flex-direction: column;
 }
 #view-dashboard.active, #view-history.active, #view-procurement.active, #view-kelolaakun.active {
