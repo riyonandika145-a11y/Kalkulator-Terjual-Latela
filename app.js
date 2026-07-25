@@ -544,11 +544,31 @@ function badgeClassStatusPurchasing(status) {
 // sekaligus ke DOM, browser jadi berat banget & ngelag di SEMUA halaman
 // (karena halaman yang gak lagi dibuka cuma "disembunyikan", bukan
 // beneran dihapus, jadi elemennya tetap nempel di memori). Makanya
-// cuma render 1 halaman (50 baris) dalam satu waktu.
+// cuma render 1 halaman dalam satu waktu, jumlahnya bisa dipilih user.
 let pembelianCurrentPage = 1;
-const PEMBELIAN_PAGE_SIZE = 50;
+let PEMBELIAN_PAGE_SIZE = 50;
+let pembelianLastList = []; // list yang lagi ditampilin (buat re-render pas ganti halaman/page size/batal edit)
+let pembelianEditingRowIndex = null; // rowIndex baris yang lagi di-edit inline (null = gak ada yang lagi diedit)
+
+const pembelianPageSizeSelect = document.getElementById('pembelian-page-size');
+if (pembelianPageSizeSelect) {
+    pembelianPageSizeSelect.addEventListener('change', () => {
+        PEMBELIAN_PAGE_SIZE = parseInt(pembelianPageSizeSelect.value, 10) || 50;
+        pembelianCurrentPage = 1;
+        renderPembelianTable(pembelianLastList);
+    });
+}
+
+const PEMBELIAN_SATUAN_OPTIONS = ['Pcs', 'Kg', 'Roll', 'Yards', 'Pack', 'Lusin'];
+const PEMBELIAN_STATUS_BAYAR_OPTIONS = ['Belum Bayar', 'Sudah Bayar', 'Hold'];
+const PEMBELIAN_STATUS_PURCHASING_OPTIONS = ['On Order', 'Complete', 'Close'];
+
+function buildSelectOptionsHtml(options, selectedValue) {
+    return options.map(opt => `<option value="${opt}" ${opt === selectedValue ? 'selected' : ''}>${opt}</option>`).join('');
+}
 
 function renderPembelianTable(list) {
+    pembelianLastList = list;
     const tbody = document.getElementById('tbody-pembelian-list');
     if (!tbody) return;
     if (!list.length) { tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:#94a3b8; font-style:italic;">Tidak ada data yang cocok.</td></tr>`; renderPembelianPagination(list); return; }
@@ -560,17 +580,43 @@ function renderPembelianTable(list) {
 
     tbody.innerHTML = '';
     pageItems.forEach(p => {
-        const expenseFmt = (p.expense !== undefined && p.expense !== null && p.expense !== '') ? `Rp ${Number(p.expense).toLocaleString('id-ID')}` : '-';
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td><strong>${p.noPo || '-'}</strong></td><td>${p.barang || '-'}</td><td>${p.kode || '-'}</td><td>${p.variasi || '-'}</td><td style="text-align:right;">${p.qty !== undefined && p.qty !== null && p.qty !== '' ? p.qty : '-'}</td><td>${p.satuan || '-'}</td><td>${formatTanggalDisplay(p.tanggalPengajuan)}</td><td>${p.requestor || '-'}</td><td style="text-align:right;">${expenseFmt}</td><td><span class="badge-status ${badgeClassStatusBayar(p.statusPembayaran)}">${p.statusPembayaran || '-'}</span></td><td><span class="badge-status ${badgeClassStatusPurchasing(p.statusPurchasing)}">${p.statusPurchasing || '-'}</span></td><td>${p.tanggalComplete ? formatTanggalDisplay(p.tanggalComplete) : '-'}</td><td>${p.notes || '-'}</td><td style="text-align:center; position:relative;">
-            <button class="btn-aksi-titik3" data-rowindex="${p.rowIndex}">&#8942;</button>
-            <div class="dropdown-aksi-titik3" data-rowindex="${p.rowIndex}">
-                <button class="dropdown-item-edit-pembelian" data-rowindex="${p.rowIndex}">Edit</button>
-                <button class="dropdown-item-hapus-pembelian" data-rowindex="${p.rowIndex}">Hapus</button>
-            </div>
-        </td>`;
+        const isEditing = pembelianEditingRowIndex !== null && String(pembelianEditingRowIndex) === String(p.rowIndex);
+
+        if (isEditing) {
+            // --- MODE EDIT: semua cell jadi input/select langsung di baris ---
+            tr.innerHTML = `
+                <td><input type="text" class="inline-edit-field" data-field="noPo" value="${(p.noPo || '').toString().replace(/"/g, '&quot;')}" style="width:90px;"></td>
+                <td><input type="text" class="inline-edit-field" data-field="barang" value="${(p.barang || '').toString().replace(/"/g, '&quot;')}" style="width:100px;"></td>
+                <td><input type="text" class="inline-edit-field" data-field="kode" value="${(p.kode || '').toString().replace(/"/g, '&quot;')}" style="width:80px;"></td>
+                <td><input type="text" class="inline-edit-field" data-field="variasi" value="${(p.variasi || '').toString().replace(/"/g, '&quot;')}" style="width:90px;"></td>
+                <td><input type="number" class="inline-edit-field" data-field="qty" value="${p.qty !== undefined && p.qty !== null ? p.qty : ''}" style="width:60px;"></td>
+                <td><select class="inline-edit-field" data-field="satuan" style="width:80px;">${buildSelectOptionsHtml(PEMBELIAN_SATUAN_OPTIONS, p.satuan)}</select></td>
+                <td><input type="date" class="inline-edit-field" data-field="tanggalPengajuan" value="${normalizeDateForInput(p.tanggalPengajuan)}" style="width:130px;"></td>
+                <td><input type="text" class="inline-edit-field" data-field="requestor" value="${(p.requestor || '').toString().replace(/"/g, '&quot;')}" style="width:90px;"></td>
+                <td><input type="number" class="inline-edit-field" data-field="expense" value="${p.expense !== undefined && p.expense !== null ? p.expense : ''}" style="width:90px;"></td>
+                <td><select class="inline-edit-field" data-field="statusPembayaran" style="width:100px;">${buildSelectOptionsHtml(PEMBELIAN_STATUS_BAYAR_OPTIONS, p.statusPembayaran)}</select></td>
+                <td><select class="inline-edit-field" data-field="statusPurchasing" style="width:100px;">${buildSelectOptionsHtml(PEMBELIAN_STATUS_PURCHASING_OPTIONS, p.statusPurchasing)}</select></td>
+                <td><input type="date" class="inline-edit-field" data-field="tanggalComplete" value="${normalizeDateForInput(p.tanggalComplete)}" style="width:130px;"></td>
+                <td><input type="text" class="inline-edit-field" data-field="notes" value="${(p.notes || '').toString().replace(/"/g, '&quot;')}" style="width:100px;"></td>
+                <td style="text-align:center; white-space:nowrap;">
+                    <button class="btn-inline-save" data-rowindex="${p.rowIndex}" data-orig-nopo="${(p.noPo || '').toString().replace(/"/g, '&quot;')}" data-orig-barang="${(p.barang || '').toString().replace(/"/g, '&quot;')}" data-orig-variasi="${(p.variasi || '').toString().replace(/"/g, '&quot;')}">Simpan</button>
+                    <button class="btn-inline-cancel">Batal</button>
+                </td>`;
+        } else {
+            // --- MODE TAMPIL BIASA ---
+            const expenseFmt = (p.expense !== undefined && p.expense !== null && p.expense !== '') ? `Rp ${Number(p.expense).toLocaleString('id-ID')}` : '-';
+            tr.innerHTML = `<td><strong>${p.noPo || '-'}</strong></td><td>${p.barang || '-'}</td><td>${p.kode || '-'}</td><td>${p.variasi || '-'}</td><td style="text-align:right;">${p.qty !== undefined && p.qty !== null && p.qty !== '' ? p.qty : '-'}</td><td>${p.satuan || '-'}</td><td>${formatTanggalDisplay(p.tanggalPengajuan)}</td><td>${p.requestor || '-'}</td><td style="text-align:right;">${expenseFmt}</td><td><span class="badge-status ${badgeClassStatusBayar(p.statusPembayaran)}">${p.statusPembayaran || '-'}</span></td><td><span class="badge-status ${badgeClassStatusPurchasing(p.statusPurchasing)}">${p.statusPurchasing || '-'}</span></td><td>${p.tanggalComplete ? formatTanggalDisplay(p.tanggalComplete) : '-'}</td><td>${p.notes || '-'}</td><td style="text-align:center; position:relative;">
+                <button class="btn-aksi-titik3" data-rowindex="${p.rowIndex}">&#8942;</button>
+                <div class="dropdown-aksi-titik3" data-rowindex="${p.rowIndex}">
+                    <button class="dropdown-item-edit-pembelian" data-rowindex="${p.rowIndex}">Edit</button>
+                    <button class="dropdown-item-hapus-pembelian" data-rowindex="${p.rowIndex}">Hapus</button>
+                </div>
+            </td>`;
+        }
         tbody.appendChild(tr);
     });
+
     tbody.querySelectorAll('.btn-aksi-titik3').forEach(btn => btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const dropdown = btn.nextElementSibling;
@@ -578,10 +624,69 @@ function renderPembelianTable(list) {
         document.querySelectorAll('.dropdown-aksi-titik3.show').forEach(d => d.classList.remove('show'));
         if (!isOpen) dropdown.classList.add('show');
     }));
-    tbody.querySelectorAll('.dropdown-item-edit-pembelian').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.dropdown-aksi-titik3.show').forEach(d => d.classList.remove('show')); openPembelianEditModal(btn.getAttribute('data-rowindex')); }));
+    tbody.querySelectorAll('.dropdown-item-edit-pembelian').forEach(btn => btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.dropdown-aksi-titik3.show').forEach(d => d.classList.remove('show'));
+        pembelianEditingRowIndex = btn.getAttribute('data-rowindex');
+        renderPembelianTable(pembelianLastList);
+    }));
     tbody.querySelectorAll('.dropdown-item-hapus-pembelian').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.dropdown-aksi-titik3.show').forEach(d => d.classList.remove('show')); deletePembelian(btn.getAttribute('data-rowindex')); }));
 
+    // Tombol Simpan/Batal buat mode inline-edit
+    tbody.querySelectorAll('.btn-inline-save').forEach(btn => btn.addEventListener('click', () => savePembelianInlineEdit(btn)));
+    tbody.querySelectorAll('.btn-inline-cancel').forEach(btn => btn.addEventListener('click', () => { pembelianEditingRowIndex = null; renderPembelianTable(pembelianLastList); }));
+
     renderPembelianPagination(list);
+}
+
+function savePembelianInlineEdit(btnSaveEl) {
+    const tr = btnSaveEl.closest('tr');
+    const rowIndex = btnSaveEl.getAttribute('data-rowindex');
+    const originalNoPo = btnSaveEl.getAttribute('data-orig-nopo');
+    const originalBarang = btnSaveEl.getAttribute('data-orig-barang');
+    const originalVariasi = btnSaveEl.getAttribute('data-orig-variasi');
+
+    const getVal = (field) => { const el = tr.querySelector(`.inline-edit-field[data-field="${field}"]`); return el ? el.value : ''; };
+    const noPo = getVal('noPo').trim();
+    const barang = getVal('barang').trim();
+    if (!noPo || !barang) { updateStatusMessage('(!) No. PO dan Barang wajib diisi.'); return; }
+
+    btnSaveEl.disabled = true;
+    updateStatusMessage('Menyimpan perubahan ke kedua sheet...');
+
+    const payload = new URLSearchParams();
+    payload.append('action', 'update_pembelian');
+    payload.append('rowIndex', rowIndex);
+    payload.append('originalNoPo', originalNoPo);
+    payload.append('originalBarang', originalBarang);
+    payload.append('originalVariasi', originalVariasi);
+    payload.append('noPo', noPo);
+    payload.append('barang', barang);
+    payload.append('kode', getVal('kode').trim());
+    payload.append('variasi', getVal('variasi').trim());
+    payload.append('qty', getVal('qty'));
+    payload.append('satuan', getVal('satuan'));
+    payload.append('tanggalPengajuan', getVal('tanggalPengajuan'));
+    payload.append('requestor', getVal('requestor').trim());
+    payload.append('expense', getVal('expense'));
+    payload.append('statusPembayaran', getVal('statusPembayaran'));
+    payload.append('statusPurchasing', getVal('statusPurchasing'));
+    payload.append('tanggalComplete', getVal('tanggalComplete'));
+    payload.append('notes', getVal('notes').trim());
+
+    fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
+        .then(res => res.json())
+        .then((result) => {
+            btnSaveEl.disabled = false;
+            if (result && result.success) {
+                updateStatusMessage('Perubahan berhasil disimpan ke kedua sheet.');
+                pembelianEditingRowIndex = null;
+                fetchPembelianList();
+            } else {
+                updateStatusMessage('(!) ' + ((result && result.message) || 'Gagal menyimpan perubahan.'));
+            }
+        })
+        .catch(() => { btnSaveEl.disabled = false; updateStatusMessage('(!) Gagal menghubungi server.'); });
 }
 
 function renderPembelianPagination(list) {
@@ -613,6 +718,7 @@ function renderPembelianPagination(list) {
     if (btnNext) btnNext.addEventListener('click', () => { if (pembelianCurrentPage < totalPages) { pembelianCurrentPage++; renderPembelianTable(list); } });
 }
 
+
 if (searchPembelianInput) {
     searchPembelianInput.addEventListener('input', () => {
         const q = searchPembelianInput.value.trim().toLowerCase();
@@ -628,53 +734,6 @@ if (searchPembelianInput) {
     });
 }
 
-// --- MODAL EDIT HISTORI PEMBELIAN ---
-const pembelianEditModal = document.getElementById('pembelian-edit-modal');
-const pembelianEditRowIndex = document.getElementById('pembelian-edit-rowindex');
-const pembelianEditOriginalNoPo = document.getElementById('pembelian-edit-original-nopo');
-const pembelianEditOriginalBarang = document.getElementById('pembelian-edit-original-barang');
-const pembelianEditOriginalVariasi = document.getElementById('pembelian-edit-original-variasi');
-const pembelianEditNoPo = document.getElementById('pembelian-edit-nopo');
-const pembelianEditBarang = document.getElementById('pembelian-edit-barang');
-const pembelianEditKode = document.getElementById('pembelian-edit-kode');
-const pembelianEditVariasi = document.getElementById('pembelian-edit-variasi');
-const pembelianEditQty = document.getElementById('pembelian-edit-qty');
-const pembelianEditSatuan = document.getElementById('pembelian-edit-satuan');
-const pembelianEditTanggal = document.getElementById('pembelian-edit-tanggal');
-const pembelianEditRequestor = document.getElementById('pembelian-edit-requestor');
-const pembelianEditExpense = document.getElementById('pembelian-edit-expense');
-const pembelianEditStatusBayar = document.getElementById('pembelian-edit-status-bayar');
-const pembelianEditStatusPurchasing = document.getElementById('pembelian-edit-status-purchasing');
-const pembelianEditTanggalComplete = document.getElementById('pembelian-edit-tanggal-complete');
-const pembelianEditNotes = document.getElementById('pembelian-edit-notes');
-const pembelianEditErrorMsg = document.getElementById('pembelian-edit-error-msg');
-const btnPembelianEditSave = document.getElementById('btn-pembelian-edit-save');
-const btnPembelianEditCancel = document.getElementById('btn-pembelian-edit-cancel');
-
-function openPembelianEditModal(rowIndex) {
-    const p = (globalPembelianListCache || []).find(x => String(x.rowIndex) === String(rowIndex));
-    if (!p) { updateStatusMessage('(!) Data histori pembelian tidak ditemukan.'); return; }
-    if (pembelianEditRowIndex) pembelianEditRowIndex.value = p.rowIndex;
-    if (pembelianEditOriginalNoPo) pembelianEditOriginalNoPo.value = p.noPo || '';
-    if (pembelianEditOriginalBarang) pembelianEditOriginalBarang.value = p.barang || '';
-    if (pembelianEditOriginalVariasi) pembelianEditOriginalVariasi.value = p.variasi || '';
-    if (pembelianEditNoPo) pembelianEditNoPo.value = p.noPo || '';
-    if (pembelianEditBarang) pembelianEditBarang.value = p.barang || '';
-    if (pembelianEditKode) pembelianEditKode.value = p.kode || '';
-    if (pembelianEditVariasi) pembelianEditVariasi.value = p.variasi || '';
-    if (pembelianEditQty) pembelianEditQty.value = p.qty || '';
-    if (pembelianEditSatuan) pembelianEditSatuan.value = p.satuan || 'Pcs';
-    if (pembelianEditTanggal) pembelianEditTanggal.value = normalizeDateForInput(p.tanggalPengajuan);
-    if (pembelianEditRequestor) pembelianEditRequestor.value = p.requestor || '';
-    if (pembelianEditExpense) pembelianEditExpense.value = p.expense || '';
-    if (pembelianEditStatusBayar) pembelianEditStatusBayar.value = p.statusPembayaran || 'Belum Bayar';
-    if (pembelianEditStatusPurchasing) pembelianEditStatusPurchasing.value = p.statusPurchasing || 'On Order';
-    if (pembelianEditTanggalComplete) pembelianEditTanggalComplete.value = normalizeDateForInput(p.tanggalComplete);
-    if (pembelianEditNotes) pembelianEditNotes.value = p.notes || '';
-    if (pembelianEditErrorMsg) pembelianEditErrorMsg.innerText = '';
-    if (pembelianEditModal) pembelianEditModal.classList.add('show');
-}
-
 function normalizeDateForInput(raw) {
     if (!raw) return '';
     if (raw instanceof Date) {
@@ -682,56 +741,6 @@ function normalizeDateForInput(raw) {
         return `${yyyy}-${mm}-${dd}`;
     }
     return raw.toString().slice(0, 10);
-}
-
-if (btnPembelianEditCancel) btnPembelianEditCancel.addEventListener('click', () => { if (pembelianEditModal) pembelianEditModal.classList.remove('show'); });
-if (pembelianEditModal) pembelianEditModal.addEventListener('click', (e) => { if (e.target === pembelianEditModal) pembelianEditModal.classList.remove('show'); });
-
-if (btnPembelianEditSave) {
-    btnPembelianEditSave.addEventListener('click', () => {
-        const rowIndex = pembelianEditRowIndex ? pembelianEditRowIndex.value : '';
-        if (!rowIndex) { if (pembelianEditErrorMsg) pembelianEditErrorMsg.innerText = 'Data tidak valid.'; return; }
-        const noPo = pembelianEditNoPo ? pembelianEditNoPo.value.trim() : '';
-        const barang = pembelianEditBarang ? pembelianEditBarang.value.trim() : '';
-        if (!noPo || !barang) { if (pembelianEditErrorMsg) pembelianEditErrorMsg.innerText = 'No. PO dan Barang wajib diisi.'; return; }
-
-        btnPembelianEditSave.disabled = true;
-        if (pembelianEditErrorMsg) pembelianEditErrorMsg.innerText = 'Menyimpan...';
-
-        const payload = new URLSearchParams();
-        payload.append('action', 'update_pembelian');
-        payload.append('rowIndex', rowIndex);
-        payload.append('originalNoPo', pembelianEditOriginalNoPo ? pembelianEditOriginalNoPo.value : '');
-        payload.append('originalBarang', pembelianEditOriginalBarang ? pembelianEditOriginalBarang.value : '');
-        payload.append('originalVariasi', pembelianEditOriginalVariasi ? pembelianEditOriginalVariasi.value : '');
-        payload.append('noPo', noPo);
-        payload.append('barang', barang);
-        payload.append('kode', pembelianEditKode ? pembelianEditKode.value.trim() : '');
-        payload.append('variasi', pembelianEditVariasi ? pembelianEditVariasi.value.trim() : '');
-        payload.append('qty', pembelianEditQty ? pembelianEditQty.value : '');
-        payload.append('satuan', pembelianEditSatuan ? pembelianEditSatuan.value : 'Pcs');
-        payload.append('tanggalPengajuan', pembelianEditTanggal ? pembelianEditTanggal.value : '');
-        payload.append('requestor', pembelianEditRequestor ? pembelianEditRequestor.value.trim() : '');
-        payload.append('expense', pembelianEditExpense ? pembelianEditExpense.value : '');
-        payload.append('statusPembayaran', pembelianEditStatusBayar ? pembelianEditStatusBayar.value : 'Belum Bayar');
-        payload.append('statusPurchasing', pembelianEditStatusPurchasing ? pembelianEditStatusPurchasing.value : 'On Order');
-        payload.append('tanggalComplete', pembelianEditTanggalComplete ? pembelianEditTanggalComplete.value : '');
-        payload.append('notes', pembelianEditNotes ? pembelianEditNotes.value.trim() : '');
-
-        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
-            .then(res => res.json())
-            .then((result) => {
-                btnPembelianEditSave.disabled = false;
-                if (result && result.success) {
-                    if (pembelianEditModal) pembelianEditModal.classList.remove('show');
-                    updateStatusMessage('Histori pembelian berhasil diupdate di kedua sheet.');
-                    fetchPembelianList();
-                } else {
-                    if (pembelianEditErrorMsg) pembelianEditErrorMsg.innerText = (result && result.message) || 'Gagal menyimpan.';
-                }
-            })
-            .catch(() => { btnPembelianEditSave.disabled = false; if (pembelianEditErrorMsg) pembelianEditErrorMsg.innerText = 'Gagal menghubungi server.'; });
-    });
 }
 
 function deletePembelian(rowIndex) {
