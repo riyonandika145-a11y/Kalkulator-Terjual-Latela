@@ -522,6 +522,7 @@ function fetchPembelianList() {
     tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data histori pembelian...</td></tr>`;
     fetch(`${GOOGLE_SCRIPT_URL}?action=fetch_pembelian`).then(res => res.json()).then(list => {
         globalPembelianListCache = Array.isArray(list) ? list : [];
+        pembelianCurrentPage = 1;
         renderPembelianTable(globalPembelianListCache);
     }).catch(() => { tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data histori pembelian.</td></tr>`; });
 }
@@ -539,12 +540,26 @@ function badgeClassStatusPurchasing(status) {
     return 'badge-status-pending';
 }
 
+// 🔧 PAGINATION: data bisa ribuan baris (7000+), kalau di-render semua
+// sekaligus ke DOM, browser jadi berat banget & ngelag di SEMUA halaman
+// (karena halaman yang gak lagi dibuka cuma "disembunyikan", bukan
+// beneran dihapus, jadi elemennya tetap nempel di memori). Makanya
+// cuma render 1 halaman (50 baris) dalam satu waktu.
+let pembelianCurrentPage = 1;
+const PEMBELIAN_PAGE_SIZE = 50;
+
 function renderPembelianTable(list) {
     const tbody = document.getElementById('tbody-pembelian-list');
     if (!tbody) return;
-    if (!list.length) { tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:#94a3b8; font-style:italic;">Tidak ada data yang cocok.</td></tr>`; return; }
+    if (!list.length) { tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:#94a3b8; font-style:italic;">Tidak ada data yang cocok.</td></tr>`; renderPembelianPagination(list); return; }
+
+    const totalPages = Math.max(1, Math.ceil(list.length / PEMBELIAN_PAGE_SIZE));
+    if (pembelianCurrentPage > totalPages) pembelianCurrentPage = totalPages;
+    const startIdx = (pembelianCurrentPage - 1) * PEMBELIAN_PAGE_SIZE;
+    const pageItems = list.slice(startIdx, startIdx + PEMBELIAN_PAGE_SIZE);
+
     tbody.innerHTML = '';
-    list.forEach(p => {
+    pageItems.forEach(p => {
         const expenseFmt = (p.expense !== undefined && p.expense !== null && p.expense !== '') ? `Rp ${Number(p.expense).toLocaleString('id-ID')}` : '-';
         const tr = document.createElement('tr');
         tr.innerHTML = `<td><strong>${p.noPo || '-'}</strong></td><td>${p.barang || '-'}</td><td>${p.kode || '-'}</td><td>${p.variasi || '-'}</td><td style="text-align:right;">${p.qty !== undefined && p.qty !== null && p.qty !== '' ? p.qty : '-'}</td><td>${p.satuan || '-'}</td><td>${formatTanggalDisplay(p.tanggalPengajuan)}</td><td>${p.requestor || '-'}</td><td style="text-align:right;">${expenseFmt}</td><td><span class="badge-status ${badgeClassStatusBayar(p.statusPembayaran)}">${p.statusPembayaran || '-'}</span></td><td><span class="badge-status ${badgeClassStatusPurchasing(p.statusPurchasing)}">${p.statusPurchasing || '-'}</span></td><td>${p.tanggalComplete ? formatTanggalDisplay(p.tanggalComplete) : '-'}</td><td>${p.notes || '-'}</td><td style="text-align:center; position:relative;">
@@ -565,11 +580,43 @@ function renderPembelianTable(list) {
     }));
     tbody.querySelectorAll('.dropdown-item-edit-pembelian').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.dropdown-aksi-titik3.show').forEach(d => d.classList.remove('show')); openPembelianEditModal(btn.getAttribute('data-rowindex')); }));
     tbody.querySelectorAll('.dropdown-item-hapus-pembelian').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.dropdown-aksi-titik3.show').forEach(d => d.classList.remove('show')); deletePembelian(btn.getAttribute('data-rowindex')); }));
+
+    renderPembelianPagination(list);
+}
+
+function renderPembelianPagination(list) {
+    let pagerEl = document.getElementById('pembelian-pagination');
+    if (!pagerEl) {
+        pagerEl = document.createElement('div');
+        pagerEl.id = 'pembelian-pagination';
+        pagerEl.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:10px; padding-top:12px; flex-wrap:wrap;';
+        const tableResponsive = document.querySelector('#view-pembelian .table-responsive');
+        if (tableResponsive && tableResponsive.parentNode) tableResponsive.parentNode.appendChild(pagerEl);
+    }
+    if (!list.length) { pagerEl.innerHTML = ''; return; }
+
+    const totalPages = Math.max(1, Math.ceil(list.length / PEMBELIAN_PAGE_SIZE));
+    const startIdx = (pembelianCurrentPage - 1) * PEMBELIAN_PAGE_SIZE;
+    const endIdx = Math.min(startIdx + PEMBELIAN_PAGE_SIZE, list.length);
+
+    pagerEl.innerHTML = `
+        <span style="font-size:12px; color:var(--text-muted);">Menampilkan ${startIdx + 1}-${endIdx} dari ${list.length} data</span>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <button id="btn-pembelian-prev" class="btn-action btn-pink-outline" ${pembelianCurrentPage <= 1 ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''}>&larr; Sebelumnya</button>
+            <span style="font-size:12px; color:var(--text-main);">Halaman ${pembelianCurrentPage} / ${totalPages}</span>
+            <button id="btn-pembelian-next" class="btn-action btn-pink-outline" ${pembelianCurrentPage >= totalPages ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''}>Berikutnya &rarr;</button>
+        </div>`;
+
+    const btnPrev = document.getElementById('btn-pembelian-prev');
+    const btnNext = document.getElementById('btn-pembelian-next');
+    if (btnPrev) btnPrev.addEventListener('click', () => { if (pembelianCurrentPage > 1) { pembelianCurrentPage--; renderPembelianTable(list); } });
+    if (btnNext) btnNext.addEventListener('click', () => { if (pembelianCurrentPage < totalPages) { pembelianCurrentPage++; renderPembelianTable(list); } });
 }
 
 if (searchPembelianInput) {
     searchPembelianInput.addEventListener('input', () => {
         const q = searchPembelianInput.value.trim().toLowerCase();
+        pembelianCurrentPage = 1; // reset ke halaman 1 tiap kali search berubah
         if (!q) { renderPembelianTable(globalPembelianListCache); return; }
         const filtered = globalPembelianListCache.filter(p =>
             (p.noPo || '').toString().toLowerCase().includes(q) ||
