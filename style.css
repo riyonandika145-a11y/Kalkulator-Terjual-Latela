@@ -1243,6 +1243,7 @@ tr:hover td { background: rgba(255,255,255,0.04); }
     flex-shrink: 0;
 }
 .table-responsive { flex: 1; overflow-y: auto; overflow-x: auto; border: 1px solid rgba(255,255,255,0.10); border-radius: 16px; }
+#view-pembelian .table-responsive { max-height: calc(100vh - 260px); flex: none; }
 .table-responsive table thead th {
     position: sticky; top: 0;
     background: rgba(10,28,45,0.80); z-index: 10;
