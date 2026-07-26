@@ -261,42 +261,13 @@
 
                 <section id="view-pembelian" class="content-view">
                     <h2 class="page-title">Histori Pembelian</h2>
-                    <div class="procurement-form-container">
-                        <div class="proc-row-top">
-                            <div class="proc-field-col"><span class="proc-field-label">No. PO:</span><input type="text" id="pembelian-nopo" placeholder="Contoh: PO_000197"></div>
-                            <div class="proc-field-col"><span class="proc-field-label">Barang:</span><input type="text" id="pembelian-barang" placeholder="Nama barang..."></div>
-                        </div>
-                        <div class="proc-row-top">
-                            <div class="proc-field-col"><span class="proc-field-label">Kode:</span><input type="text" id="pembelian-kode" placeholder="Kode barang (opsional)..."></div>
-                            <div class="proc-field-col"><span class="proc-field-label">Variasi:</span><input type="text" id="pembelian-variasi" placeholder="Variasi/warna..."></div>
-                        </div>
-                        <div class="proc-row-top">
-                            <div class="proc-field-col"><span class="proc-field-label">Qty:</span><input type="number" id="pembelian-qty" placeholder="Jumlah..."></div>
-                            <div class="proc-field-col"><span class="proc-field-label">Satuan:</span><select id="pembelian-satuan"><option value="Pcs">Pcs</option><option value="Kg">Kg</option><option value="Roll">Roll</option><option value="Yards">Yards</option><option value="Pack">Pack</option><option value="Lusin">Lusin</option></select></div>
-                        </div>
-                        <div class="proc-row-top">
-                            <div class="proc-field-col"><span class="proc-field-label">Tanggal Pengajuan:</span><input type="date" id="pembelian-tanggal"></div>
-                            <div class="proc-field-col"><span class="proc-field-label">Requestor:</span><input type="text" id="pembelian-requestor" placeholder="Nama requestor..."></div>
-                        </div>
-                        <div class="proc-row-top">
-                            <div class="proc-field-col"><span class="proc-field-label">Total Bayar (Rp):</span><input type="number" id="pembelian-expense" placeholder="Total bayar..."></div>
-                            <div class="proc-field-col"><span class="proc-field-label">Status Pembayaran:</span><select id="pembelian-status-bayar"><option value="Belum Bayar">Belum Bayar</option><option value="Sudah Bayar">Sudah Bayar</option><option value="Hold">Hold</option></select></div>
-                        </div>
-                        <div class="proc-row-top">
-                            <div class="proc-field-col"><span class="proc-field-label">Status Purchasing:</span><select id="pembelian-status-purchasing"><option value="On Order">On Order</option><option value="Complete">Complete</option><option value="Close">Close</option></select></div>
-                            <div class="proc-field-col"><span class="proc-field-label">Tanggal Complete:</span><input type="date" id="pembelian-tanggal-complete"></div>
-                        </div>
-                        <div class="proc-row-top">
-                            <div class="proc-field-col" style="flex:1 1 100%;"><span class="proc-field-label">Notes:</span><input type="text" id="pembelian-notes" placeholder="Catatan (opsional)..."></div>
-                        </div>
-                        <div class="proc-row-actions"><button id="btn-reset-pembelian">Reset</button><button id="btn-tambah-pembelian">+ Tambah ke Histori</button></div>
-                    </div>
 
                     <div class="sku-list-card" style="width: 100%;">
                         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px; gap:10px; flex-wrap:wrap;">
                             <h3 style="margin: 0;">Daftar Histori Pembelian</h3>
                             <input type="text" id="search-pembelian" placeholder="Cari No. PO, barang, requestor..." style="flex:1; min-width:200px; max-width:320px; height:36px; padding:0 14px; border-radius:10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16); color:var(--text-main); font-size:13px;">
                             <select id="pembelian-page-size" style="height:36px;"><option value="10">10 baris</option><option value="20">20 baris</option><option value="30">30 baris</option><option value="50" selected>50 baris</option></select>
+                            <button id="btn-tambah-pembelian" class="btn-action btn-pink-solid">+ Tambah Item</button>
                             <button id="btn-refresh-pembelian" class="btn-action btn-pink-outline">Refresh</button>
                         </div>
                         <div class="table-responsive"><table><thead><tr><th>No. PO</th><th>Barang</th><th>Kode</th><th>Variasi</th><th style="text-align:right;">Qty</th><th>Satuan</th><th>Tgl Pengajuan</th><th>Requestor</th><th style="text-align:right;">Total (Rp)</th><th>Status Bayar</th><th>Status Purchasing</th><th>Tgl Complete</th><th>Notes</th><th style="text-align:center;">Aksi</th></tr></thead><tbody id="tbody-pembelian-list"><tr><td colspan="14" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data histori pembelian...</td></tr></tbody></table></div>
