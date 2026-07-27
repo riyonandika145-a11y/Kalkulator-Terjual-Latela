@@ -79,6 +79,10 @@
                 <button class="menu-item" data-target="history">
                     <span class="menu-text">History</span>
                 </button>
+
+                <button class="menu-item" data-target="forecasting">
+                    <span class="menu-text">Forecasting</span>
+                </button>
                 
                 <button class="menu-item" data-target="procurement">
                     <span class="menu-text">Procurement</span>
@@ -206,6 +210,32 @@
                 <section id="view-history" class="content-view">
                     <h2 class="page-title">History Log</h2>
                     <div id="history-list-container" class="empty-state-card"><p>Tidak ada riwayat.</p></div>
+                </section>
+
+                <section id="view-forecasting" class="content-view">
+                    <h2 class="page-title">Forecasting Penjualan</h2>
+                    <div class="info-note-box" style="margin-bottom:15px; font-size:12px; color:var(--text-muted); background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.10); border-radius:12px; padding:10px 14px;">
+                        Prediksi dihitung dari tren histori penjualan yang sudah disimpan (menu History). Semakin banyak riwayat yang tersimpan, semakin akurat prediksinya. Ini estimasi sederhana berdasarkan tren, bukan jaminan pasti.
+                    </div>
+
+                    <div class="sku-list-card" style="width: 100%; margin-bottom:20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
+                            <h3 style="margin:0;">Grafik Tren per Produk</h3>
+                            <select id="forecast-product-select" style="min-width:220px; height:36px;"><option value="">Memuat daftar produk...</option></select>
+                        </div>
+                        <div style="height:280px;"><canvas id="forecastChart"></canvas></div>
+                        <div id="forecast-stats-box" style="display:flex; gap:20px; flex-wrap:wrap; margin-top:15px; padding-top:15px; border-top:1px solid var(--border-color);">
+                            <div><span style="font-size:11px; color:var(--text-muted); display:block;">Jumlah Periode Data</span><span id="forecast-stat-periode" style="font-size:18px; font-weight:700;">-</span></div>
+                            <div><span style="font-size:11px; color:var(--text-muted); display:block;">Rata-rata / Periode</span><span id="forecast-stat-avg" style="font-size:18px; font-weight:700;">-</span></div>
+                            <div><span style="font-size:11px; color:var(--text-muted); display:block;">Prediksi Periode Berikutnya</span><span id="forecast-stat-next" style="font-size:18px; font-weight:700; color:var(--pink-main);">-</span></div>
+                            <div><span style="font-size:11px; color:var(--text-muted); display:block;">Tren</span><span id="forecast-stat-trend" style="font-size:18px; font-weight:700;">-</span></div>
+                        </div>
+                    </div>
+
+                    <div class="sku-list-card" style="width: 100%;">
+                        <h3>Ringkasan Prediksi Semua Produk</h3>
+                        <div class="table-responsive"><table><thead><tr><th>Produk</th><th style="text-align:right;">Jumlah Periode</th><th style="text-align:right;">Rata-rata/Periode</th><th style="text-align:right;">Prediksi Berikutnya</th><th>Tren</th></tr></thead><tbody id="tbody-forecast-summary"><tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data forecasting...</td></tr></tbody></table></div>
+                    </div>
                 </section>
 
                 <section id="view-procurement" class="content-view">
