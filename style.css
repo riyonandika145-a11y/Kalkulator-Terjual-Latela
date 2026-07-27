@@ -922,7 +922,7 @@ body[data-theme="light"] .btn-help-dot {
 #view-kalkulator.active, #view-mastersku.active, #view-barang.active {
     display: flex; flex-direction: column;
 }
-#view-dashboard.active, #view-history.active, #view-procurement.active, #view-kelolaakun.active, #view-pembelian.active {
+#view-dashboard.active, #view-history.active, #view-procurement.active, #view-kelolaakun.active, #view-pembelian.active, #view-forecasting.active {
     display: block; overflow-y: auto; padding-bottom: 40px;
 }
 
