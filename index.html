@@ -213,28 +213,108 @@
                 </section>
 
                 <section id="view-forecasting" class="content-view">
-                    <h2 class="page-title">Forecasting Penjualan</h2>
+                    <h2 class="page-title">Demand Forecasting</h2>
                     <div class="info-note-box" style="margin-bottom:15px; font-size:12px; color:var(--text-muted); background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.10); border-radius:12px; padding:10px 14px;">
-                        Prediksi dihitung dari tren histori penjualan yang sudah disimpan (menu History). Semakin banyak riwayat yang tersimpan, semakin akurat prediksinya. Ini estimasi sederhana berdasarkan tren, bukan jaminan pasti.
+                        Dihitung dari data History penjualan yang tersimpan. SKU kategori A (kontribusi penjualan terbesar) diprediksi pakai Holt-Winters (level+tren+musiman), kategori B/C pakai Moving Average. Prediksi disesuaikan otomatis kalau tanggalnya masuk kalender bisnis (payday, tanggal kembar, dll). Akurasi bergantung banyak & rutinnya data History yang tersimpan — belum ada data stok gudang, jadi Suggested Purchase/Stockout/Overstock belum tersedia di versi ini.
                     </div>
 
+                    <!-- ===================== ABC ANALYSIS ===================== -->
                     <div class="sku-list-card" style="width: 100%; margin-bottom:20px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
-                            <h3 style="margin:0;">Grafik Tren per Produk</h3>
-                            <select id="forecast-product-select" style="min-width:220px; height:36px;"><option value="">Memuat daftar produk...</option></select>
+                            <h3 style="margin:0;">ABC Analysis (Pareto)</h3>
+                            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+                                <span style="font-size:12px;"><span class="badge-status badge-status-approved">A</span> <span id="abc-count-a">0</span> SKU</span>
+                                <span style="font-size:12px;"><span class="badge-status badge-status-pending">B</span> <span id="abc-count-b">0</span> SKU</span>
+                                <span style="font-size:12px;"><span class="badge-status badge-status-rejected">C</span> <span id="abc-count-c">0</span> SKU</span>
+                            </div>
                         </div>
+                        <div class="table-responsive" style="max-height:320px;"><table><thead><tr><th>SKU</th><th>Nama Produk</th><th style="text-align:right;">Total Terjual</th><th style="text-align:right;">% Kontribusi</th><th style="text-align:right;">% Kumulatif</th><th>Kategori</th></tr></thead><tbody id="tbody-abc-analysis"><tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data ABC Analysis...</td></tr></tbody></table></div>
+                    </div>
+
+                    <!-- ===================== KALENDER BISNIS ===================== -->
+                    <div class="sku-list-card" style="width: 100%; margin-bottom:20px;">
+                        <h3 style="margin-bottom:15px;">Kalender Bisnis (Faktor Koreksi Event)</h3>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px; align-items:flex-end;">
+                            <div><span class="proc-field-label" style="display:block; margin-bottom:4px;">Tanggal:</span><input type="date" id="calendar-tanggal" style="height:36px;"></div>
+                            <div><span class="proc-field-label" style="display:block; margin-bottom:4px;">Jenis Event:</span><select id="calendar-jenis" style="height:36px; min-width:180px;">
+                                <option value="Payday">Payday</option>
+                                <option value="Tanggal Kembar">Tanggal Kembar</option>
+                                <option value="Harbolnas">Harbolnas</option>
+                                <option value="Ramadhan">Ramadhan</option>
+                                <option value="Idul Fitri">Idul Fitri</option>
+                                <option value="Campaign Marketplace">Campaign Marketplace</option>
+                                <option value="Flash Sale">Flash Sale</option>
+                                <option value="Live Streaming">Live Streaming</option>
+                                <option value="Promo Internal">Promo Internal</option>
+                                <option value="Lainnya">Lainnya</option>
+                            </select></div>
+                            <div style="flex:1; min-width:150px;"><span class="proc-field-label" style="display:block; margin-bottom:4px;">Keterangan:</span><input type="text" id="calendar-keterangan" placeholder="Opsional..." style="height:36px; width:100%;"></div>
+                            <button id="btn-tambah-calendar" class="btn-action btn-pink-solid" style="height:36px;">+ Tambah Event</button>
+                            <button id="btn-generate-tanggal-kembar" class="btn-action btn-pink-outline" style="height:36px;">Generate Tanggal Kembar Tahun Ini</button>
+                        </div>
+                        <div class="table-responsive" style="max-height:220px;"><table><thead><tr><th>Tanggal</th><th>Jenis Event</th><th>Keterangan</th><th>Faktor Koreksi</th><th style="text-align:center;">Aksi</th></tr></thead><tbody id="tbody-calendar-list"><tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat kalender bisnis...</td></tr></tbody></table></div>
+                    </div>
+
+                    <!-- ===================== FORECAST DASHBOARD ===================== -->
+                    <div class="sku-list-card" style="width: 100%; margin-bottom:20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
+                            <h3 style="margin:0;">Forecast Detail</h3>
+                            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                                <select id="forecast-dimensi-select" style="height:36px;">
+                                    <option value="sku">Per SKU</option>
+                                    <option value="jenis">Per Jenis Hijab (Nama Produk)</option>
+                                    <option value="warna">Per Warna</option>
+                                </select>
+                                <select id="forecast-item-select" style="min-width:220px; height:36px;"><option value="">Memuat...</option></select>
+                                <select id="forecast-ma-window" style="height:36px;" title="Periode Moving Average buat kategori B/C">
+                                    <option value="7">MA 7 Periode</option>
+                                    <option value="14">MA 14 Periode</option>
+                                    <option value="30">MA 30 Periode</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom:15px;">
+                            <span id="forecast-badge-abc" class="badge-status badge-status-pending">-</span>
+                            <span id="forecast-badge-method" style="font-size:12px; color:var(--text-muted); align-self:center;">Metode: -</span>
+                        </div>
+
                         <div style="height:280px;"><canvas id="forecastChart"></canvas></div>
+
                         <div id="forecast-stats-box" style="display:flex; gap:20px; flex-wrap:wrap; margin-top:15px; padding-top:15px; border-top:1px solid var(--border-color);">
                             <div><span style="font-size:11px; color:var(--text-muted); display:block;">Jumlah Periode Data</span><span id="forecast-stat-periode" style="font-size:18px; font-weight:700;">-</span></div>
-                            <div><span style="font-size:11px; color:var(--text-muted); display:block;">Rata-rata / Periode</span><span id="forecast-stat-avg" style="font-size:18px; font-weight:700;">-</span></div>
-                            <div><span style="font-size:11px; color:var(--text-muted); display:block;">Prediksi Periode Berikutnya</span><span id="forecast-stat-next" style="font-size:18px; font-weight:700; color:var(--pink-main);">-</span></div>
+                            <div><span style="font-size:11px; color:var(--text-muted); display:block;">Forecast Harian (besok)</span><span id="forecast-stat-harian" style="font-size:18px; font-weight:700; color:var(--pink-main);">-</span></div>
+                            <div><span style="font-size:11px; color:var(--text-muted); display:block;">Forecast Mingguan (7 periode)</span><span id="forecast-stat-mingguan" style="font-size:18px; font-weight:700; color:var(--pink-main);">-</span></div>
+                            <div><span style="font-size:11px; color:var(--text-muted); display:block;">Forecast Bulanan (30 periode)</span><span id="forecast-stat-bulanan" style="font-size:18px; font-weight:700; color:var(--pink-main);">-</span></div>
                             <div><span style="font-size:11px; color:var(--text-muted); display:block;">Tren</span><span id="forecast-stat-trend" style="font-size:18px; font-weight:700;">-</span></div>
+                        </div>
+
+                        <div style="margin-top:15px; padding-top:15px; border-top:1px solid var(--border-color);">
+                            <h3 style="margin-bottom:10px; font-size:13px;">Tingkat Akurasi Model (Backtest)</h3>
+                            <div style="display:flex; gap:20px; flex-wrap:wrap;">
+                                <div><span style="font-size:11px; color:var(--text-muted); display:block;">MAD</span><span id="forecast-stat-mad" style="font-size:15px; font-weight:700;">-</span></div>
+                                <div><span style="font-size:11px; color:var(--text-muted); display:block;">MSE</span><span id="forecast-stat-mse" style="font-size:15px; font-weight:700;">-</span></div>
+                                <div><span style="font-size:11px; color:var(--text-muted); display:block;">RMSE</span><span id="forecast-stat-rmse" style="font-size:15px; font-weight:700;">-</span></div>
+                                <div><span style="font-size:11px; color:var(--text-muted); display:block;">MAPE</span><span id="forecast-stat-mape" style="font-size:15px; font-weight:700;">-</span></div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:15px; padding-top:15px; border-top:1px solid var(--border-color);">
+                            <h3 style="margin-bottom:10px; font-size:13px;">Rata-rata Penjualan: Hari Event vs Hari Normal</h3>
+                            <div style="display:flex; gap:20px; flex-wrap:wrap;">
+                                <div><span style="font-size:11px; color:var(--text-muted); display:block;">Rata-rata Hari Normal</span><span id="forecast-stat-normal" style="font-size:15px; font-weight:700;">-</span></div>
+                                <div><span style="font-size:11px; color:var(--text-muted); display:block;">Rata-rata Hari Campaign/Event</span><span id="forecast-stat-campaign" style="font-size:15px; font-weight:700;">-</span></div>
+                            </div>
                         </div>
                     </div>
 
+                    <!-- ===================== RINGKASAN SEMUA SKU ===================== -->
                     <div class="sku-list-card" style="width: 100%;">
-                        <h3>Ringkasan Prediksi Semua Produk</h3>
-                        <div class="table-responsive"><table><thead><tr><th>Produk</th><th style="text-align:right;">Jumlah Periode</th><th style="text-align:right;">Rata-rata/Periode</th><th style="text-align:right;">Prediksi Berikutnya</th><th>Tren</th></tr></thead><tbody id="tbody-forecast-summary"><tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data forecasting...</td></tr></tbody></table></div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
+                            <h3 style="margin:0;">Ringkasan Forecast Semua SKU (Kategori A)</h3>
+                            <input type="text" id="search-forecast-summary" placeholder="Cari SKU/nama produk..." style="height:36px; padding:0 14px; border-radius:10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16); color:var(--text-main); font-size:13px;">
+                        </div>
+                        <div class="table-responsive" style="max-height:320px;"><table><thead><tr><th>SKU</th><th>Nama Produk</th><th>Kategori</th><th style="text-align:right;">Forecast Harian</th><th style="text-align:right;">Forecast Mingguan</th><th style="text-align:right;">Forecast Bulanan</th><th>Tren</th></tr></thead><tbody id="tbody-forecast-summary"><tr><td colspan="7" style="text-align:center; color:#94a3b8; font-style:italic;">Pilih SKU kategori A dulu di atas untuk memuat ringkasan.</td></tr></tbody></table></div>
                     </div>
                 </section>
 
