@@ -1847,112 +1847,135 @@ function fetchHistoryFromCloud() {
 }
 
 // =========================================================================
-// FORECASTING PENJUALAN — dihitung dari data History yang sudah tersimpan.
-// Setiap entry History = 1 "periode" (waktu kamu klik Simpan History).
-// Buat tiap produk, diambil rangkaian qty per periode, lalu diproyeksikan
-// 1 periode ke depan pakai regresi linear sederhana (tren garis lurus).
+// DEMAND FORECASTING v2 — ABC Analysis + Holt-Winters (kategori A) +
+// Moving Average/WMA (kategori B/C) + Business Calendar Adjustment +
+// metrik akurasi (MAD/MSE/RMSE/MAPE).
+//
+// CATATAN JUJUR SOAL DATA: setiap entri History = 1 kali kamu klik
+// "Simpan History", BUKAN otomatis harian dari sistem transaksi. Jadi
+// akurasi model ini sangat bergantung seberapa RUTIN History disimpan.
+// Kalender bisnis dipakai untuk hitung 1 faktor koreksi GLOBAL per jenis
+// event (bukan per-SKU) karena data historis per-SKU per-event biasanya
+// belum cukup banyak untuk dipisah lagi tanpa jadi terlalu noisy.
 // =========================================================================
-let globalForecastSeries = {}; // { "NAMA PRODUK": [{waktu, qty}, ...] } urut dari lama ke baru
-let globalForecastResults = {}; // { "NAMA PRODUK": {periods, avg, forecastNext, trend} }
 
-function parseWaktuToDate(waktuStr) {
+let globalForecastBySku = {};    // { SKU: { nama, type, warna, series:[{date,qty}] } }
+let globalForecastByJenis = {};  // { NAMA: [{date,qty}] } — agregat semua SKU dgn nama sama
+let globalForecastByWarna = {};  // { WARNA: [{date,qty}] }
+let globalAbcResults = {};       // { SKU: { nama, total, pct, cumPct, kategori } }
+let globalBusinessCalendar = []; // [{rowIndex, tanggal:'yyyy-mm-dd', jenisEvent, keterangan}]
+let globalEventCorrectionFactors = {}; // { jenisEvent: factor }
+let globalDailyTotalsAll = {};   // { 'yyyy-mm-dd': totalQtySemuaProduk } — dipakai hitung faktor koreksi
+let MA_WINDOW = 7;
+
+function parseWaktuToDateObj(waktuStr) {
     if (!waktuStr) return null;
-    // Format hasil new Date().toLocaleString('id-ID') biasanya "D/M/YYYY, HH.MM.SS"
     const match = waktuStr.toString().match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
     if (!match) return null;
     const [, d, m, y] = match;
     return new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10));
 }
+function dateToKey(date) {
+    if (!date) return '';
+    const yyyy = date.getFullYear(); const mm = String(date.getMonth() + 1).padStart(2, '0'); const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
 
+// --- MASTER LOADER: dipanggil sekali pas menu Forecasting dibuka ---
 function loadForecastingData() {
-    const select = document.getElementById('forecast-product-select');
-    const tbody = document.getElementById('tbody-forecast-summary');
-    if (select) select.innerHTML = '<option value="">Memuat daftar produk...</option>';
-    if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data forecasting...</td></tr>`;
+    const abcTbody = document.getElementById('tbody-abc-analysis');
+    if (abcTbody) abcTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data ABC Analysis...</td></tr>`;
 
-    fetch(`${GOOGLE_SCRIPT_URL}?action=fetch`).then(res => res.json()).then(logs => {
-        if (!Array.isArray(logs) || !logs.length) {
-            if (select) select.innerHTML = '<option value="">Belum ada data histori</option>';
-            if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada data History yang bisa diprediksi. Simpan minimal 2-3 histori dulu di menu History.</td></tr>`;
-            return;
-        }
+    Promise.all([
+        fetch(`${GOOGLE_SCRIPT_URL}?action=fetch`).then(res => res.json()).catch(() => []),
+        fetch(`${GOOGLE_SCRIPT_URL}?action=fetch_calendar`).then(res => res.json()).catch(() => [])
+    ]).then(([logs, calendar]) => {
+        globalBusinessCalendar = Array.isArray(calendar) ? calendar : [];
+        buildForecastSeriesFromHistory(Array.isArray(logs) ? logs : []);
+        computeAbcAnalysis();
+        computeEventCorrectionFactors();
 
-        const pickDetail = (obj) => {
-            if (obj.detail) return obj.detail;
-            if (obj.Detail) return obj.Detail;
-            for (const k in obj) {
-                if (!['waktu','Waktu Simpan','files','Files Terproses','total','Total Qty Item'].includes(k)) {
-                    if (typeof obj[k] === 'string' && obj[k].trim().startsWith('{')) return obj[k];
-                }
-            }
-            return '';
-        };
-        const pickWaktu = (obj) => obj.waktu || obj['Waktu Simpan'] || '';
-
-        // Bangun time-series per produk (urutan sheet = dari lama ke baru, jangan di-reverse)
-        globalForecastSeries = {};
-        logs.forEach(log => {
-            const waktu = pickWaktu(log);
-            const detailStr = pickDetail(log);
-            if (!detailStr) return;
-            let snap;
-            try { snap = JSON.parse(detailStr); } catch (err) { return; }
-
-            const qtyPerProduk = {};
-            ['utama', 'aksesoris', 'gradeb', 'random'].forEach(kat => {
-                const items = snap[kat] || {};
-                Object.values(items).forEach(item => {
-                    if (!item || !item.nama) return;
-                    const nama = item.nama.toString().trim().toUpperCase();
-                    qtyPerProduk[nama] = (qtyPerProduk[nama] || 0) + (item.qty || 0);
-                });
-            });
-
-            Object.keys(qtyPerProduk).forEach(nama => {
-                if (!globalForecastSeries[nama]) globalForecastSeries[nama] = [];
-                globalForecastSeries[nama].push({ waktu, qty: qtyPerProduk[nama] });
-            });
-        });
-
-        // Hitung prediksi tiap produk
-        globalForecastResults = {};
-        Object.keys(globalForecastSeries).forEach(nama => {
-            globalForecastResults[nama] = computeForecastForSeries(globalForecastSeries[nama]);
-        });
-
-        renderForecastSummaryTable();
-        populateForecastProductDropdown();
-    }).catch(() => {
-        if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data forecasting.</td></tr>`;
+        renderAbcAnalysisTable();
+        renderCalendarList();
+        populateForecastDimensionSelectors();
     });
 }
 
-// Regresi linear sederhana: qty = a + b*index, diproyeksikan ke index berikutnya.
-// Hasil dijamin >= 0 (gak mungkin prediksi penjualan negatif).
-function computeForecastForSeries(series) {
-    const n = series.length;
-    const qtys = series.map(s => s.qty);
-    const avg = qtys.reduce((a, b) => a + b, 0) / n;
+function buildForecastSeriesFromHistory(logs) {
+    globalForecastBySku = {}; globalForecastByJenis = {}; globalForecastByWarna = {}; globalDailyTotalsAll = {};
 
-    let forecastNext = avg;
-    let slope = 0;
-    if (n >= 2) {
-        const xs = series.map((_, i) => i + 1);
-        const xMean = xs.reduce((a, b) => a + b, 0) / n;
-        const yMean = avg;
-        let num = 0, den = 0;
-        for (let i = 0; i < n; i++) { num += (xs[i] - xMean) * (qtys[i] - yMean); den += (xs[i] - xMean) ** 2; }
-        slope = den !== 0 ? num / den : 0;
-        const intercept = yMean - slope * xMean;
-        forecastNext = intercept + slope * (n + 1);
-    }
-    forecastNext = Math.max(0, Math.round(forecastNext));
+    const pickDetail = (obj) => {
+        if (obj.detail) return obj.detail;
+        if (obj.Detail) return obj.Detail;
+        for (const k in obj) {
+            if (!['waktu', 'Waktu Simpan', 'files', 'Files Terproses', 'total', 'Total Qty Item'].includes(k)) {
+                if (typeof obj[k] === 'string' && obj[k].trim().startsWith('{')) return obj[k];
+            }
+        }
+        return '';
+    };
+    const pickWaktu = (obj) => obj.waktu || obj['Waktu Simpan'] || '';
 
-    let trend = 'Stabil';
-    if (slope > 0.15) trend = 'Naik';
-    else if (slope < -0.15) trend = 'Turun';
+    logs.forEach(log => {
+        const waktu = pickWaktu(log);
+        const date = parseWaktuToDateObj(waktu);
+        const detailStr = pickDetail(log);
+        if (!detailStr) return;
+        let snap;
+        try { snap = JSON.parse(detailStr); } catch (err) { return; }
 
-    return { periods: n, avg: Math.round(avg * 10) / 10, forecastNext, trend, slope };
+        let totalHariIni = 0;
+        ['utama', 'aksesoris', 'gradeb', 'random'].forEach(kat => {
+            const items = snap[kat] || {};
+            Object.keys(items).forEach(sku => {
+                const item = items[sku];
+                if (!item) return;
+                const qty = item.qty || 0;
+                totalHariIni += qty;
+
+                if (!globalForecastBySku[sku]) globalForecastBySku[sku] = { nama: item.nama || sku, type: item.type || '', warna: item.warna || '', series: [] };
+                globalForecastBySku[sku].series.push({ date, qty });
+
+                const namaKey = (item.nama || sku).toString().trim().toUpperCase();
+                if (!globalForecastByJenis[namaKey]) globalForecastByJenis[namaKey] = [];
+                globalForecastByJenis[namaKey].push({ date, qty });
+
+                const warnaKey = (item.warna || '').toString().trim().toUpperCase() || '(TANPA WARNA)';
+                if (!globalForecastByWarna[warnaKey]) globalForecastByWarna[warnaKey] = [];
+                globalForecastByWarna[warnaKey].push({ date, qty });
+            });
+        });
+
+        if (date) { const key = dateToKey(date); globalDailyTotalsAll[key] = (globalDailyTotalsAll[key] || 0) + totalHariIni; }
+    });
+}
+
+// --- ABC ANALYSIS (Pareto: A <=80% kumulatif, B <=95%, sisanya C) ---
+function computeAbcAnalysis() {
+    const totals = Object.keys(globalForecastBySku).map(sku => ({
+        sku, nama: globalForecastBySku[sku].nama,
+        total: globalForecastBySku[sku].series.reduce((s, p) => s + p.qty, 0)
+    }));
+    totals.sort((a, b) => b.total - a.total);
+    const grandTotal = totals.reduce((s, t) => s + t.total, 0) || 1;
+
+    let cum = 0;
+    globalAbcResults = {};
+    totals.forEach(t => {
+        cum += t.total;
+        const pct = (t.total / grandTotal) * 100;
+        const cumPct = (cum / grandTotal) * 100;
+        let kategori = 'C';
+        if (cumPct <= 80) kategori = 'A';
+        else if (cumPct <= 95) kategori = 'B';
+        globalAbcResults[t.sku] = { nama: t.nama, total: t.total, pct, cumPct, kategori };
+    });
+}
+
+function badgeClassAbc(kategori) {
+    if (kategori === 'A') return 'badge-status-approved';
+    if (kategori === 'B') return 'badge-status-pending';
+    return 'badge-status-rejected';
 }
 
 function badgeClassTrend(trend) {
@@ -1961,74 +1984,437 @@ function badgeClassTrend(trend) {
     return 'badge-status-pending';
 }
 
-function renderForecastSummaryTable() {
+function renderAbcAnalysisTable() {
+    const tbody = document.getElementById('tbody-abc-analysis');
+    if (!tbody) return;
+    const skuList = Object.keys(globalAbcResults);
+    if (!skuList.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada data History untuk dianalisis.</td></tr>`; return; }
+
+    let countA = 0, countB = 0, countC = 0;
+    tbody.innerHTML = '';
+    skuList.forEach(sku => {
+        const r = globalAbcResults[sku];
+        if (r.kategori === 'A') countA++; else if (r.kategori === 'B') countB++; else countC++;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><strong>${sku}</strong></td><td>${r.nama}</td><td style="text-align:right;">${r.total}</td><td style="text-align:right;">${r.pct.toFixed(1)}%</td><td style="text-align:right;">${r.cumPct.toFixed(1)}%</td><td><span class="badge-status ${badgeClassAbc(r.kategori)}">${r.kategori}</span></td>`;
+        tbody.appendChild(tr);
+    });
+
+    const elA = document.getElementById('abc-count-a'); if (elA) elA.innerText = countA;
+    const elB = document.getElementById('abc-count-b'); if (elB) elB.innerText = countB;
+    const elC = document.getElementById('abc-count-c'); if (elC) elC.innerText = countC;
+}
+
+// --- KALENDER BISNIS ---
+const btnTambahCalendar = document.getElementById('btn-tambah-calendar');
+if (btnTambahCalendar) {
+    btnTambahCalendar.addEventListener('click', () => {
+        const tanggal = document.getElementById('calendar-tanggal')?.value;
+        const jenis = document.getElementById('calendar-jenis')?.value;
+        const ket = document.getElementById('calendar-keterangan')?.value.trim() || '';
+        if (!tanggal) { updateStatusMessage('(!) Tanggal wajib diisi.'); return; }
+        const payload = new URLSearchParams();
+        payload.append('action', 'create_calendar_event');
+        payload.append('tanggal', tanggal); payload.append('jenisEvent', jenis); payload.append('keterangan', ket);
+        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
+            .then(res => res.json())
+            .then(() => {
+                updateStatusMessage('Event kalender bisnis berhasil ditambahkan.');
+                document.getElementById('calendar-keterangan').value = '';
+                loadForecastingData();
+            })
+            .catch(() => updateStatusMessage('(!) Gagal menambah event.'));
+    });
+}
+
+const btnGenerateTanggalKembar = document.getElementById('btn-generate-tanggal-kembar');
+if (btnGenerateTanggalKembar) {
+    btnGenerateTanggalKembar.addEventListener('click', () => {
+        const tahun = new Date().getFullYear();
+        const events = [];
+        for (let bulan = 1; bulan <= 12; bulan++) {
+            const tgl = `${tahun}-${String(bulan).padStart(2, '0')}-${String(bulan).padStart(2, '0')}`;
+            events.push([tgl, 'Tanggal Kembar', `${bulan}.${bulan} ${tahun}`]);
+        }
+        if (!confirm(`Generate 12 tanggal kembar (1.1 s/d 12.12) untuk tahun ${tahun}?`)) return;
+        updateStatusMessage('Generate tanggal kembar...');
+        const payload = new URLSearchParams();
+        payload.append('action', 'create_calendar_events_bulk');
+        payload.append('events', JSON.stringify(events));
+        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
+            .then(res => res.json())
+            .then(() => { updateStatusMessage('12 tanggal kembar berhasil ditambahkan.'); loadForecastingData(); })
+            .catch(() => updateStatusMessage('(!) Gagal generate tanggal kembar.'));
+    });
+}
+
+function renderCalendarList() {
+    const tbody = document.getElementById('tbody-calendar-list');
+    if (!tbody) return;
+    if (!globalBusinessCalendar.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada event di kalender bisnis.</td></tr>`; return; }
+
+    const sorted = globalBusinessCalendar.slice().sort((a, b) => (a.tanggal || '').localeCompare(b.tanggal || ''));
+    tbody.innerHTML = '';
+    sorted.forEach(ev => {
+        const factor = globalEventCorrectionFactors[ev.jenisEvent];
+        const factorText = factor !== undefined ? `${factor.toFixed(2)}x` : 'Belum ada data';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${formatTanggalDisplay(ev.tanggal)}</td><td>${ev.jenisEvent}</td><td>${ev.keterangan || '-'}</td><td>${factorText}</td><td style="text-align:center;"><button class="btn-action btn-gray-outline btn-hapus-calendar" data-rowindex="${ev.rowIndex}">Hapus</button></td>`;
+        tbody.appendChild(tr);
+    });
+    tbody.querySelectorAll('.btn-hapus-calendar').forEach(btn => btn.addEventListener('click', () => {
+        if (!confirm('Hapus event kalender ini?')) return;
+        const payload = new URLSearchParams();
+        payload.append('action', 'delete_calendar_event'); payload.append('rowIndex', btn.getAttribute('data-rowindex'));
+        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
+            .then(res => res.json())
+            .then(() => { updateStatusMessage('Event berhasil dihapus.'); loadForecastingData(); })
+            .catch(() => updateStatusMessage('(!) Gagal menghapus event.'));
+    }));
+}
+
+// --- FAKTOR KOREKSI EVENT (global, dibandingkan dengan rata-rata semua hari) ---
+function computeEventCorrectionFactors() {
+    const allValues = Object.values(globalDailyTotalsAll);
+    const overallAvg = allValues.length ? allValues.reduce((a, b) => a + b, 0) / allValues.length : 0;
+
+    const sumByEvent = {}, countByEvent = {};
+    globalBusinessCalendar.forEach(ev => {
+        const key = (ev.tanggal || '').toString().slice(0, 10);
+        if (globalDailyTotalsAll[key] !== undefined) {
+            sumByEvent[ev.jenisEvent] = (sumByEvent[ev.jenisEvent] || 0) + globalDailyTotalsAll[key];
+            countByEvent[ev.jenisEvent] = (countByEvent[ev.jenisEvent] || 0) + 1;
+        }
+    });
+
+    globalEventCorrectionFactors = {};
+    Object.keys(sumByEvent).forEach(jenis => {
+        const avgOnEvent = sumByEvent[jenis] / countByEvent[jenis];
+        if (overallAvg > 0) globalEventCorrectionFactors[jenis] = avgOnEvent / overallAvg;
+    });
+}
+
+// Cek apakah sebuah tanggal (Date object) match event kalender manapun, return jenisEvent-nya
+function matchCalendarEvent(date) {
+    if (!date) return null;
+    const key = dateToKey(date);
+    const ev = globalBusinessCalendar.find(e => (e.tanggal || '').toString().slice(0, 10) === key);
+    return ev ? ev.jenisEvent : null;
+}
+
+// =========================================================================
+// METODE FORECASTING
+// =========================================================================
+
+// --- Holt-Winters Triple Exponential Smoothing dengan grid-search parameter ---
+function holtWintersForecast(qty, seasonLength, horizon) {
+    const n = qty.length;
+    if (n < 2) {
+        const avg = qty.length ? qty[0] : 0;
+        return { forecast: new Array(horizon).fill(avg), fitted: qty.map(() => avg), method: 'Rata-rata (data terlalu sedikit untuk Holt-Winters)' };
+    }
+    const useSeasonal = seasonLength > 1 && n >= seasonLength * 2;
+
+    function runHW(alpha, beta, gamma) {
+        let level, trend, seasonals = [];
+        if (useSeasonal) {
+            const season1 = qty.slice(0, seasonLength);
+            const season2 = qty.slice(seasonLength, seasonLength * 2);
+            const avg1 = season1.reduce((a, b) => a + b, 0) / seasonLength;
+            const avg2 = season2.reduce((a, b) => a + b, 0) / seasonLength;
+            level = avg1; trend = (avg2 - avg1) / seasonLength;
+            for (let i = 0; i < seasonLength; i++) seasonals[i] = season1[i] - avg1;
+        } else {
+            level = qty[0]; trend = qty[1] - qty[0];
+        }
+        const fitted = [];
+        for (let t = 0; t < n; t++) {
+            const sIdx = useSeasonal ? t % seasonLength : 0;
+            const sComp = useSeasonal ? (seasonals[sIdx] || 0) : 0;
+            fitted.push(level + trend + sComp);
+            const actual = qty[t];
+            const prevLevel = level;
+            level = alpha * (actual - sComp) + (1 - alpha) * (level + trend);
+            trend = beta * (level - prevLevel) + (1 - beta) * trend;
+            if (useSeasonal) seasonals[sIdx] = gamma * (actual - level) + (1 - gamma) * sComp;
+        }
+        let sse = 0;
+        for (let t = 0; t < n; t++) { const e = qty[t] - fitted[t]; sse += e * e; }
+
+        const forecast = [];
+        for (let h = 1; h <= horizon; h++) {
+            const sIdx = useSeasonal ? (n + h - 1) % seasonLength : 0;
+            const sComp = useSeasonal ? (seasonals[sIdx] || 0) : 0;
+            forecast.push(Math.max(0, Math.round(level + trend * h + sComp)));
+        }
+        return { sse, fitted, forecast, level, trend };
+    }
+
+    // Grid search sederhana (5x5x5 kombinasi kalau seasonal, 5x5 kalau enggak)
+    const paramGrid = [0.1, 0.3, 0.5, 0.7, 0.9];
+    let best = null;
+    paramGrid.forEach(alpha => {
+        paramGrid.forEach(beta => {
+            if (useSeasonal) {
+                paramGrid.forEach(gamma => {
+                    const result = runHW(alpha, beta, gamma);
+                    if (!best || result.sse < best.sse) best = { ...result, alpha, beta, gamma };
+                });
+            } else {
+                const result = runHW(alpha, beta, 0);
+                if (!best || result.sse < best.sse) best = { ...result, alpha, beta, gamma: 0 };
+            }
+        });
+    });
+
+    return {
+        forecast: best.forecast, fitted: best.fitted,
+        method: useSeasonal
+            ? `Holt-Winters (α=${best.alpha}, β=${best.beta}, γ=${best.gamma}, musiman ${seasonLength} periode)`
+            : `Holt's Linear/Double Exponential Smoothing (α=${best.alpha}, β=${best.beta}) — data belum cukup untuk deteksi musiman`
+    };
+}
+
+// --- (Weighted) Moving Average untuk kategori B/C ---
+function movingAverageForecast(qty, window, horizon, weighted) {
+    const n = qty.length;
+    const w = Math.min(window, n);
+    if (w === 0) return { forecast: new Array(horizon).fill(0), fitted: [], method: 'Tidak ada data' };
+
+    function forecastOneStep(arr) {
+        const slice = arr.slice(-w);
+        if (!weighted) return slice.reduce((a, b) => a + b, 0) / slice.length;
+        let sumW = 0, sumWV = 0;
+        slice.forEach((v, i) => { const wt = i + 1; sumWV += v * wt; sumW += wt; }); // data terbaru bobot lebih besar
+        return sumWV / sumW;
+    }
+
+    const fitted = [];
+    for (let t = w; t < n; t++) fitted.push(forecastOneStep(qty.slice(0, t)));
+
+    const forecast = [];
+    let extended = qty.slice();
+    for (let h = 0; h < horizon; h++) {
+        const val = Math.max(0, Math.round(forecastOneStep(extended)));
+        forecast.push(val);
+        extended = extended.concat([val]);
+    }
+    return { forecast, fitted, method: weighted ? `Weighted Moving Average (${w} periode)` : `Moving Average (${w} periode)` };
+}
+
+// --- Backtest buat hitung MAD/MSE/RMSE/MAPE (leave-last-k-out) ---
+function backtestAccuracy(qty, method, seasonLength) {
+    const n = qty.length;
+    const holdout = Math.min(3, Math.floor(n / 3));
+    if (holdout < 1) return { mad: null, mse: null, rmse: null, mape: null };
+
+    const trainSeries = qty.slice(0, n - holdout);
+    const actualHoldout = qty.slice(n - holdout);
+
+    let predicted;
+    if (method === 'hw') {
+        predicted = holtWintersForecast(trainSeries, seasonLength, holdout).forecast;
+    } else {
+        predicted = movingAverageForecast(trainSeries, MA_WINDOW, holdout, true).forecast;
+    }
+
+    let sumAbs = 0, sumSq = 0, sumPct = 0, countPct = 0;
+    for (let i = 0; i < holdout; i++) {
+        const err = actualHoldout[i] - predicted[i];
+        sumAbs += Math.abs(err);
+        sumSq += err * err;
+        if (actualHoldout[i] !== 0) { sumPct += Math.abs(err / actualHoldout[i]); countPct++; }
+    }
+    const mad = sumAbs / holdout;
+    const mse = sumSq / holdout;
+    const rmse = Math.sqrt(mse);
+    const mape = countPct > 0 ? (sumPct / countPct) * 100 : null;
+    return { mad, mse, rmse, mape };
+}
+
+// =========================================================================
+// DASHBOARD FORECAST — wiring UI
+// =========================================================================
+const forecastDimensiSelect = document.getElementById('forecast-dimensi-select');
+const forecastItemSelect = document.getElementById('forecast-item-select');
+const forecastMaWindowSelect = document.getElementById('forecast-ma-window');
+
+function getForecastSeriesSource(dimensi) {
+    if (dimensi === 'jenis') return globalForecastByJenis;
+    if (dimensi === 'warna') return globalForecastByWarna;
+    return globalForecastBySku;
+}
+
+function populateForecastDimensionSelectors() {
+    if (!forecastItemSelect || !forecastDimensiSelect) return;
+    const refreshItemList = () => {
+        const dimensi = forecastDimensiSelect.value;
+        const source = getForecastSeriesSource(dimensi);
+        const keys = Object.keys(source).sort();
+        if (!keys.length) { forecastItemSelect.innerHTML = '<option value="">Belum ada data</option>'; return; }
+        forecastItemSelect.innerHTML = keys.map(k => {
+            const label = dimensi === 'sku' ? `${k} — ${(source[k].nama || '').toString()}` : k;
+            return `<option value="${k.replace(/"/g, '&quot;')}">${label}</option>`;
+        }).join('');
+        forecastItemSelect.value = keys[0];
+        renderForecastDashboard();
+    };
+    forecastDimensiSelect.onchange = refreshItemList;
+    forecastItemSelect.onchange = renderForecastDashboard;
+    if (forecastMaWindowSelect) forecastMaWindowSelect.onchange = () => { MA_WINDOW = parseInt(forecastMaWindowSelect.value, 10) || 7; renderForecastDashboard(); };
+    refreshItemList();
+}
+
+let forecastChartInstance = null;
+
+function renderForecastDashboard() {
+    if (!forecastDimensiSelect || !forecastItemSelect) return;
+    const dimensi = forecastDimensiSelect.value;
+    const key = forecastItemSelect.value;
+    if (!key) return;
+
+    const source = getForecastSeriesSource(dimensi);
+    const seriesRaw = (source[key] && source[key].series) ? source[key].series : (source[key] || []);
+    // urutkan kronologis berdasarkan tanggal (yang null ditaruh di awal)
+    const seriesSorted = seriesRaw.slice().sort((a, b) => (a.date ? a.date.getTime() : 0) - (b.date ? b.date.getTime() : 0));
+    const qty = seriesSorted.map(s => s.qty);
+
+    // Kategori ABC (cuma berlaku buat dimensi "sku")
+    let kategori = '-';
+    if (dimensi === 'sku' && globalAbcResults[key]) kategori = globalAbcResults[key].kategori;
+    const badgeAbc = document.getElementById('forecast-badge-abc');
+    if (badgeAbc) { badgeAbc.innerText = kategori === '-' ? 'Tanpa Kategori ABC' : `Kategori ${kategori}`; badgeAbc.className = `badge-status ${kategori !== '-' ? badgeClassAbc(kategori) : 'badge-status-pending'}`; }
+
+    const useHoltWinters = kategori === 'A';
+    const horizon = 30; // hitung 30 periode ke depan, dipakai buat total harian/mingguan/bulanan
+    const seasonLength = 7;
+
+    const result = useHoltWinters
+        ? holtWintersForecast(qty, seasonLength, horizon)
+        : movingAverageForecast(qty, MA_WINDOW, horizon, true);
+
+    const methodBadge = document.getElementById('forecast-badge-method');
+    if (methodBadge) methodBadge.innerText = `Metode: ${result.method}`;
+
+    // Terapkan faktor koreksi kalender bisnis ke tiap titik forecast, berdasarkan
+    // tanggal proyeksinya (tanggal terakhir di data + h hari)
+    const lastDate = seriesSorted.length && seriesSorted[seriesSorted.length - 1].date ? seriesSorted[seriesSorted.length - 1].date : new Date();
+    const adjustedForecast = result.forecast.map((val, i) => {
+        const targetDate = new Date(lastDate); targetDate.setDate(targetDate.getDate() + i + 1);
+        const eventType = matchCalendarEvent(targetDate);
+        const factor = eventType && globalEventCorrectionFactors[eventType] ? globalEventCorrectionFactors[eventType] : 1;
+        return Math.max(0, Math.round(val * factor));
+    });
+
+    const forecastHarian = adjustedForecast[0] || 0;
+    const forecastMingguan = adjustedForecast.slice(0, 7).reduce((a, b) => a + b, 0);
+    const forecastBulanan = adjustedForecast.slice(0, 30).reduce((a, b) => a + b, 0);
+
+    // Tren: bandingin rata2 separuh akhir vs separuh awal data historis
+    let trend = 'Stabil';
+    if (qty.length >= 4) {
+        const half = Math.floor(qty.length / 2);
+        const avgFirst = qty.slice(0, half).reduce((a, b) => a + b, 0) / half;
+        const avgSecond = qty.slice(half).reduce((a, b) => a + b, 0) / (qty.length - half);
+        if (avgSecond > avgFirst * 1.1) trend = 'Naik';
+        else if (avgSecond < avgFirst * 0.9) trend = 'Turun';
+    }
+
+    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+    setText('forecast-stat-periode', qty.length);
+    setText('forecast-stat-harian', forecastHarian);
+    setText('forecast-stat-mingguan', forecastMingguan);
+    setText('forecast-stat-bulanan', forecastBulanan);
+    const trendEl = document.getElementById('forecast-stat-trend');
+    if (trendEl) { trendEl.innerText = trend; trendEl.style.color = trend === 'Naik' ? '#10b981' : (trend === 'Turun' ? '#ef4444' : '#f59e0b'); }
+
+    // Akurasi (backtest)
+    const acc = backtestAccuracy(qty, useHoltWinters ? 'hw' : 'ma', seasonLength);
+    setText('forecast-stat-mad', acc.mad !== null ? acc.mad.toFixed(2) : '-');
+    setText('forecast-stat-mse', acc.mse !== null ? acc.mse.toFixed(2) : '-');
+    setText('forecast-stat-rmse', acc.rmse !== null ? acc.rmse.toFixed(2) : '-');
+    setText('forecast-stat-mape', acc.mape !== null ? `${acc.mape.toFixed(1)}%` : '-');
+
+    // Rata-rata hari event vs normal (dari data historis produk ini)
+    let sumEvent = 0, countEvent = 0, sumNormal = 0, countNormal = 0;
+    seriesSorted.forEach(p => {
+        const isEvent = p.date && matchCalendarEvent(p.date);
+        if (isEvent) { sumEvent += p.qty; countEvent++; } else { sumNormal += p.qty; countNormal++; }
+    });
+    setText('forecast-stat-normal', countNormal > 0 ? (sumNormal / countNormal).toFixed(1) : '-');
+    setText('forecast-stat-campaign', countEvent > 0 ? (sumEvent / countEvent).toFixed(1) : 'Belum ada data event yang cocok');
+
+    // Chart
+    const labels = seriesSorted.map((s, i) => s.date ? `${s.date.getDate()}/${s.date.getMonth() + 1}` : `P${i + 1}`);
+    const next7Labels = adjustedForecast.slice(0, 7).map((_, i) => { const d = new Date(lastDate); d.setDate(d.getDate() + i + 1); return `${d.getDate()}/${d.getMonth() + 1}`; });
+    const allLabels = labels.concat(next7Labels);
+    const dataActual = qty.concat(new Array(7).fill(null));
+    const dataForecast = new Array(qty.length - 1 >= 0 ? qty.length - 1 : 0).fill(null).concat([qty[qty.length - 1] || 0]).concat(adjustedForecast.slice(0, 7));
+
+    const canvas = document.getElementById('forecastChart');
+    if (canvas) {
+        if (forecastChartInstance) forecastChartInstance.destroy();
+        forecastChartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: allLabels,
+                datasets: [
+                    { label: 'Histori Aktual', data: dataActual, borderColor: '#60a5fa', backgroundColor: 'rgba(96,165,250,0.15)', tension: 0.3, fill: true },
+                    { label: 'Forecast', data: dataForecast, borderColor: '#f472b6', backgroundColor: 'rgba(244,114,182,0.15)', borderDash: [6, 4], tension: 0.3, fill: true }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, labels: { boxWidth: 12 } } }, scales: { y: { beginAtZero: true } } }
+        });
+    }
+
+    if (dimensi === 'sku') renderForecastSummaryAllA();
+}
+
+// Ringkasan forecast semua SKU kategori A (dihitung on-demand, bukan semua SKU
+// sekaligus di awal, biar gak berat kalau SKU-nya ribuan)
+function renderForecastSummaryAllA() {
     const tbody = document.getElementById('tbody-forecast-summary');
     if (!tbody) return;
-    const namaList = Object.keys(globalForecastResults).sort((a, b) => globalForecastResults[b].forecastNext - globalForecastResults[a].forecastNext);
-    if (!namaList.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada data.</td></tr>`; return; }
+    const skuA = Object.keys(globalAbcResults).filter(sku => globalAbcResults[sku].kategori === 'A');
+    if (!skuA.length) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada SKU kategori A.</td></tr>`; return; }
 
     tbody.innerHTML = '';
-    namaList.forEach(nama => {
-        const r = globalForecastResults[nama];
+    skuA.forEach(sku => {
+        const seriesSorted = globalForecastBySku[sku].series.slice().sort((a, b) => (a.date ? a.date.getTime() : 0) - (b.date ? b.date.getTime() : 0));
+        const qty = seriesSorted.map(s => s.qty);
+        const result = holtWintersForecast(qty, 7, 30);
+        const lastDate = seriesSorted.length && seriesSorted[seriesSorted.length - 1].date ? seriesSorted[seriesSorted.length - 1].date : new Date();
+        const adjusted = result.forecast.map((val, i) => {
+            const targetDate = new Date(lastDate); targetDate.setDate(targetDate.getDate() + i + 1);
+            const eventType = matchCalendarEvent(targetDate);
+            const factor = eventType && globalEventCorrectionFactors[eventType] ? globalEventCorrectionFactors[eventType] : 1;
+            return Math.max(0, Math.round(val * factor));
+        });
+        const harian = adjusted[0] || 0;
+        const mingguan = adjusted.slice(0, 7).reduce((a, b) => a + b, 0);
+        const bulanan = adjusted.slice(0, 30).reduce((a, b) => a + b, 0);
+
+        let trend = 'Stabil';
+        if (qty.length >= 4) {
+            const half = Math.floor(qty.length / 2);
+            const avgFirst = qty.slice(0, half).reduce((a, b) => a + b, 0) / half;
+            const avgSecond = qty.slice(half).reduce((a, b) => a + b, 0) / (qty.length - half);
+            if (avgSecond > avgFirst * 1.1) trend = 'Naik'; else if (avgSecond < avgFirst * 0.9) trend = 'Turun';
+        }
+
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td><strong>${nama}</strong></td><td style="text-align:right;">${r.periods}</td><td style="text-align:right;">${r.avg}</td><td style="text-align:right; color:var(--pink-main); font-weight:700;">${r.forecastNext}</td><td><span class="badge-status ${badgeClassTrend(r.trend)}">${r.trend}</span></td>`;
+        tr.innerHTML = `<td><strong>${sku}</strong></td><td>${globalForecastBySku[sku].nama}</td><td><span class="badge-status badge-status-approved">A</span></td><td style="text-align:right;">${harian}</td><td style="text-align:right;">${mingguan}</td><td style="text-align:right;">${bulanan}</td><td><span class="badge-status ${badgeClassTrend(trend)}">${trend}</span></td>`;
         tbody.appendChild(tr);
     });
 }
 
-function populateForecastProductDropdown() {
-    const select = document.getElementById('forecast-product-select');
-    if (!select) return;
-    const namaList = Object.keys(globalForecastSeries).sort();
-    if (!namaList.length) { select.innerHTML = '<option value="">Belum ada data produk</option>'; return; }
-
-    select.innerHTML = namaList.map(n => `<option value="${n.replace(/"/g, '&quot;')}">${n}</option>`).join('');
-    select.value = namaList[0];
-    renderForecastChart(namaList[0]);
-
-    select.onchange = () => renderForecastChart(select.value);
-}
-
-let forecastChartInstance = null;
-function renderForecastChart(namaProduk) {
-    const series = globalForecastSeries[namaProduk] || [];
-    const result = globalForecastResults[namaProduk] || { periods: 0, avg: 0, forecastNext: 0, trend: 'Stabil' };
-
-    const statPeriode = document.getElementById('forecast-stat-periode');
-    const statAvg = document.getElementById('forecast-stat-avg');
-    const statNext = document.getElementById('forecast-stat-next');
-    const statTrend = document.getElementById('forecast-stat-trend');
-    if (statPeriode) statPeriode.innerText = result.periods;
-    if (statAvg) statAvg.innerText = result.avg;
-    if (statNext) statNext.innerText = result.forecastNext;
-    if (statTrend) { statTrend.innerText = result.trend; statTrend.style.color = result.trend === 'Naik' ? '#10b981' : (result.trend === 'Turun' ? '#ef4444' : '#f59e0b'); }
-
-    const labels = series.map((s, i) => s.waktu ? s.waktu.split(',')[0] : `Periode ${i + 1}`);
-    const dataActual = series.map(s => s.qty);
-    labels.push('Prediksi');
-    const dataForecast = new Array(series.length).fill(null);
-    dataForecast.push(result.forecastNext);
-    // Sambungkan titik terakhir aktual ke titik prediksi biar garisnya nyambung
-    const dataActualPadded = dataActual.slice();
-    dataActualPadded.push(null);
-
-    const canvas = document.getElementById('forecastChart');
-    if (!canvas) return;
-    if (forecastChartInstance) forecastChartInstance.destroy();
-    forecastChartInstance = new Chart(canvas.getContext('2d'), {
-        type: 'line',
-        data: {
-            labels,
-            datasets: [
-                { label: 'Histori Aktual', data: dataActualPadded, borderColor: '#60a5fa', backgroundColor: 'rgba(96,165,250,0.15)', tension: 0.3, fill: true },
-                { label: 'Prediksi', data: dataForecast, borderColor: '#f472b6', backgroundColor: '#f472b6', borderDash: [6, 4], pointRadius: 6, pointBackgroundColor: '#f472b6', showLine: false }
-            ]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: true, labels: { boxWidth: 12 } } },
-            scales: { y: { beginAtZero: true } }
-        }
+const searchForecastSummary = document.getElementById('search-forecast-summary');
+if (searchForecastSummary) {
+    searchForecastSummary.addEventListener('input', () => {
+        const q = searchForecastSummary.value.trim().toLowerCase();
+        document.querySelectorAll('#tbody-forecast-summary tr').forEach(tr => {
+            tr.style.display = tr.innerText.toLowerCase().includes(q) ? '' : 'none';
+        });
     });
 }
 
