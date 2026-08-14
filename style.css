@@ -1723,3 +1723,12 @@ body[data-theme="light"] .btn-inline-cancel {
     box-shadow: 0 2px 8px rgba(244,114,182,0.5); cursor: pointer;
 }
 body[data-theme="light"] .rop-slider-row input[type="range"] { background: rgba(0,0,0,0.10); }
+
+.rop-slider-max-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px; font-size: 11px; color: var(--text-muted);
+}
+.rop-max-input {
+    width: 90px; height: 28px; padding: 0 8px;
+    border-radius: 8px; font-size: 12px;
+}
