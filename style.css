@@ -922,7 +922,7 @@ body[data-theme="light"] .btn-help-dot {
 #view-kalkulator.active, #view-mastersku.active, #view-barang.active {
     display: flex; flex-direction: column;
 }
-#view-dashboard.active, #view-history.active, #view-procurement.active, #view-kelolaakun.active, #view-pembelian.active, #view-forecasting.active {
+#view-dashboard.active, #view-history.active, #view-procurement.active, #view-kelolaakun.active, #view-pembelian.active, #view-forecasting.active, #view-rop.active {
     display: block; overflow-y: auto; padding-bottom: 40px;
 }
 
@@ -1694,3 +1694,32 @@ body[data-theme="light"] .btn-inline-cancel {
     border-color: rgba(0,0,0,0.14);
     color: rgba(30,50,80,0.80);
 }
+
+/* =========================================================================
+   KALKULATOR ROP — slider interaktif
+   ========================================================================= */
+.rop-slider-row { margin-bottom: 22px; }
+.rop-slider-label {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px; font-size: 13px; color: var(--text-main);
+}
+.rop-slider-value { font-weight: 700; color: var(--pink-main); font-size: 14px; }
+.rop-slider-row input[type="range"] {
+    width: 100%; height: 6px; border-radius: 10px;
+    background: rgba(255,255,255,0.12);
+    outline: none; -webkit-appearance: none; appearance: none;
+    cursor: pointer;
+}
+.rop-slider-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--pink-main);
+    box-shadow: 0 2px 8px rgba(244,114,182,0.5);
+    cursor: pointer; border: 3px solid #fff;
+}
+.rop-slider-row input[type="range"]::-moz-range-thumb {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--pink-main); border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(244,114,182,0.5); cursor: pointer;
+}
+body[data-theme="light"] .rop-slider-row input[type="range"] { background: rgba(0,0,0,0.10); }
