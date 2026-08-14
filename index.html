@@ -83,6 +83,10 @@
                 <button class="menu-item" data-target="forecasting">
                     <span class="menu-text">Forecasting</span>
                 </button>
+
+                <button class="menu-item" data-target="rop">
+                    <span class="menu-text">Kalkulator ROP</span>
+                </button>
                 
                 <button class="menu-item" data-target="procurement">
                     <span class="menu-text">Procurement</span>
@@ -315,6 +319,60 @@
                             <input type="text" id="search-forecast-summary" placeholder="Cari SKU/nama produk..." style="height:36px; padding:0 14px; border-radius:10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16); color:var(--text-main); font-size:13px;">
                         </div>
                         <div class="table-responsive" style="max-height:320px;"><table><thead><tr><th>SKU</th><th>Nama Produk</th><th>Kategori</th><th style="text-align:right;">Forecast Harian</th><th style="text-align:right;">Forecast Mingguan</th><th style="text-align:right;">Forecast Bulanan</th><th>Tren</th></tr></thead><tbody id="tbody-forecast-summary"><tr><td colspan="7" style="text-align:center; color:#94a3b8; font-style:italic;">Pilih SKU kategori A dulu di atas untuk memuat ringkasan.</td></tr></tbody></table></div>
+                    </div>
+                </section>
+
+                <section id="view-rop" class="content-view">
+                    <h2 class="page-title">Kalkulator ROP (Reorder Point)</h2>
+                    <div class="info-note-box" style="margin-bottom:15px; font-size:12px; color:var(--text-muted); background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.10); border-radius:12px; padding:10px 14px;">
+                        Kalkulator manual — geser slider di bawah buat lihat langsung perubahan Titik Pemesanan Ulang (ROP) dan grafiknya. Rumus: <b>ROP = (d × L) + SS</b>.
+                    </div>
+
+                    <!-- Kalkulator bantu Safety Stock (opsional) -->
+                    <div class="sku-list-card" style="width: 100%; margin-bottom:20px;">
+                        <h3 style="margin-bottom:15px;">Bantu Hitung Safety Stock (opsional)</h3>
+                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">Rumus: SS = (Demand Maksimum × Lead Time Maksimum) − (Demand Rata-rata × Lead Time Rata-rata)</p>
+                        <div style="display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end;">
+                            <div><span class="proc-field-label" style="display:block; margin-bottom:4px;">Demand Maksimum (unit/hari):</span><input type="number" id="ss-demand-max" value="130" style="width:150px; height:36px;"></div>
+                            <div><span class="proc-field-label" style="display:block; margin-bottom:4px;">Lead Time Maksimum (hari):</span><input type="number" id="ss-lt-max" value="10" style="width:150px; height:36px;"></div>
+                            <div><span class="proc-field-label" style="display:block; margin-bottom:4px;">Demand Rata-rata (unit/hari):</span><input type="number" id="ss-demand-avg" value="100" style="width:150px; height:36px;"></div>
+                            <div><span class="proc-field-label" style="display:block; margin-bottom:4px;">Lead Time Rata-rata (hari):</span><input type="number" id="ss-lt-avg" value="7" style="width:150px; height:36px;"></div>
+                            <button id="btn-hitung-ss" class="btn-action btn-pink-outline" style="height:36px;">Hitung SS</button>
+                        </div>
+                        <div style="margin-top:12px; font-size:13px;">
+                            Hasil: <strong id="ss-hasil-text">SS = (130 × 10) − (100 × 7) = 600 unit</strong>
+                            <button id="btn-pakai-ss" class="btn-action btn-pink-solid" style="margin-left:12px; height:30px; font-size:12px;">Pakai nilai ini ke slider SS ↓</button>
+                        </div>
+                    </div>
+
+                    <!-- Kalkulator ROP utama -->
+                    <div class="sku-list-card" style="width: 100%; margin-bottom:20px;">
+                        <h3 style="margin-bottom:20px;">Kalkulator ROP Interaktif</h3>
+
+                        <div class="rop-slider-row">
+                            <div class="rop-slider-label"><span>I₀ — Stok Awal / Saat Ini</span><span id="rop-val-i0" class="rop-slider-value">300 unit</span></div>
+                            <input type="range" id="rop-slider-i0" min="0" max="2000" step="10" value="300">
+                        </div>
+                        <div class="rop-slider-row">
+                            <div class="rop-slider-label"><span>d — Rata-rata Pemakaian Harian</span><span id="rop-val-d" class="rop-slider-value">40 unit/hari</span></div>
+                            <input type="range" id="rop-slider-d" min="1" max="500" step="1" value="40">
+                        </div>
+                        <div class="rop-slider-row">
+                            <div class="rop-slider-label"><span>L — Lead Time</span><span id="rop-val-l" class="rop-slider-value">4 hari</span></div>
+                            <input type="range" id="rop-slider-l" min="0" max="60" step="1" value="4">
+                        </div>
+                        <div class="rop-slider-row">
+                            <div class="rop-slider-label"><span>SS — Safety Stock</span><span id="rop-val-ss" class="rop-slider-value">40 unit</span></div>
+                            <input type="range" id="rop-slider-ss" min="0" max="1000" step="10" value="40">
+                        </div>
+
+                        <div style="height:300px; margin-top:20px;"><canvas id="ropChart"></canvas></div>
+
+                        <div style="display:flex; gap:24px; flex-wrap:wrap; margin-top:20px; padding-top:16px; border-top:1px solid var(--border-color);">
+                            <div><span style="font-size:11px; color:var(--text-muted); display:block;">ROP = (d × L) + SS</span><span id="rop-hasil-rop" style="font-size:22px; font-weight:700; color:var(--pink-main);">200 unit</span></div>
+                            <div><span style="font-size:11px; color:var(--text-muted); display:block;">Hari sampai wajib pesan ulang</span><span id="rop-hasil-hari" style="font-size:22px; font-weight:700;">2.5 hari</span></div>
+                            <div><span style="font-size:11px; color:var(--text-muted); display:block;">Status Stok Saat Ini</span><span id="rop-hasil-status" class="badge-status badge-status-approved" style="font-size:14px;">Aman</span></div>
+                        </div>
                     </div>
                 </section>
 
