@@ -2436,6 +2436,26 @@ function initRopCalculator() {
     if (!ropInitialized) {
         [sliderI0, sliderD, sliderL, sliderSS].forEach(el => el.addEventListener('input', renderRopCalculator));
 
+        // Input "Set Maksimal" -> nentuin batas atas (max) slider-nya masing-masing.
+        // Kalau nilai slider yang sekarang ternyata lebih besar dari maksimal baru, di-clamp turun.
+        const maxWiring = [
+            { maxInput: 'rop-max-i0', slider: sliderI0 },
+            { maxInput: 'rop-max-d', slider: sliderD },
+            { maxInput: 'rop-max-l', slider: sliderL },
+            { maxInput: 'rop-max-ss', slider: sliderSS }
+        ];
+        maxWiring.forEach(({ maxInput, slider }) => {
+            const inputEl = document.getElementById(maxInput);
+            if (!inputEl) return;
+            inputEl.addEventListener('change', () => {
+                const batasBaru = parseFloat(inputEl.value);
+                if (isNaN(batasBaru) || batasBaru <= 0) { inputEl.value = slider.max; return; }
+                slider.max = batasBaru;
+                if (parseFloat(slider.value) > batasBaru) slider.value = batasBaru;
+                renderRopCalculator();
+            });
+        });
+
         const btnHitungSS = document.getElementById('btn-hitung-ss');
         if (btnHitungSS) btnHitungSS.addEventListener('click', hitungSafetyStockBantu);
 
@@ -2443,7 +2463,10 @@ function initRopCalculator() {
         if (btnPakaiSS) {
             btnPakaiSS.addEventListener('click', () => {
                 const hasil = parseFloat(btnPakaiSS.getAttribute('data-hasil') || '0');
-                sliderSS.max = Math.max(parseFloat(sliderSS.max), Math.ceil(hasil / 10) * 10);
+                const batasBaru = Math.max(parseFloat(sliderSS.max), Math.ceil(hasil / 10) * 10);
+                sliderSS.max = batasBaru;
+                const maxInputSS = document.getElementById('rop-max-ss');
+                if (maxInputSS) maxInputSS.value = batasBaru;
                 sliderSS.value = Math.max(0, Math.round(hasil));
                 renderRopCalculator();
             });
