@@ -1527,6 +1527,7 @@ menuItems.forEach(item => {
         if (target === 'barang') fetchBarangList();
         if (target === 'pembelian') fetchPembelianList();
         if (target === 'forecasting') loadForecastingData();
+        if (target === 'rop') initRopCalculator();
     });
 });
 
@@ -2415,6 +2416,109 @@ if (searchForecastSummary) {
         document.querySelectorAll('#tbody-forecast-summary tr').forEach(tr => {
             tr.style.display = tr.innerText.toLowerCase().includes(q) ? '' : 'none';
         });
+    });
+}
+
+// =========================================================================
+// KALKULATOR ROP (Reorder Point) — interaktif, murni manual (gak narik
+// data historis apapun). Rumus: ROP = (d × L) + SS
+// =========================================================================
+let ropChartInstance = null;
+let ropInitialized = false;
+
+function initRopCalculator() {
+    const sliderI0 = document.getElementById('rop-slider-i0');
+    const sliderD = document.getElementById('rop-slider-d');
+    const sliderL = document.getElementById('rop-slider-l');
+    const sliderSS = document.getElementById('rop-slider-ss');
+    if (!sliderI0 || !sliderD || !sliderL || !sliderSS) return;
+
+    if (!ropInitialized) {
+        [sliderI0, sliderD, sliderL, sliderSS].forEach(el => el.addEventListener('input', renderRopCalculator));
+
+        const btnHitungSS = document.getElementById('btn-hitung-ss');
+        if (btnHitungSS) btnHitungSS.addEventListener('click', hitungSafetyStockBantu);
+
+        const btnPakaiSS = document.getElementById('btn-pakai-ss');
+        if (btnPakaiSS) {
+            btnPakaiSS.addEventListener('click', () => {
+                const hasil = parseFloat(btnPakaiSS.getAttribute('data-hasil') || '0');
+                sliderSS.max = Math.max(parseFloat(sliderSS.max), Math.ceil(hasil / 10) * 10);
+                sliderSS.value = Math.max(0, Math.round(hasil));
+                renderRopCalculator();
+            });
+        }
+        ropInitialized = true;
+    }
+    renderRopCalculator();
+}
+
+function hitungSafetyStockBantu() {
+    const demandMax = parseFloat(document.getElementById('ss-demand-max')?.value) || 0;
+    const ltMax = parseFloat(document.getElementById('ss-lt-max')?.value) || 0;
+    const demandAvg = parseFloat(document.getElementById('ss-demand-avg')?.value) || 0;
+    const ltAvg = parseFloat(document.getElementById('ss-lt-avg')?.value) || 0;
+
+    const hasil = (demandMax * ltMax) - (demandAvg * ltAvg);
+    const teks = document.getElementById('ss-hasil-text');
+    if (teks) teks.innerText = `SS = (${demandMax} × ${ltMax}) − (${demandAvg} × ${ltAvg}) = ${Math.round(hasil)} unit`;
+
+    const btnPakai = document.getElementById('btn-pakai-ss');
+    if (btnPakai) btnPakai.setAttribute('data-hasil', hasil);
+}
+
+function renderRopCalculator() {
+    const i0 = parseFloat(document.getElementById('rop-slider-i0')?.value) || 0;
+    const d = parseFloat(document.getElementById('rop-slider-d')?.value) || 1;
+    const l = parseFloat(document.getElementById('rop-slider-l')?.value) || 0;
+    const ss = parseFloat(document.getElementById('rop-slider-ss')?.value) || 0;
+
+    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+    setText('rop-val-i0', `${i0} unit`);
+    setText('rop-val-d', `${d} unit/hari`);
+    setText('rop-val-l', `${l} hari`);
+    setText('rop-val-ss', `${ss} unit`);
+
+    const rop = (d * l) + ss;
+    const hariSampaiRop = d > 0 ? (i0 - rop) / d : 0;
+
+    setText('rop-hasil-rop', `${Math.round(rop)} unit`);
+    setText('rop-hasil-hari', hariSampaiRop > 0 ? `${hariSampaiRop.toFixed(1)} hari` : 'Sudah harus pesan sekarang!');
+
+    const statusEl = document.getElementById('rop-hasil-status');
+    if (statusEl) {
+        if (i0 <= ss) { statusEl.innerText = 'Kritis (di bawah Safety Stock)'; statusEl.className = 'badge-status badge-status-rejected'; }
+        else if (i0 <= rop) { statusEl.innerText = 'Segera Pesan Ulang'; statusEl.className = 'badge-status badge-status-pending'; }
+        else { statusEl.innerText = 'Aman'; statusEl.className = 'badge-status badge-status-approved'; }
+    }
+
+    // --- Grafik: garis penurunan stok dari I0 turun ke 0 seiring waktu ---
+    const hariSampaiHabis = i0 / d;
+    const maxHari = Math.max(20, Math.ceil(hariSampaiHabis) + 3, l + 5);
+    const labels = []; for (let h = 0; h <= maxHari; h++) labels.push(h);
+
+    const dataStok = labels.map(h => Math.max(0, i0 - d * h));
+    const dataRop = labels.map(() => rop);
+    const dataSS = labels.map(() => ss);
+
+    const canvas = document.getElementById('ropChart');
+    if (!canvas) return;
+    if (ropChartInstance) ropChartInstance.destroy();
+    ropChartInstance = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Penurunan Stok', data: dataStok, borderColor: '#60a5fa', backgroundColor: 'transparent', tension: 0, pointRadius: 0, borderWidth: 2.5 },
+                { label: 'Titik Pemesanan Ulang (ROP)', data: dataRop, borderColor: '#f59e0b', backgroundColor: 'transparent', borderDash: [8, 5], pointRadius: 0, borderWidth: 1.5 },
+                { label: 'Stok Pengaman (Safety Stock)', data: dataSS, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.15)', fill: 'origin', pointRadius: 0, borderWidth: 1.5 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: true, labels: { boxWidth: 12, font: { size: 10 } } } },
+            scales: { x: { title: { display: true, text: 'Hari' } }, y: { beginAtZero: true, title: { display: true, text: 'Unit' } } }
+        }
     });
 }
 
