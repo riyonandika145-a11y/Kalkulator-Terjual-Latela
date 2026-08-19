@@ -922,7 +922,7 @@ body[data-theme="light"] .btn-help-dot {
 #view-kalkulator.active, #view-mastersku.active, #view-barang.active {
     display: flex; flex-direction: column;
 }
-#view-dashboard.active, #view-history.active, #view-procurement.active, #view-kelolaakun.active, #view-pembelian.active, #view-forecasting.active, #view-rop.active {
+#view-dashboard.active, #view-history.active, #view-procurement.active, #view-kelolaakun.active, #view-pembelian.active, #view-forecasting.active, #view-rop.active, #view-qrlabel.active {
     display: block; overflow-y: auto; padding-bottom: 40px;
 }
 
@@ -1731,4 +1731,33 @@ body[data-theme="light"] .rop-slider-row input[type="range"] { background: rgba(
 .rop-max-input {
     width: 90px; height: 28px; padding: 0 8px;
     border-radius: 8px; font-size: 12px;
+}
+
+/* =========================================================================
+   CETAK LABEL QR CODE
+   ========================================================================= */
+#qrlabel-print-area { display: none; }
+
+.qr-label-item {
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+    width: 3.2cm; height: 3.6cm;
+    padding: 0.15cm;
+    box-sizing: border-box;
+    text-align: center;
+    page-break-inside: avoid;
+}
+.qr-label-item img { width: 2.4cm; height: 2.4cm; }
+.qr-label-item .qr-label-sku { font-size: 8pt; font-weight: 700; margin-top: 2px; font-family: 'Courier New', monospace; color: #000; }
+.qr-label-item .qr-label-warna { font-size: 7pt; color: #333; }
+
+@media print {
+    body * { visibility: hidden; }
+    #qrlabel-print-area, #qrlabel-print-area * { visibility: visible; }
+    #qrlabel-print-area {
+        display: flex !important;
+        flex-wrap: wrap;
+        position: absolute; left: 0; top: 0; width: 100%;
+        background: #fff;
+    }
+    .qr-label-item { border: 1px dashed #ccc; }
 }
