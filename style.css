@@ -1735,22 +1735,32 @@ body[data-theme="light"] .rop-slider-row input[type="range"] { background: rgba(
 
 /* =========================================================================
    CETAK LABEL QR CODE
+   Ukuran disesuaikan buat kertas stiker "Label No. 111" (13mm x 19mm).
+   Kalau merek stiker kamu beda dikit ukurannya, tinggal ubah nilai
+   --label-w / --label-h di bawah ini (satuan mm).
    ========================================================================= */
 #qrlabel-print-area { display: none; }
 
+:root {
+    --label-w: 13mm;
+    --label-h: 19mm;
+}
+
 .qr-label-item {
     display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
-    width: 3.2cm; height: 3.6cm;
-    padding: 0.15cm;
+    width: var(--label-w); height: var(--label-h);
+    padding: 0.5mm;
     box-sizing: border-box;
     text-align: center;
+    overflow: hidden;
     page-break-inside: avoid;
 }
-.qr-label-item img { width: 2.4cm; height: 2.4cm; }
-.qr-label-item .qr-label-sku { font-size: 8pt; font-weight: 700; margin-top: 2px; font-family: 'Courier New', monospace; color: #000; }
-.qr-label-item .qr-label-warna { font-size: 7pt; color: #333; }
+.qr-label-item img { width: 9mm; height: 9mm; flex-shrink: 0; }
+.qr-label-item .qr-label-sku { font-size: 5.5pt; font-weight: 700; line-height: 1.1; margin-top: 0.5mm; font-family: 'Courier New', monospace; color: #000; word-break: break-all; }
+.qr-label-item .qr-label-warna { font-size: 4.5pt; line-height: 1.1; color: #333; }
 
 @media print {
+    @page { margin: 5mm; }
     body * { visibility: hidden; }
     #qrlabel-print-area, #qrlabel-print-area * { visibility: visible; }
     #qrlabel-print-area {
