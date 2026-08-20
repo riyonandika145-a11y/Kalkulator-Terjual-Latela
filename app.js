@@ -1023,7 +1023,7 @@ function fetchMasterSkusFromCloud() {
             });
             updateStatusMessage("Master SKU berhasil disinkronisasi secara INSTAN & LIVE!");
             renderMasterSkuDatabaseView();
-            renderQrLabelTable(); // biar tabel di halaman Cetak Label QR ikut ke-refresh kalau lagi kebuka
+            populateQrLabelJenisDropdown(); // biar dropdown Jenis Barang di halaman Cetak Label QR ikut ke-refresh kalau lagi kebuka
             populateDashboardDropdown(); 
             populateManualNamaDropdown(); 
             resetKalkulatorDataState();
@@ -1837,75 +1837,129 @@ function fetchHistoryFromCloud() {
 // QR yang sama).
 // =========================================================================
 const btnSyncQrLabel = document.getElementById('btn-sync-qrlabel');
-const searchQrLabelInput = document.getElementById('search-qrlabel');
-const qrLabelSelectAll = document.getElementById('qrlabel-select-all');
+const qrLabelJenisBarang = document.getElementById('qrlabel-jenis-barang');
+const qrLabelWarna = document.getElementById('qrlabel-warna');
+const qrLabelQtyInput = document.getElementById('qrlabel-qty-input');
+const btnAddQrLabelItem = document.getElementById('btn-add-qrlabel-item');
 const btnCetakQrLabel = document.getElementById('btn-cetak-qrlabel');
 
-let qrLabelJumlahMap = {}; // { SKU: jumlahLabel } — nyimpen input jumlah label per SKU biar gak reset pas render ulang
+let qrLabelBasket = []; // [{ sku, nama, warna, qty }] — daftar SKU yang mau dicetak labelnya
 
 function initQrLabelPage() {
-    if (Object.keys(masterSkus).length > 0) renderQrLabelTable();
+    if (Object.keys(masterSkus).length > 0) populateQrLabelJenisDropdown();
+    renderQrLabelBasketTable();
 }
 
 if (btnSyncQrLabel) btnSyncQrLabel.addEventListener('click', fetchMasterSkusFromCloud);
 
-if (searchQrLabelInput) {
-    searchQrLabelInput.addEventListener('input', () => renderQrLabelTable());
+// Isi dropdown "Jenis Barang" dari daftar nama produk unik di Master SKU
+function populateQrLabelJenisDropdown() {
+    if (!qrLabelJenisBarang) return;
+    const selectedBefore = qrLabelJenisBarang.value;
+    qrLabelJenisBarang.innerHTML = '<option value="">-- Pilih Jenis Barang --</option>';
+    let uniqueNama = new Set();
+    Object.values(masterSkus).forEach(item => { if (item.nama) uniqueNama.add(item.nama); });
+    Array.from(uniqueNama).sort().forEach(nama => {
+        const opt = document.createElement('option'); opt.value = nama; opt.innerText = nama;
+        qrLabelJenisBarang.appendChild(opt);
+    });
+    // Coba pertahankan pilihan sebelumnya kalau masih ada di data baru (misal abis Sync ulang)
+    if (selectedBefore && uniqueNama.has(selectedBefore)) qrLabelJenisBarang.value = selectedBefore;
+    resetQrLabelWarnaDropdown();
 }
 
-function renderQrLabelTable() {
-    const tbody = document.getElementById('tbody-qrlabel-list');
+function resetQrLabelWarnaDropdown() {
+    if (!qrLabelWarna) return;
+    qrLabelWarna.innerHTML = '<option value="">-- Pilih Warna --</option>';
+    qrLabelWarna.disabled = true;
+}
+
+if (qrLabelJenisBarang) {
+    qrLabelJenisBarang.addEventListener('change', () => {
+        resetQrLabelWarnaDropdown();
+        const selectedNama = qrLabelJenisBarang.value;
+        if (!selectedNama || !qrLabelWarna) return;
+
+        // Setiap opsi Warna langsung nyimpen kode SKU-nya sebagai value, jadi begitu dipilih
+        // langsung ketemu SKU yang presis (gak perlu nebak-nebak walau ada beda Type juga).
+        const matches = Object.entries(masterSkus)
+            .filter(([, item]) => item.nama === selectedNama)
+            .sort((a, b) => (a[1].warna || '').localeCompare(b[1].warna || ''));
+
+        matches.forEach(([sku, item]) => {
+            const opt = document.createElement('option');
+            opt.value = sku;
+            opt.innerText = (item.type && item.type !== '-') ? `${item.warna} (${item.type})` : (item.warna || sku);
+            qrLabelWarna.appendChild(opt);
+        });
+        qrLabelWarna.disabled = false;
+    });
+}
+
+if (btnAddQrLabelItem) {
+    btnAddQrLabelItem.addEventListener('click', () => {
+        const sku = qrLabelWarna ? qrLabelWarna.value : '';
+        const qty = qrLabelQtyInput ? parseInt(qrLabelQtyInput.value, 10) : 0;
+
+        if (!sku) { updateStatusMessage('(!) Pilih Jenis Barang & Warna dulu.'); return; }
+        if (isNaN(qty) || qty <= 0) { updateStatusMessage('(!) Isi Qty dengan benar.'); return; }
+
+        const item = masterSkus[sku];
+        const existing = qrLabelBasket.find(b => b.sku === sku);
+        if (existing) { existing.qty += qty; }
+        else { qrLabelBasket.push({ sku, nama: item.nama, warna: item.warna, qty }); }
+
+        renderQrLabelBasketTable();
+
+        // Reset Warna & Qty aja (Jenis Barang dibiarin biar gampang nambah warna lain dari jenis yang sama)
+        resetQrLabelWarnaDropdown();
+        if (qrLabelJenisBarang) qrLabelJenisBarang.value = '';
+        if (qrLabelQtyInput) qrLabelQtyInput.value = '1';
+        updateStatusMessage(`Sukses menambah ${sku} ke daftar cetak.`);
+    });
+}
+
+function renderQrLabelBasketTable() {
+    const tbody = document.getElementById('tbody-qrlabel-basket');
     if (!tbody) return;
 
-    const skuKeys = Object.keys(masterSkus);
-    if (!skuKeys.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Klik "Sync Master SKU" dulu untuk memuat daftar SKU.</td></tr>`; return; }
-
-    const q = searchQrLabelInput ? searchQrLabelInput.value.trim().toLowerCase() : '';
-    const filtered = skuKeys.filter(sku => {
-        if (!q) return true;
-        const item = masterSkus[sku];
-        return sku.toLowerCase().includes(q) || (item.nama || '').toLowerCase().includes(q) || (item.warna || '').toLowerCase().includes(q) || (item.type || '').toLowerCase().includes(q);
-    }).sort();
+    if (!qrLabelBasket.length) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada SKU ditambahkan.</td></tr>`;
+        updateQrLabelSummary();
+        return;
+    }
 
     tbody.innerHTML = '';
-    filtered.forEach(sku => {
-        const item = masterSkus[sku];
-        const jumlah = qrLabelJumlahMap[sku] !== undefined ? qrLabelJumlahMap[sku] : 1;
+    qrLabelBasket.forEach((row, idx) => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td><input type="checkbox" class="qrlabel-checkbox" data-sku="${sku}"></td><td><code>${sku}</code></td><td>${item.nama}</td><td>${item.type}</td><td>${item.warna}</td><td><input type="number" class="qrlabel-jumlah-input" data-sku="${sku}" value="${jumlah}" min="1" style="width:70px; height:30px;"></td>`;
+        tr.innerHTML = `<td><code>${row.sku}</code></td><td>${row.nama}</td><td>${row.warna}</td><td><input type="number" class="qrlabel-basket-qty-input" data-idx="${idx}" value="${row.qty}" min="1" style="width:70px; height:30px;"></td><td style="text-align:center;"><button class="btn-hapus-qrlabel-item" data-idx="${idx}" title="Hapus" style="background:none; border:none; color:#dc2626; cursor:pointer; font-size:16px;">&times;</button></td>`;
         tbody.appendChild(tr);
     });
 
-    tbody.querySelectorAll('.qrlabel-checkbox').forEach(cb => cb.addEventListener('change', updateQrLabelSummary));
-    tbody.querySelectorAll('.qrlabel-jumlah-input').forEach(inp => inp.addEventListener('input', () => {
-        qrLabelJumlahMap[inp.getAttribute('data-sku')] = parseInt(inp.value, 10) || 1;
+    tbody.querySelectorAll('.qrlabel-basket-qty-input').forEach(inp => inp.addEventListener('input', () => {
+        const idx = parseInt(inp.getAttribute('data-idx'), 10);
+        const val = parseInt(inp.value, 10);
+        if (qrLabelBasket[idx]) qrLabelBasket[idx].qty = (isNaN(val) || val <= 0) ? 1 : val;
         updateQrLabelSummary();
     }));
+    tbody.querySelectorAll('.btn-hapus-qrlabel-item').forEach(btn => btn.addEventListener('click', () => {
+        const idx = parseInt(btn.getAttribute('data-idx'), 10);
+        qrLabelBasket.splice(idx, 1);
+        renderQrLabelBasketTable();
+    }));
+
     updateQrLabelSummary();
 }
 
-if (qrLabelSelectAll) {
-    qrLabelSelectAll.addEventListener('change', () => {
-        document.querySelectorAll('.qrlabel-checkbox').forEach(cb => { cb.checked = qrLabelSelectAll.checked; });
-        updateQrLabelSummary();
-    });
-}
-
-function getSelectedQrLabelSkus() {
-    return Array.from(document.querySelectorAll('.qrlabel-checkbox:checked')).map(cb => cb.getAttribute('data-sku'));
-}
-
 function updateQrLabelSummary() {
-    const selected = getSelectedQrLabelSkus();
-    const totalLabel = selected.reduce((sum, sku) => sum + (qrLabelJumlahMap[sku] || 1), 0);
-    const elCount = document.getElementById('qrlabel-selected-count'); if (elCount) elCount.innerText = selected.length;
+    const totalLabel = qrLabelBasket.reduce((sum, row) => sum + (row.qty || 0), 0);
+    const elCount = document.getElementById('qrlabel-selected-count'); if (elCount) elCount.innerText = qrLabelBasket.length;
     const elTotal = document.getElementById('qrlabel-total-label'); if (elTotal) elTotal.innerText = totalLabel;
 }
 
 if (btnCetakQrLabel) {
     btnCetakQrLabel.addEventListener('click', async () => {
-        const selected = getSelectedQrLabelSkus();
-        if (!selected.length) { updateStatusMessage('(!) Pilih minimal 1 SKU dulu buat dicetak.'); return; }
+        if (!qrLabelBasket.length) { updateStatusMessage('(!) Tambah minimal 1 SKU dulu buat dicetak.'); return; }
         if (typeof QRCode === 'undefined') { updateStatusMessage('(!) Library QR Code gagal dimuat, cek koneksi internet.'); return; }
 
         btnCetakQrLabel.disabled = true;
@@ -1914,9 +1968,9 @@ if (btnCetakQrLabel) {
         const printArea = document.getElementById('qrlabel-print-area');
         printArea.innerHTML = '';
 
-        for (const sku of selected) {
-            const item = masterSkus[sku];
-            const jumlah = qrLabelJumlahMap[sku] || 1;
+        for (const row of qrLabelBasket) {
+            const sku = row.sku;
+            const jumlah = row.qty || 1;
             // Generate 1 gambar QR per SKU, dipakai ulang buat semua copy-nya (efisien, gak generate berkali-kali)
             let qrDataUrl;
             try { qrDataUrl = await QRCode.toDataURL(sku, { width: 200, margin: 1 }); }
@@ -1925,7 +1979,7 @@ if (btnCetakQrLabel) {
             for (let i = 0; i < jumlah; i++) {
                 const div = document.createElement('div');
                 div.className = 'qr-label-item';
-                div.innerHTML = `<img src="${qrDataUrl}" alt="QR ${sku}"><div class="qr-label-sku">${sku}</div><div class="qr-label-warna">${item.warna || ''}</div>`;
+                div.innerHTML = `<img src="${qrDataUrl}" alt="QR ${sku}"><div class="qr-label-sku">${sku}</div><div class="qr-label-warna">${row.warna || ''}</div>`;
                 printArea.appendChild(div);
             }
         }
