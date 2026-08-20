@@ -6,13 +6,14 @@
 // selalu langsung kepakai tanpa perlu trik cache-busting manual.
 // ====================================================================
 
-const CACHE_NAME = 'latela-oms-v1'; // 🔧 Naikkan angka versi ini kalau mau paksa bersihin cache lama
+const CACHE_NAME = 'latela-oms-v2'; // 🔧 Naikkan angka versi ini kalau mau paksa bersihin cache lama
 
 const APP_SHELL = [
   './',
   './index.html',
   './app.js',
   './style.css',
+  './qrcode.min.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
