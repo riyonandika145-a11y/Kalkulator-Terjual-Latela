@@ -74,6 +74,9 @@
                 <button class="menu-item active" data-target="kalkulator">
                     <span class="menu-text">Kalkulator Terjual</span>
                 </button>
+                <button class="menu-item" data-target="barangkeluar">
+                    <span class="menu-text">Barang Keluar</span>
+                </button>
                 <button class="menu-item" data-target="mastersku">
                     <span class="menu-text">Master SKU</span>
                 </button>
@@ -197,6 +200,27 @@
                             <div id="panel-aksesoris" class="sub-table-panel"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align: right;">Qty</th></tr></thead><tbody id="tbody-aksesoris"></tbody></table></div>
                             <div id="panel-gradeb" class="sub-table-panel"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align: right;">Qty</th></tr></thead><tbody id="tbody-gradeb"></tbody></table></div>
                             <div id="panel-random" class="sub-table-panel"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align: right;">Qty</th></tr></thead><tbody id="tbody-random"></tbody></table></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="view-barangkeluar" class="content-view">
+                    <div class="top-controls-bar">
+                        <div class="control-group"><span class="group-label">Ringkasan:</span><div class="group-inputs"><span class="badge-file-status">Total Keluar: <strong id="bk-total-qty">0</strong></span><span class="badge-file-status">SKU Ter-scan: <strong id="bk-total-sku">0</strong></span></div></div>
+                        <div class="control-group"><span class="group-label">Data:</span><div class="group-inputs"><button id="btn-sync-barangkeluar" class="btn-action btn-pink-solid">Sync Data Scan</button></div></div>
+                    </div>
+                    <div class="workspace-panel">
+                        <div class="sub-tabs-container">
+                            <button class="bk-sub-tab active" data-category="utama">PRODUK UTAMA</button>
+                            <button class="bk-sub-tab" data-category="aksesoris">AKSESORIS</button>
+                            <button class="bk-sub-tab" data-category="gradeb">GRADE B</button>
+                            <button class="bk-sub-tab" data-category="random">RANDOM</button>
+                        </div>
+                        <div class="table-frame-box">
+                            <div id="bk-panel-utama" class="bk-sub-table-panel active"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align: right;">Qty Keluar</th><th>Terakhir Discan</th></tr></thead><tbody id="tbody-bk-utama"><tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Klik "Sync Data Scan" buat memuat data.</td></tr></tbody></table></div>
+                            <div id="bk-panel-aksesoris" class="bk-sub-table-panel"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align: right;">Qty Keluar</th><th>Terakhir Discan</th></tr></thead><tbody id="tbody-bk-aksesoris"></tbody></table></div>
+                            <div id="bk-panel-gradeb" class="bk-sub-table-panel"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align: right;">Qty Keluar</th><th>Terakhir Discan</th></tr></thead><tbody id="tbody-bk-gradeb"></tbody></table></div>
+                            <div id="bk-panel-random" class="bk-sub-table-panel"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align: right;">Qty Keluar</th><th>Terakhir Discan</th></tr></thead><tbody id="tbody-bk-random"></tbody></table></div>
                         </div>
                     </div>
                 </section>
