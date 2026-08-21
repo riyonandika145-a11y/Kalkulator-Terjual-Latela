@@ -1825,6 +1825,51 @@ function refreshBarangKeluarTables() {
     const elTotalSku = document.getElementById('bk-total-sku'); if (elTotalSku) elTotalSku.innerText = totalSku;
 }
 
+// --- Export Barang Keluar ke Excel/CSV (sama polanya kayak export Kalkulator Terjual) ---
+const btnExportToggleBk = document.getElementById('btn-export-toggle-bk');
+const exportMenuItemsBk = document.getElementById('export-menu-items-bk');
+const btnExportXlsxBk = document.getElementById('btn-export-xlsx-bk');
+const btnExportCsvBk = document.getElementById('btn-export-csv-bk');
+
+if (btnExportToggleBk) {
+    btnExportToggleBk.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (exportMenuItemsBk) exportMenuItemsBk.classList.toggle('show');
+    });
+}
+document.addEventListener('click', () => { if (exportMenuItemsBk) exportMenuItemsBk.classList.remove('show'); });
+
+function generateBarangKeluarArrayFormat() {
+    let m = [["Kategori", "SKU", "Nama", "Type", "Warna", "Qty Keluar", "Terakhir Discan"]];
+    const ins = (n, o) => Object.keys(o).sort((a, b) => o[b].qty - o[a].qty).forEach(k => m.push([n, k, o[k].nama, o[k].type, o[k].warna, o[k].qty, formatWaktuScan(o[k].lastScan)]));
+    ins("PRODUK UTAMA", globalBarangKeluarKategori.utama); ins("AKSESORIS", globalBarangKeluarKategori.aksesoris); ins("GRADE B", globalBarangKeluarKategori.gradeb); ins("RANDOM", globalBarangKeluarKategori.random);
+    return m;
+}
+
+if (btnExportXlsxBk) {
+    btnExportXlsxBk.addEventListener('click', () => {
+        const wb = XLSX.utils.book_new();
+        const fmt = (d) => {
+            let m = [["SKU", "Nama", "Type", "Warna", "Qty Keluar", "Terakhir Discan"]];
+            Object.keys(d).sort((a, b) => d[b].qty - d[a].qty).forEach(k => m.push([k, d[k].nama, d[k].type, d[k].warna, d[k].qty, formatWaktuScan(d[k].lastScan)]));
+            return XLSX.utils.aoa_to_sheet(m);
+        };
+        XLSX.utils.book_append_sheet(wb, fmt(globalBarangKeluarKategori.utama), "Produk Utama");
+        XLSX.utils.book_append_sheet(wb, fmt(globalBarangKeluarKategori.aksesoris), "Aksesoris");
+        XLSX.utils.book_append_sheet(wb, fmt(globalBarangKeluarKategori.gradeb), "Grade B");
+        XLSX.utils.book_append_sheet(wb, fmt(globalBarangKeluarKategori.random), "Random");
+        XLSX.writeFile(wb, `Barang_Keluar_${new Date().toISOString().slice(0,10)}.xlsx`);
+    });
+}
+
+if (btnExportCsvBk) {
+    btnExportCsvBk.addEventListener('click', () => {
+        const ws = XLSX.utils.aoa_to_sheet(generateBarangKeluarArrayFormat());
+        const blob = new Blob([XLSX.utils.sheet_to_csv(ws)], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.setAttribute("download", `Barang_Keluar_${new Date().toISOString().slice(0,10)}.csv`); a.click();
+    });
+}
+
 // 5. UPDATE GRAPHICS METRICS DASHBOARD
 function updateDashboardMetrics() {
     const targetProduct = dashFilterDropdown ? dashFilterDropdown.value : "all";
