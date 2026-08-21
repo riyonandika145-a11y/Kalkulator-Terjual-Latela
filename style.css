@@ -1153,7 +1153,7 @@ input[readonly] {
 }
 
 .sub-tabs-container { display: flex; gap: 4px; padding-left: 2px; flex-shrink: 0; }
-.sub-tab {
+.sub-tab, .bk-sub-tab {
     padding: 8px 20px;
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.12);
@@ -1165,8 +1165,8 @@ input[readonly] {
     border-top-right-radius: 8px;
     transition: background 0.15s, color 0.15s;
 }
-.sub-tab:hover { background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.80); }
-.sub-tab.active {
+.sub-tab:hover, .bk-sub-tab:hover { background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.80); }
+.sub-tab.active, .bk-sub-tab.active {
     background: rgba(255,255,255,0.09);
     color: rgba(255,255,255,0.90);
     font-weight: 700;
@@ -1191,8 +1191,8 @@ input[readonly] {
     box-shadow: 0 6px 20px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 
-.sub-table-panel { display: none; height: 100%; }
-.sub-table-panel.active { display: block; }
+.sub-table-panel, .bk-sub-table-panel { display: none; height: 100%; }
+.sub-table-panel.active, .bk-sub-table-panel.active { display: block; }
 
 table { width: 100%; border-collapse: collapse; }
 th, td {
@@ -1625,14 +1625,12 @@ select#proc-vendor-select.proc-readonly-field:focus {
 
 .dropdown-aksi-titik3 {
     display: none;
-    position: absolute;
-    top: 38px; right: 0;
     background: rgba(15,32,48,0.98);
     border: 1px solid rgba(255,255,255,0.14);
     border-radius: 12px;
     min-width: 140px;
     padding: 6px;
-    z-index: 100;
+    z-index: 9999;
     box-shadow: 0 10px 30px rgba(0,0,0,0.4);
     text-align: left;
 }
