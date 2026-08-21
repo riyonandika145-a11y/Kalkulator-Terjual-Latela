@@ -295,30 +295,59 @@ function renderBarangTable(list) {
     list.forEach(b => {
         const hargaFmt = (b.harga !== undefined && b.harga !== null && b.harga !== '') ? `Rp ${Number(b.harga).toLocaleString('id-ID')}` : '-';
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${b.namaProduk || '-'}</td><td>${b.variasi || '-'}</td><td>${b.toko || '-'}</td><td>${b.vendor || '-'}</td><td>${b.kodeVendor || '-'}</td><td style="text-align:right;">${hargaFmt}</td><td>${b.satuan || '-'}</td><td style="text-align:right;">${b.leadTime !== undefined && b.leadTime !== null && b.leadTime !== '' ? `${b.leadTime} Hari` : '-'}</td><td style="text-align:center; position:relative;">
+        tr.innerHTML = `<td>${b.namaProduk || '-'}</td><td>${b.variasi || '-'}</td><td>${b.toko || '-'}</td><td>${b.vendor || '-'}</td><td>${b.kodeVendor || '-'}</td><td style="text-align:right;">${hargaFmt}</td><td>${b.satuan || '-'}</td><td style="text-align:right;">${b.leadTime !== undefined && b.leadTime !== null && b.leadTime !== '' ? `${b.leadTime} Hari` : '-'}</td><td style="text-align:center;">
             <button class="btn-aksi-titik3" data-rowindex="${b.rowIndex}">⋮</button>
-            <div class="dropdown-aksi-titik3" data-rowindex="${b.rowIndex}">
-                <button class="dropdown-item-edit" data-rowindex="${b.rowIndex}">Edit</button>
-                <button class="dropdown-item-hapus" data-rowindex="${b.rowIndex}">Hapus</button>
-            </div>
         </td>`;
         tbody.appendChild(tr);
     });
 
-    // Toggle dropdown pas titik-3 diklik (tutup dropdown lain yang lagi kebuka)
     tbody.querySelectorAll('.btn-aksi-titik3').forEach(btn => btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const dropdown = btn.nextElementSibling;
-        const isOpen = dropdown.classList.contains('show');
-        document.querySelectorAll('.dropdown-aksi-titik3.show').forEach(d => d.classList.remove('show'));
-        if (!isOpen) dropdown.classList.add('show');
+        const rowIndex = btn.getAttribute('data-rowindex');
+        openAksiTitik3Menu(btn, [
+            { label: 'Edit', onClick: () => openBarangEditModal(rowIndex) },
+            { label: 'Hapus', danger: true, onClick: () => deleteBarang(rowIndex) }
+        ]);
     }));
-    tbody.querySelectorAll('.dropdown-item-edit').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.dropdown-aksi-titik3.show').forEach(d => d.classList.remove('show')); openBarangEditModal(btn.getAttribute('data-rowindex')); }));
-    tbody.querySelectorAll('.dropdown-item-hapus').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.dropdown-aksi-titik3.show').forEach(d => d.classList.remove('show')); deleteBarang(btn.getAttribute('data-rowindex')); }));
 }
 
-// Tutup semua dropdown titik-3 kalau klik di luar area itu
-document.addEventListener('click', () => { document.querySelectorAll('.dropdown-aksi-titik3.show').forEach(d => d.classList.remove('show')); });
+// =========================================================================
+// HELPER BERSAMA: menu titik-3 (dipakai di tabel Barang, Pembelian, dst).
+// Cuma 1 elemen yang di-reuse & ditaruh langsung di <body>, diposisikan pakai
+// getBoundingClientRect() pas tombolnya diklik. Ini biar menu-nya gak ke-crop
+// sama overflow:auto di container tabel yang bisa di-scroll (bug lama, dropdown
+// ke-render tapi kepotong invisible sama container-nya).
+// =========================================================================
+let _aksiTitik3Menu = null;
+function openAksiTitik3Menu(btn, items) {
+    closeAksiTitik3Menu();
+    if (!_aksiTitik3Menu) {
+        _aksiTitik3Menu = document.createElement('div');
+        _aksiTitik3Menu.className = 'dropdown-aksi-titik3';
+        document.body.appendChild(_aksiTitik3Menu);
+    }
+    _aksiTitik3Menu.innerHTML = '';
+    items.forEach(it => {
+        const b = document.createElement('button');
+        b.textContent = it.label;
+        if (it.danger) b.className = 'dropdown-item-hapus';
+        b.addEventListener('click', (e) => { e.stopPropagation(); closeAksiTitik3Menu(); it.onClick(); });
+        _aksiTitik3Menu.appendChild(b);
+    });
+    const rect = btn.getBoundingClientRect();
+    _aksiTitik3Menu.style.position = 'fixed';
+    _aksiTitik3Menu.style.top = (rect.bottom + 4) + 'px';
+    _aksiTitik3Menu.style.right = (window.innerWidth - rect.right) + 'px';
+    _aksiTitik3Menu.style.left = 'auto';
+    _aksiTitik3Menu.classList.add('show');
+}
+function closeAksiTitik3Menu() {
+    if (_aksiTitik3Menu) _aksiTitik3Menu.classList.remove('show');
+}
+document.addEventListener('click', closeAksiTitik3Menu);
+document.addEventListener('scroll', closeAksiTitik3Menu, true);
+
+
 
 // --- SEARCH BARANG (filter live dari cache, gak perlu fetch ulang) ---
 const searchBarangInput = document.getElementById('search-barang');
@@ -577,12 +606,8 @@ function renderPembelianTable(list) {
         } else {
             // --- MODE TAMPIL BIASA ---
             const expenseFmt = (p.expense !== undefined && p.expense !== null && p.expense !== '') ? `Rp ${Number(p.expense).toLocaleString('id-ID')}` : '-';
-            tr.innerHTML = `<td><strong>${p.noPo || '-'}</strong></td><td>${p.barang || '-'}</td><td>${p.kode || '-'}</td><td>${p.variasi || '-'}</td><td style="text-align:right;">${p.qty !== undefined && p.qty !== null && p.qty !== '' ? p.qty : '-'}</td><td>${p.satuan || '-'}</td><td>${formatTanggalDisplay(p.tanggalPengajuan)}</td><td>${p.requestor || '-'}</td><td style="text-align:right;">${expenseFmt}</td><td><span class="badge-status ${badgeClassStatusBayar(p.statusPembayaran)}">${p.statusPembayaran || '-'}</span></td><td><span class="badge-status ${badgeClassStatusPurchasing(p.statusPurchasing)}">${p.statusPurchasing || '-'}</span></td><td>${p.tanggalComplete ? formatTanggalDisplay(p.tanggalComplete) : '-'}</td><td>${p.notes || '-'}</td><td style="text-align:center; position:relative;">
+            tr.innerHTML = `<td><strong>${p.noPo || '-'}</strong></td><td>${p.barang || '-'}</td><td>${p.kode || '-'}</td><td>${p.variasi || '-'}</td><td style="text-align:right;">${p.qty !== undefined && p.qty !== null && p.qty !== '' ? p.qty : '-'}</td><td>${p.satuan || '-'}</td><td>${formatTanggalDisplay(p.tanggalPengajuan)}</td><td>${p.requestor || '-'}</td><td style="text-align:right;">${expenseFmt}</td><td><span class="badge-status ${badgeClassStatusBayar(p.statusPembayaran)}">${p.statusPembayaran || '-'}</span></td><td><span class="badge-status ${badgeClassStatusPurchasing(p.statusPurchasing)}">${p.statusPurchasing || '-'}</span></td><td>${p.tanggalComplete ? formatTanggalDisplay(p.tanggalComplete) : '-'}</td><td>${p.notes || '-'}</td><td style="text-align:center;">
                 <button class="btn-aksi-titik3" data-rowindex="${p.rowIndex}">&#8942;</button>
-                <div class="dropdown-aksi-titik3" data-rowindex="${p.rowIndex}">
-                    <button class="dropdown-item-edit-pembelian" data-rowindex="${p.rowIndex}">Edit</button>
-                    <button class="dropdown-item-hapus-pembelian" data-rowindex="${p.rowIndex}">Hapus</button>
-                </div>
             </td>`;
         }
         tbody.appendChild(tr);
@@ -590,18 +615,13 @@ function renderPembelianTable(list) {
 
     tbody.querySelectorAll('.btn-aksi-titik3').forEach(btn => btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const dropdown = btn.nextElementSibling;
-        const isOpen = dropdown.classList.contains('show');
-        document.querySelectorAll('.dropdown-aksi-titik3.show').forEach(d => d.classList.remove('show'));
-        if (!isOpen) dropdown.classList.add('show');
+        const rowIndex = btn.getAttribute('data-rowindex');
+        openAksiTitik3Menu(btn, [
+            { label: 'Edit', onClick: () => { pembelianEditingRowIndex = rowIndex; renderPembelianTable(pembelianLastList); } },
+            { label: 'Hapus', danger: true, onClick: () => deletePembelian(rowIndex) }
+        ]);
     }));
-    tbody.querySelectorAll('.dropdown-item-edit-pembelian').forEach(btn => btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        document.querySelectorAll('.dropdown-aksi-titik3.show').forEach(d => d.classList.remove('show'));
-        pembelianEditingRowIndex = btn.getAttribute('data-rowindex');
-        renderPembelianTable(pembelianLastList);
-    }));
-    tbody.querySelectorAll('.dropdown-item-hapus-pembelian').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.dropdown-aksi-titik3.show').forEach(d => d.classList.remove('show')); deletePembelian(btn.getAttribute('data-rowindex')); }));
+
 
     // Tombol Simpan/Batal buat mode inline-edit
     tbody.querySelectorAll('.btn-inline-save').forEach(btn => btn.addEventListener('click', () => savePembelianInlineEdit(btn)));
@@ -1510,6 +1530,7 @@ menuItems.forEach(item => {
         if (target === 'barang') fetchBarangList();
         if (target === 'pembelian') fetchPembelianList();
         if (target === 'qrlabel') initQrLabelPage();
+        if (target === 'barangkeluar' && Object.keys(globalBarangKeluarKategori.utama).length === 0 && Object.keys(globalBarangKeluarKategori.aksesoris).length === 0 && Object.keys(globalBarangKeluarKategori.gradeb).length === 0 && Object.keys(globalBarangKeluarKategori.random).length === 0) fetchBarangKeluarFromCloud();
     });
 });
 
@@ -1676,6 +1697,132 @@ function refreshAllTables() {
     renderSingleTable(globalDataKategori.aksesoris, tbodyAksesoris);
     renderSingleTable(globalDataKategori.gradeb, tbodyGradeb); 
     renderSingleTable(globalDataKategori.random, tbodyRandom);
+}
+
+// =========================================================================
+// BARANG KELUAR — hasil scan barcode dari webapp HP terpisah. Beda Apps
+// Script/spreadsheet dari Master SKU utama. Formatnya 1 baris = 1 kali scan
+// (SKU + timestamp, belum ada qty), jadi qty keluar per SKU = jumlah baris
+// scan-nya. SKU-nya dicocokin ke Master SKU (masterSkus) buat ambil
+// Nama/Type/Warna/Kategori. Kalau ada SKU hasil scan yang belum ada di
+// Master SKU, tetep ditampilin (kategori "utama") tapi ditandain jelas biar
+// gampang ketauan dan bisa nyusul ditambahin ke Master SKU.
+// =========================================================================
+const GOOGLE_SCRIPT_URL_BARANG_KELUAR = "https://script.google.com/macros/s/AKfycbwMTENQ2pHpnlsmb1SNLHZTJ5a7XV-o20ZI5hb2uzY-oUciOgKCmkntHVHw9FWgft4/exec";
+
+let globalBarangKeluarKategori = { utama: {}, aksesoris: {}, gradeb: {}, random: {} };
+
+const btnSyncBarangKeluar = document.getElementById('btn-sync-barangkeluar');
+const bkSubTabs = document.querySelectorAll('.bk-sub-tab');
+const bkSubTablePanels = document.querySelectorAll('.bk-sub-table-panel');
+
+const tbodyBkUtama = document.getElementById('tbody-bk-utama');
+const tbodyBkAksesoris = document.getElementById('tbody-bk-aksesoris');
+const tbodyBkGradeb = document.getElementById('tbody-bk-gradeb');
+const tbodyBkRandom = document.getElementById('tbody-bk-random');
+
+if (btnSyncBarangKeluar) btnSyncBarangKeluar.addEventListener('click', fetchBarangKeluarFromCloud);
+
+bkSubTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        bkSubTabs.forEach(t => t.classList.remove('active')); tab.classList.add('active');
+        bkSubTablePanels.forEach(p => p.classList.remove('active'));
+        const targetPanel = document.getElementById(`bk-panel-${tab.getAttribute('data-category')}`);
+        if (targetPanel) targetPanel.classList.add('active');
+    });
+});
+
+function fetchBarangKeluarFromCloud() {
+    updateStatusMessage("Menghubungkan ke data scan barcode...");
+    [tbodyBkUtama, tbodyBkAksesoris, tbodyBkGradeb, tbodyBkRandom].forEach(tb => {
+        if (tb) tb.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Sinkronisasi data scan...</td></tr>`;
+    });
+
+    fetch(`${GOOGLE_SCRIPT_URL_BARANG_KELUAR}?action=fetch_scans`)
+        .then(response => { if (!response.ok) throw new Error("Gagal terhubung ke Apps Script Barang Keluar."); return response.json(); })
+        .then(rows => {
+            globalBarangKeluarKategori = { utama: {}, aksesoris: {}, gradeb: {}, random: {} };
+            let unknownCount = 0;
+            const list = Array.isArray(rows) ? rows : [];
+
+            list.forEach(row => {
+                const skuRaw = row['SKU'] || row['sku'] || row['Code'] || row['code'];
+                if (!skuRaw) return;
+                const sku = skuRaw.toString().trim();
+                const waktuRaw = (row['Timestamp'] || row['timestamp'] || row['Waktu'] || row['waktu'] || '').toString();
+
+                const master = masterSkus[sku];
+                const kat = master ? master.kategori : 'utama';
+                if (!globalBarangKeluarKategori[kat]) globalBarangKeluarKategori[kat] = {};
+
+                if (!globalBarangKeluarKategori[kat][sku]) {
+                    globalBarangKeluarKategori[kat][sku] = {
+                        nama: master ? master.nama : '(!) SKU BELUM ADA DI MASTER SKU',
+                        type: master ? master.type : '-',
+                        warna: master ? master.warna : '-',
+                        qty: 0,
+                        lastScan: ''
+                    };
+                    if (!master) unknownCount++;
+                }
+                globalBarangKeluarKategori[kat][sku].qty += 1;
+                if (waktuRaw && waktuRaw > globalBarangKeluarKategori[kat][sku].lastScan) {
+                    globalBarangKeluarKategori[kat][sku].lastScan = waktuRaw;
+                }
+            });
+
+            refreshBarangKeluarTables();
+            updateStatusMessage(unknownCount > 0
+                ? `Sukses sync ${list.length} data scan (${unknownCount} SKU belum dikenali, cek kategori Produk Utama).`
+                : `Sukses sync ${list.length} data scan.`);
+        })
+        .catch(err => {
+            [tbodyBkUtama, tbodyBkAksesoris, tbodyBkGradeb, tbodyBkRandom].forEach(tb => {
+                if (tb) tb.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#dc2626; font-weight:bold; padding:20px;">(!) SISTEM EROR: ${err.message}</td></tr>`;
+            });
+        });
+}
+
+function renderBarangKeluarSingleTable(dataKategori, tbodyElement) {
+    if (!tbodyElement) return;
+    const skuKeys = Object.keys(dataKategori);
+    if (!skuKeys.length) { tbodyElement.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada data scan di kategori ini.</td></tr>`; return; }
+    tbodyElement.innerHTML = '';
+    skuKeys.sort((a, b) => dataKategori[b].qty - dataKategori[a].qty).forEach(sku => {
+        const item = dataKategori[sku];
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${sku}</td><td>${item.nama}</td><td>${item.type}</td><td>${item.warna}</td><td style="text-align:right;">${item.qty}</td><td>${formatWaktuScan(item.lastScan)}</td>`;
+        tbodyElement.appendChild(tr);
+    });
+}
+
+// Format timestamp hasil scan (dd/mm/yyyy HH:MM). Ditulis fleksibel karena
+// format persis timestamp dari webapp scanner-nya bisa beda-beda (ISO string,
+// "yyyy-mm-dd HH:MM:SS", atau serial Date dari Google Sheets).
+function formatWaktuScan(raw) {
+    if (!raw) return '-';
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return raw.toString(); // gagal di-parse -> tampilin apa adanya, biar ketauan formatnya kayak apa
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+}
+
+function refreshBarangKeluarTables() {
+    renderBarangKeluarSingleTable(globalBarangKeluarKategori.utama, tbodyBkUtama);
+    renderBarangKeluarSingleTable(globalBarangKeluarKategori.aksesoris, tbodyBkAksesoris);
+    renderBarangKeluarSingleTable(globalBarangKeluarKategori.gradeb, tbodyBkGradeb);
+    renderBarangKeluarSingleTable(globalBarangKeluarKategori.random, tbodyBkRandom);
+
+    let totalQty = 0, totalSku = 0;
+    Object.values(globalBarangKeluarKategori).forEach(kat => {
+        Object.values(kat).forEach(item => { totalQty += item.qty; totalSku++; });
+    });
+    const elTotalQty = document.getElementById('bk-total-qty'); if (elTotalQty) elTotalQty.innerText = totalQty.toLocaleString('id-ID');
+    const elTotalSku = document.getElementById('bk-total-sku'); if (elTotalSku) elTotalSku.innerText = totalSku;
 }
 
 // 5. UPDATE GRAPHICS METRICS DASHBOARD
@@ -1847,6 +1994,7 @@ let qrLabelBasket = []; // [{ sku, nama, warna, qty }] — daftar SKU yang mau d
 
 function initQrLabelPage() {
     if (Object.keys(masterSkus).length > 0) populateQrLabelJenisDropdown();
+    else fetchMasterSkusFromCloud(); // data Master SKU belum kebaca (mungkin sync awal belum kelar) -> tarik ulang sekarang
     renderQrLabelBasketTable();
 }
 
