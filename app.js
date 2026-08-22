@@ -2144,7 +2144,7 @@ function renderQrLabelBasketTable() {
     updateQrLabelSummary();
 }
 
-const LABEL_PER_LEMBAR = 81; // Label No. 110: 1 lembar fisik isi 81 label (9 kolom x 9 baris)
+const LABEL_PER_LEMBAR = 72; // sesuai ukuran fisik lembar 216x166mm & jarak titik-tengah 25x18mm -> grid 8 kolom x 9 baris
 
 function updateQrLabelSummary() {
     const totalLembar = qrLabelBasket.reduce((sum, row) => sum + (row.qty || 0), 0);
