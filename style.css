@@ -1733,23 +1733,38 @@ body[data-theme="light"] .rop-slider-row input[type="range"] { background: rgba(
 
 /* =========================================================================
    CETAK LABEL QR CODE
-   Ukuran disesuaikan buat kertas stiker "Label No. 110" (22mm x 16mm,
-   81 label per lembar). Kalau merek stiker kamu beda dikit ukurannya,
-   tinggal ubah nilai --label-w / --label-h di bawah ini (satuan mm).
+   Ukuran disesuaikan pas ke pengukuran fisik stiker Anda:
+   - Lembar kertas: 216mm x 166mm
+   - Ukuran tiap label: 22mm x 16mm
+   - Jarak titik-tengah antar label: 25mm (horizontal) x 18mm (vertikal)
+   -> hasilnya grid 8 kolom x 9 baris = 72 label per lembar.
+   Kalau ternyata masih geser dikit pas ditest print, tinggal ubah nilai
+   --sheet-w/-h, --label-w/-h, --pitch-h/-v, --cols, --rows di bawah ini.
    ========================================================================= */
 #qrlabel-print-area { display: none; }
 
 :root {
+    --sheet-w: 216mm;
+    --sheet-h: 166mm;
     --label-w: 22mm;
     --label-h: 16mm;
+    --pitch-h: 25mm; /* jarak titik-tengah antar kolom */
+    --pitch-v: 18mm; /* jarak titik-tengah antar baris */
+    --cols: 8;
+    --rows: 9;
 }
 
-/* 1 .qr-label-sheet = 1 lembar fisik (81 label). Dipaksa ganti halaman
-   print di tiap akhir sheet biar hasil cetaknya kebagi rapi per lembar,
-   gak nyambung/geser ke lembar fisik berikutnya. */
+/* 1 .qr-label-sheet = 1 lembar fisik (72 label, grid 8x9). Dipaksa ganti
+   halaman print di tiap akhir sheet biar hasil cetaknya kebagi rapi per
+   lembar, gak nyambung/geser ke lembar fisik berikutnya. Posisi tiap label
+   dikunci pakai CSS Grid presis sesuai jarak titik-tengahnya (bukan cuma
+   ngisi rapat kayak flex-wrap), biar pas sama posisi potongan stiker asli. */
 .qr-label-sheet {
-    display: flex; flex-wrap: wrap;
-    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(var(--cols), var(--label-w));
+    grid-auto-rows: var(--label-h);
+    column-gap: calc(var(--pitch-h) - var(--label-w));
+    row-gap: calc(var(--pitch-v) - var(--label-h));
     page-break-after: always;
 }
 
@@ -1766,7 +1781,9 @@ body[data-theme="light"] .rop-slider-row input[type="range"] { background: rgba(
 .qr-label-item .qr-label-warna { font-size: 6.5pt; font-weight: 700; line-height: 1.1; margin-top: 0.3mm; text-transform: uppercase; color: #000; }
 
 @media print {
-    @page { margin: 5mm; }
+    /* margin dihitung otomatis biar grid-nya pas di tengah lembar 216x166mm:
+       (216 - grid_width)/2 horizontal, (166 - grid_height)/2 vertikal */
+    @page { size: 216mm 166mm; margin: 3mm 9.5mm; }
     body * { visibility: hidden; }
     #qrlabel-print-area, #qrlabel-print-area * { visibility: visible; }
     #qrlabel-print-area {
