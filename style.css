@@ -1733,39 +1733,45 @@ body[data-theme="light"] .rop-slider-row input[type="range"] { background: rgba(
 
 /* =========================================================================
    CETAK LABEL QR CODE
-   Ukuran disesuaikan buat kertas stiker "Label No. 111" (13mm x 19mm).
-   Kalau merek stiker kamu beda dikit ukurannya, tinggal ubah nilai
-   --label-w / --label-h di bawah ini (satuan mm).
+   Ukuran disesuaikan buat kertas stiker "Label No. 110" (22mm x 16mm,
+   81 label per lembar). Kalau merek stiker kamu beda dikit ukurannya,
+   tinggal ubah nilai --label-w / --label-h di bawah ini (satuan mm).
    ========================================================================= */
 #qrlabel-print-area { display: none; }
 
 :root {
-    --label-w: 13mm;
-    --label-h: 19mm;
+    --label-w: 22mm;
+    --label-h: 16mm;
+}
+
+/* 1 .qr-label-sheet = 1 lembar fisik (81 label). Dipaksa ganti halaman
+   print di tiap akhir sheet biar hasil cetaknya kebagi rapi per lembar,
+   gak nyambung/geser ke lembar fisik berikutnya. */
+.qr-label-sheet {
+    display: flex; flex-wrap: wrap;
+    width: 100%;
+    page-break-after: always;
 }
 
 .qr-label-item {
-    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
     width: var(--label-w); height: var(--label-h);
-    padding: 0.5mm;
+    padding: 0;
     box-sizing: border-box;
     text-align: center;
     overflow: hidden;
     page-break-inside: avoid;
 }
-.qr-label-item img { width: 9mm; height: 9mm; flex-shrink: 0; }
-.qr-label-item .qr-label-sku { font-size: 5.5pt; font-weight: 700; line-height: 1.1; margin-top: 0.5mm; font-family: 'Courier New', monospace; color: #000; word-break: break-all; }
-.qr-label-item .qr-label-warna { font-size: 4.5pt; line-height: 1.1; color: #333; }
+.qr-label-item img { width: 11mm; height: 11mm; flex-shrink: 0; }
+.qr-label-item .qr-label-warna { font-size: 6.5pt; font-weight: 700; line-height: 1.1; margin-top: 0.3mm; text-transform: uppercase; color: #000; }
 
 @media print {
     @page { margin: 5mm; }
     body * { visibility: hidden; }
     #qrlabel-print-area, #qrlabel-print-area * { visibility: visible; }
     #qrlabel-print-area {
-        display: flex !important;
-        flex-wrap: wrap;
+        display: block !important;
         position: absolute; left: 0; top: 0; width: 100%;
         background: #fff;
     }
-    .qr-label-item { border: 1px dashed #ccc; }
 }
