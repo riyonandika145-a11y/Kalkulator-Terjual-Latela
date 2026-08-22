@@ -234,7 +234,7 @@
                 <section id="view-qrlabel" class="content-view">
                     <h2 class="page-title">Cetak Label QR Code</h2>
                     <div class="info-note-box" style="margin-bottom:15px; font-size:12px; color:var(--text-muted); background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.10); border-radius:12px; padding:10px 14px;">
-                        Isi QR Code = kode SKU dari Master SKU. Pilih Jenis Barang & Warna, isi jumlah labelnya, klik Tambah. Ulangi buat SKU lain, lalu klik Cetak Label kalau daftarnya sudah lengkap.
+                        Isi QR Code = kode SKU dari Master SKU. Template pakai kertas stiker <strong>Label No. 110</strong> (1 lembar = 81 label). Pilih Jenis Barang & Warna, isi <strong>Qty Lembar</strong> (misal isi 2 = cetak 2 lembar penuh = 162 label), klik Tambah. Ulangi buat SKU lain, lalu klik Cetak Label.
                     </div>
 
                     <div class="sku-list-card" style="width: 100%; margin-bottom:20px;">
@@ -247,21 +247,21 @@
                             <select id="qrlabel-warna" disabled><option value="">-- Pilih Warna --</option></select>
                         </div>
                         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                            <input type="number" id="qrlabel-qty-input" placeholder="Qty" min="1" value="1" style="width:90px; height:36px; text-align:center; font-weight:700; border-radius:10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16); color:var(--text-main);">
+                            <input type="number" id="qrlabel-qty-input" placeholder="Qty Lembar" min="1" value="1" style="width:110px; height:36px; text-align:center; font-weight:700; border-radius:10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16); color:var(--text-main);">
                             <button id="btn-add-qrlabel-item" class="btn-action btn-pink-solid">+ Tambah</button>
                         </div>
                     </div>
 
                     <div class="sku-list-card" style="width: 100%; margin-bottom:20px;">
                         <h3 style="margin:0 0 15px 0;">Daftar SKU Akan Dicetak</h3>
-                        <div class="table-responsive" style="max-height:400px;"><table><thead><tr><th>SKU</th><th>Nama</th><th>Warna</th><th style="width:110px;">Qty Label</th><th style="width:50px;"></th></tr></thead><tbody id="tbody-qrlabel-basket"><tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada SKU ditambahkan.</td></tr></tbody></table></div>
+                        <div class="table-responsive" style="max-height:400px;"><table><thead><tr><th>SKU</th><th>Nama</th><th>Warna</th><th style="width:110px;">Qty Lembar</th><th style="width:50px;"></th></tr></thead><tbody id="tbody-qrlabel-basket"><tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada SKU ditambahkan.</td></tr></tbody></table></div>
                     </div>
 
                     <div class="sku-list-card" style="width: 100%;">
                         <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
                             <div>
                                 <span style="font-size:12px; color:var(--text-muted); display:block;">SKU Terpilih: <strong id="qrlabel-selected-count">0</strong></span>
-                                <span style="font-size:12px; color:var(--text-muted); display:block;">Total Label Akan Dicetak: <strong id="qrlabel-total-label">0</strong></span>
+                                <span style="font-size:12px; color:var(--text-muted); display:block;">Total Label (Fisik): <strong id="qrlabel-total-label">0</strong></span>
                             </div>
                             <button id="btn-cetak-qrlabel" class="btn-action btn-pink-solid">Cetak Label</button>
                         </div>
