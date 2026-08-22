@@ -2144,11 +2144,15 @@ function renderQrLabelBasketTable() {
     updateQrLabelSummary();
 }
 
+const LABEL_PER_LEMBAR = 81; // Label No. 110: 1 lembar fisik isi 81 label (9 kolom x 9 baris)
+
 function updateQrLabelSummary() {
-    const totalLabel = qrLabelBasket.reduce((sum, row) => sum + (row.qty || 0), 0);
+    const totalLembar = qrLabelBasket.reduce((sum, row) => sum + (row.qty || 0), 0);
+    const totalLabel = totalLembar * LABEL_PER_LEMBAR;
     const elCount = document.getElementById('qrlabel-selected-count'); if (elCount) elCount.innerText = qrLabelBasket.length;
-    const elTotal = document.getElementById('qrlabel-total-label'); if (elTotal) elTotal.innerText = totalLabel;
+    const elTotal = document.getElementById('qrlabel-total-label'); if (elTotal) elTotal.innerText = `${totalLabel} (${totalLembar} lembar)`;
 }
+
 
 if (btnCetakQrLabel) {
     btnCetakQrLabel.addEventListener('click', async () => {
@@ -2161,19 +2165,27 @@ if (btnCetakQrLabel) {
         const printArea = document.getElementById('qrlabel-print-area');
         printArea.innerHTML = '';
 
+        let currentSheet = null;
+        let posInSheet = 0;
+
+        const newSheet = () => { currentSheet = document.createElement('div'); currentSheet.className = 'qr-label-sheet'; printArea.appendChild(currentSheet); posInSheet = 0; };
+
         for (const row of qrLabelBasket) {
             const sku = row.sku;
-            const jumlah = row.qty || 1;
+            const jumlahLembar = row.qty || 1; // qty = jumlah LEMBAR, bukan jumlah label satuan
             // Generate 1 gambar QR per SKU, dipakai ulang buat semua copy-nya (efisien, gak generate berkali-kali)
             let qrDataUrl;
             try { qrDataUrl = await QRCode.toDataURL(sku, { width: 200, margin: 1 }); }
             catch (err) { continue; }
 
-            for (let i = 0; i < jumlah; i++) {
+            const totalLabelSku = jumlahLembar * LABEL_PER_LEMBAR;
+            for (let i = 0; i < totalLabelSku; i++) {
+                if (!currentSheet || posInSheet >= LABEL_PER_LEMBAR) newSheet();
                 const div = document.createElement('div');
                 div.className = 'qr-label-item';
-                div.innerHTML = `<img src="${qrDataUrl}" alt="QR ${sku}"><div class="qr-label-sku">${sku}</div><div class="qr-label-warna">${row.warna || ''}</div>`;
-                printArea.appendChild(div);
+                div.innerHTML = `<img src="${qrDataUrl}" alt="QR ${sku}"><div class="qr-label-warna">${row.warna || ''}</div>`;
+                currentSheet.appendChild(div);
+                posInSheet++;
             }
         }
 
