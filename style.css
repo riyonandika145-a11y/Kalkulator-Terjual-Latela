@@ -1735,9 +1735,9 @@ body[data-theme="light"] .rop-slider-row input[type="range"] { background: rgba(
    CETAK LABEL QR CODE
    Ukuran disesuaikan pas ke pengukuran fisik stiker Anda:
    - Lembar kertas: 216mm x 166mm
-   - Ukuran tiap label: 22mm x 16mm
-   - Jarak titik-tengah antar label: 25mm (horizontal) x 18mm (vertikal)
-   -> hasilnya grid 8 kolom x 9 baris = 72 label per lembar.
+   - Ukuran tiap label: 22mm (panjang) x 16mm (lebar)
+   - Jarak antar label (dempet): sekitar 2mm, baik kesamping maupun kebawah
+   -> hasilnya grid 9 kolom x 9 baris = 81 label per lembar.
    Kalau ternyata masih geser dikit pas ditest print, tinggal ubah nilai
    --sheet-w/-h, --label-w/-h, --pitch-h/-v, --cols, --rows di bawah ini.
    ========================================================================= */
@@ -1748,13 +1748,13 @@ body[data-theme="light"] .rop-slider-row input[type="range"] { background: rgba(
     --sheet-h: 166mm;
     --label-w: 22mm;
     --label-h: 16mm;
-    --pitch-h: 25mm; /* jarak titik-tengah antar kolom */
-    --pitch-v: 18mm; /* jarak titik-tengah antar baris */
-    --cols: 8;
+    --pitch-h: 24mm; /* label 22mm + jarak 2mm, dempet kesamping */
+    --pitch-v: 18mm; /* label 16mm + jarak 2mm */
+    --cols: 9;
     --rows: 9;
 }
 
-/* 1 .qr-label-sheet = 1 lembar fisik (72 label, grid 8x9). Dipaksa ganti
+/* 1 .qr-label-sheet = 1 lembar fisik (81 label, grid 9x9). Dipaksa ganti
    halaman print di tiap akhir sheet biar hasil cetaknya kebagi rapi per
    lembar, gak nyambung/geser ke lembar fisik berikutnya. Posisi tiap label
    dikunci pakai CSS Grid presis sesuai jarak titik-tengahnya (bukan cuma
@@ -1782,8 +1782,8 @@ body[data-theme="light"] .rop-slider-row input[type="range"] { background: rgba(
 
 @media print {
     /* margin dihitung otomatis biar grid-nya pas di tengah lembar 216x166mm:
-       (216 - grid_width)/2 horizontal, (166 - grid_height)/2 vertikal */
-    @page { size: 216mm 166mm; margin: 3mm 9.5mm; }
+       (216 - grid_width)/2 = 1mm horizontal, (166 - grid_height)/2 = 3mm vertikal */
+    @page { size: 216mm 166mm; margin: 3mm 1mm; }
     body * { visibility: hidden; }
     #qrlabel-print-area, #qrlabel-print-area * { visibility: visible; }
     #qrlabel-print-area {
