@@ -2144,7 +2144,7 @@ function renderQrLabelBasketTable() {
     updateQrLabelSummary();
 }
 
-const LABEL_PER_LEMBAR = 72; // sesuai ukuran fisik lembar 216x166mm & jarak titik-tengah 25x18mm -> grid 8 kolom x 9 baris
+const LABEL_PER_LEMBAR = 81; // grid 9 kolom x 9 baris, dempet ~2mm sesuai ukuran fisik lembar 216x166mm
 
 function updateQrLabelSummary() {
     const totalLembar = qrLabelBasket.reduce((sum, row) => sum + (row.qty || 0), 0);
