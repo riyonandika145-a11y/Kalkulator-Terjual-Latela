@@ -1733,25 +1733,35 @@ body[data-theme="light"] .rop-slider-row input[type="range"] { background: rgba(
 
 /* =========================================================================
    CETAK LABEL QR CODE
-   Ukuran disesuaikan pas ke pengukuran fisik stiker Anda:
-   - Lembar kertas: 216mm x 166mm
-   - Ukuran tiap label: 22mm (panjang) x 16mm (lebar)
-   - Jarak antar label (dempet): sekitar 2mm, baik kesamping maupun kebawah
-   -> hasilnya grid 9 kolom x 9 baris = 81 label per lembar.
-   Kalau ternyata masih geser dikit pas ditest print, tinggal ubah nilai
-   --sheet-w/-h, --label-w/-h, --pitch-h/-v, --cols, --rows di bawah ini.
+   Update: lembar kertas dipakai A4 (210mm x 297mm), sesuai template resmi
+   "Labelindo No.110". Pitch grid (jarak antar titik-tengah label) diukur
+   LANGSUNG dari koordinat teks di file PDF referensi tsb (bukan estimasi
+   visual), hasilnya:
+   - Pitch horizontal: ~23.3mm/kolom, 9 kolom
+   - Pitch vertikal:   ~17.5mm/baris, 9 baris
+   -> tetap grid 9 kolom x 9 baris = 81 label per lembar, tapi sekarang
+      dipetakan ke lembar A4 (bukan lembar custom 216x166mm yang lama).
+   Isi tiap label (QR + teks warna) DIROTASI 90° ke kiri (counter-clockwise)
+   karena bentuk fisik stikernya memanjang ke samping — jadi konten yang
+   aslinya disusun vertikal (QR di atas, teks di bawah) diputar biar pas
+   masuk ke space yang panjang horizontal.
+   Kalau pas ditest print masih geser dikit, tinggal ubah nilai
+   --sheet-w/-h, --label-w/-h, --pitch-h/-v, --margin-top/-left di bawah ini.
    ========================================================================= */
 #qrlabel-print-area { display: none; }
 
 :root {
-    --sheet-w: 216mm;
-    --sheet-h: 166mm;
-    --label-w: 22mm;
-    --label-h: 16mm;
-    --pitch-h: 24mm; /* label 22mm + jarak 2mm, dempet kesamping */
-    --pitch-v: 18mm; /* label 16mm + jarak 2mm */
+    --sheet-w: 210mm;
+    --sheet-h: 297mm;
+    --pitch-h: 23.3mm;
+    --pitch-v: 17.5mm;
+    --label-gap: 2mm; /* jarak dempet antar label, sama kayak setup lama */
+    --label-w: calc(var(--pitch-h) - var(--label-gap));
+    --label-h: calc(var(--pitch-v) - var(--label-gap));
     --cols: 9;
     --rows: 9;
+    --margin-top: 10mm;  /* jarak label pertama dari atas lembar (fixed, sesuai posisi cetak di stiker asli) */
+    --margin-left: 1.1mm; /* sisa (210mm - lebar total grid) / 2, biar grid center horizontal */
 }
 
 /* 1 .qr-label-sheet = 1 lembar fisik (81 label, grid 9x9). Dipaksa ganti
@@ -1769,7 +1779,7 @@ body[data-theme="light"] .rop-slider-row input[type="range"] { background: rgba(
 }
 
 .qr-label-item {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     width: var(--label-w); height: var(--label-h);
     padding: 0;
     box-sizing: border-box;
@@ -1777,13 +1787,21 @@ body[data-theme="light"] .rop-slider-row input[type="range"] { background: rgba(
     overflow: hidden;
     page-break-inside: avoid;
 }
+/* Wrapper ini yang dirotasi -90deg (ke kiri). Lebar & tinggi-nya sengaja
+   ditukar (swap) dari ukuran label aslinya, karena setelah diputar 90°
+   dimensi visualnya ikut ketuker balik lagi jadi pas sama --label-w/-h. */
+.qr-label-item .qr-label-content {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    width: var(--label-h);
+    height: var(--label-w);
+    transform: rotate(-90deg);
+    flex-shrink: 0;
+}
 .qr-label-item img { width: 11mm; height: 11mm; flex-shrink: 0; }
-.qr-label-item .qr-label-warna { font-size: 6.5pt; font-weight: 700; line-height: 1.1; margin-top: 0.3mm; text-transform: uppercase; color: #000; }
+.qr-label-item .qr-label-warna { font-size: 6.5pt; font-weight: 700; line-height: 1.1; margin-top: 0.3mm; text-transform: uppercase; color: #000; white-space: nowrap; }
 
 @media print {
-    /* margin dihitung otomatis biar grid-nya pas di tengah lembar 216x166mm:
-       (216 - grid_width)/2 = 1mm horizontal, (166 - grid_height)/2 = 3mm vertikal */
-    @page { size: 216mm 166mm; margin: 3mm 1mm; }
+    @page { size: 210mm 297mm; margin: var(--margin-top) var(--margin-left) 0 var(--margin-left); }
     body * { visibility: hidden; }
     #qrlabel-print-area, #qrlabel-print-area * { visibility: visible; }
     #qrlabel-print-area {
