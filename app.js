@@ -1710,11 +1710,16 @@ function refreshAllTables() {
 // =========================================================================
 const GOOGLE_SCRIPT_URL_BARANG_KELUAR = "https://script.google.com/macros/s/AKfycbwMTENQ2pHpnlsmb1SNLHZTJ5a7XV-o20ZI5hb2uzY-oUciOgKCmkntHVHw9FWgft4/exec";
 
-let globalBarangKeluarKategori = { utama: {}, aksesoris: {}, gradeb: {}, random: {} };
+let globalBarangKeluarRaw = []; // [{ sku, waktu }] — data mentah hasil scan, apa adanya dari sheet (belum di-filter tanggal)
+let globalBarangKeluarKategori = { utama: {}, aksesoris: {}, gradeb: {}, random: {} }; // hasil agregasi SETELAH kena filter tanggal (ini yang dirender ke tabel)
 
 const btnSyncBarangKeluar = document.getElementById('btn-sync-barangkeluar');
 const bkSubTabs = document.querySelectorAll('.bk-sub-tab');
 const bkSubTablePanels = document.querySelectorAll('.bk-sub-table-panel');
+const bkFilterDari = document.getElementById('bk-filter-dari');
+const bkFilterSampai = document.getElementById('bk-filter-sampai');
+const btnBkFilterTerapkan = document.getElementById('btn-bk-filter-terapkan');
+const btnBkFilterSemua = document.getElementById('btn-bk-filter-semua');
 
 const tbodyBkUtama = document.getElementById('tbody-bk-utama');
 const tbodyBkAksesoris = document.getElementById('tbody-bk-aksesoris');
@@ -1732,6 +1737,21 @@ bkSubTabs.forEach(tab => {
     });
 });
 
+if (btnBkFilterTerapkan) {
+    btnBkFilterTerapkan.addEventListener('click', () => {
+        applyBarangKeluarFilter();
+        updateStatusMessage('Filter tanggal diterapkan.');
+    });
+}
+if (btnBkFilterSemua) {
+    btnBkFilterSemua.addEventListener('click', () => {
+        if (bkFilterDari) bkFilterDari.value = '';
+        if (bkFilterSampai) bkFilterSampai.value = '';
+        applyBarangKeluarFilter();
+        updateStatusMessage('Menampilkan semua data (tanpa filter tanggal).');
+    });
+}
+
 function fetchBarangKeluarFromCloud() {
     updateStatusMessage("Menghubungkan ke data scan barcode...");
     [tbodyBkUtama, tbodyBkAksesoris, tbodyBkGradeb, tbodyBkRandom].forEach(tb => {
@@ -1741,37 +1761,16 @@ function fetchBarangKeluarFromCloud() {
     fetch(`${GOOGLE_SCRIPT_URL_BARANG_KELUAR}?action=fetch_scans`)
         .then(response => { if (!response.ok) throw new Error("Gagal terhubung ke Apps Script Barang Keluar."); return response.json(); })
         .then(rows => {
-            globalBarangKeluarKategori = { utama: {}, aksesoris: {}, gradeb: {}, random: {} };
-            let unknownCount = 0;
             const list = Array.isArray(rows) ? rows : [];
 
-            list.forEach(row => {
+            // Simpan mentah dulu -> nanti di-filter tanggal pas render (biar bisa ganti-ganti filter tanpa fetch ulang)
+            globalBarangKeluarRaw = list.map(row => {
                 const skuRaw = row['SKU'] || row['sku'] || row['Code'] || row['code'];
-                if (!skuRaw) return;
-                const sku = skuRaw.toString().trim();
                 const waktuRaw = (row['Timestamp'] || row['timestamp'] || row['Waktu'] || row['waktu'] || '').toString();
+                return { sku: skuRaw ? skuRaw.toString().trim() : '', waktu: waktuRaw };
+            }).filter(r => r.sku);
 
-                const master = masterSkus[sku];
-                const kat = master ? master.kategori : 'utama';
-                if (!globalBarangKeluarKategori[kat]) globalBarangKeluarKategori[kat] = {};
-
-                if (!globalBarangKeluarKategori[kat][sku]) {
-                    globalBarangKeluarKategori[kat][sku] = {
-                        nama: master ? master.nama : '(!) SKU BELUM ADA DI MASTER SKU',
-                        type: master ? master.type : '-',
-                        warna: master ? master.warna : '-',
-                        qty: 0,
-                        lastScan: ''
-                    };
-                    if (!master) unknownCount++;
-                }
-                globalBarangKeluarKategori[kat][sku].qty += 1;
-                if (waktuRaw && waktuRaw > globalBarangKeluarKategori[kat][sku].lastScan) {
-                    globalBarangKeluarKategori[kat][sku].lastScan = waktuRaw;
-                }
-            });
-
-            refreshBarangKeluarTables();
+            const unknownCount = applyBarangKeluarFilter();
             updateStatusMessage(unknownCount > 0
                 ? `Sukses sync ${list.length} data scan (${unknownCount} SKU belum dikenali, cek kategori Produk Utama).`
                 : `Sukses sync ${list.length} data scan.`);
@@ -1781,6 +1780,50 @@ function fetchBarangKeluarFromCloud() {
                 if (tb) tb.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#dc2626; font-weight:bold; padding:20px;">(!) SISTEM EROR: ${err.message}</td></tr>`;
             });
         });
+}
+
+// Susun ulang globalBarangKeluarKategori dari globalBarangKeluarRaw, dibatasi sama
+// rentang tanggal yang dipilih di filter (kalau "Dari"/"Sampai" dikosongin, dianggap
+// gak dibatasi ke arah itu). Filter-nya baca dari kolom Waktu Scan hasil scan.
+function applyBarangKeluarFilter() {
+    const dariVal = (bkFilterDari && bkFilterDari.value) ? new Date(bkFilterDari.value + 'T00:00:00') : null;
+    const sampaiVal = (bkFilterSampai && bkFilterSampai.value) ? new Date(bkFilterSampai.value + 'T23:59:59') : null;
+
+    globalBarangKeluarKategori = { utama: {}, aksesoris: {}, gradeb: {}, random: {} };
+    let unknownCount = 0;
+
+    globalBarangKeluarRaw.forEach(r => {
+        const waktuDate = new Date(r.waktu);
+        const waktuValid = !isNaN(waktuDate.getTime());
+        // Kalau ada filter tanggal tapi timestamp-nya gak valid/gak kebaca, baris itu dilewatin
+        // (biar gak nyasar ikut ke-hitung di rentang tanggal yang salah).
+        if ((dariVal || sampaiVal) && !waktuValid) return;
+        if (dariVal && waktuDate < dariVal) return;
+        if (sampaiVal && waktuDate > sampaiVal) return;
+
+        const sku = r.sku;
+        const master = masterSkus[sku];
+        const kat = master ? master.kategori : 'utama';
+        if (!globalBarangKeluarKategori[kat]) globalBarangKeluarKategori[kat] = {};
+
+        if (!globalBarangKeluarKategori[kat][sku]) {
+            globalBarangKeluarKategori[kat][sku] = {
+                nama: master ? master.nama : '(!) SKU BELUM ADA DI MASTER SKU',
+                type: master ? master.type : '-',
+                warna: master ? master.warna : '-',
+                qty: 0,
+                lastScan: ''
+            };
+            if (!master) unknownCount++;
+        }
+        globalBarangKeluarKategori[kat][sku].qty += 1;
+        if (r.waktu && r.waktu > globalBarangKeluarKategori[kat][sku].lastScan) {
+            globalBarangKeluarKategori[kat][sku].lastScan = r.waktu;
+        }
+    });
+
+    refreshBarangKeluarTables();
+    return unknownCount;
 }
 
 function renderBarangKeluarSingleTable(dataKategori, tbodyElement) {
