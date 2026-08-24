@@ -2187,7 +2187,7 @@ function renderQrLabelBasketTable() {
     updateQrLabelSummary();
 }
 
-const LABEL_PER_LEMBAR = 81; // grid 9 kolom x 9 baris, dempet ~2mm sesuai ukuran fisik lembar 216x166mm
+const LABEL_PER_LEMBAR = 81; // grid 9 kolom x 9 baris, dempet ~2mm, dicetak di lembar A4 sesuai template Labelindo No.110
 
 function updateQrLabelSummary() {
     const totalLembar = qrLabelBasket.reduce((sum, row) => sum + (row.qty || 0), 0);
@@ -2226,7 +2226,7 @@ if (btnCetakQrLabel) {
                 if (!currentSheet || posInSheet >= LABEL_PER_LEMBAR) newSheet();
                 const div = document.createElement('div');
                 div.className = 'qr-label-item';
-                div.innerHTML = `<img src="${qrDataUrl}" alt="QR ${sku}"><div class="qr-label-warna">${row.warna || ''}</div>`;
+                div.innerHTML = `<div class="qr-label-content"><img src="${qrDataUrl}" alt="QR ${sku}"><div class="qr-label-warna">${row.warna || ''}</div></div>`;
                 currentSheet.appendChild(div);
                 posInSheet++;
             }
