@@ -1733,87 +1733,50 @@ body[data-theme="light"] .rop-slider-row input[type="range"] { background: rgba(
 
 /* =========================================================================
    CETAK LABEL QR CODE
-   Update: lembar kertas dipakai A4 (210mm x 297mm), sesuai template resmi
-   "Labelindo No.110". Pitch grid (jarak antar titik-tengah label) diukur
-   LANGSUNG dari koordinat teks di file PDF referensi tsb (bukan estimasi
-   visual), hasilnya:
-   - Pitch horizontal: ~23.3mm/kolom, 9 kolom
-   - Pitch vertikal:   ~17.5mm/baris, 9 baris
-   -> tetap grid 9 kolom x 9 baris = 81 label per lembar, tapi sekarang
-      dipetakan ke lembar A4 (bukan lembar custom 216x166mm yang lama).
-   Isi tiap label (QR + teks warna) DIROTASI 90° ke kiri (counter-clockwise)
-   karena bentuk fisik stikernya memanjang ke samping — jadi konten yang
-   aslinya disusun vertikal (QR di atas, teks di bawah) diputar biar pas
-   masuk ke space yang panjang horizontal.
-   Kalau pas ditest print masih geser dikit, tinggal ubah nilai
-   --sheet-w/-h, --label-w/-h, --pitch-h/-v, --margin-top/-left di bawah ini.
+   Grid & ukurannya direkonstruksi PERSIS dari mockup PDF terakhir yang
+   dikasih user (Fix_Inimah.pdf) — grid rata 9 kolom x 9 baris, jarak antar
+   label SERAGAM (gak kayak template Labelindo yang groupnya gak rata).
+   Border di mockup itu cuma buat nunjukin batas stiker pas desain, JANGAN
+   ikut dicetak di hasil akhir.
+   Konten (QR + teks) LURUS, gak di-rotate (beda dari revisi sebelumnya).
+   Kertas: A4.
    ========================================================================= */
 #qrlabel-print-area { display: none; }
 
 :root {
-    --sheet-w: 210mm;
-    --sheet-h: 297mm;
-    --pitch-h: 23.3mm;
-    --pitch-v: 17.5mm;
-    --label-gap: 2.62mm; /* jarak dempet antar label (2mm awal + tambahan 0.62mm) */
-    --label-w: calc(var(--pitch-h) - var(--label-gap));
-    --label-h: calc(var(--pitch-v) - var(--label-gap));
-    --cols: 9;
-    --rows: 9;
-    --margin-top: 10mm;  /* jarak label pertama dari atas lembar (fixed, sesuai posisi cetak di stiker asli) */
-    --margin-left: 4.7mm; /* dipepetin ke kiri sesuai posisi kolom pertama di template Labelindo No.110 */
+    --label-w: 14.27mm;
+    --label-h: 16.82mm;
+    --gap-h: 2.73mm;  /* pitch horizontal 17.0mm - lebar label */
+    --gap-v: 6.69mm;  /* pitch vertikal 23.5mm - tinggi label */
 }
 
-/* 1 .qr-label-sheet = 1 lembar fisik (81 label, grid 9x9). Dipaksa ganti
-   halaman print di tiap akhir sheet biar hasil cetaknya kebagi rapi per
-   lembar, gak nyambung/geser ke lembar fisik berikutnya. Posisi tiap label
-   dikunci pakai CSS Grid presis sesuai jarak titik-tengahnya (bukan cuma
-   ngisi rapat kayak flex-wrap), biar pas sama posisi potongan stiker asli. */
+/* 1 .qr-label-sheet = 1 lembar fisik (81 label, grid 9x9 rata/seragam).
+   Dipaksa ganti halaman print di tiap akhir sheet biar hasil cetaknya
+   kebagi rapi per lembar. */
 .qr-label-sheet {
     display: grid;
-    grid-template-columns: repeat(var(--cols), var(--label-w));
+    grid-template-columns: repeat(9, var(--label-w));
     grid-auto-rows: var(--label-h);
-    column-gap: calc(var(--pitch-h) - var(--label-w));
-    row-gap: calc(var(--pitch-v) - var(--label-h));
+    column-gap: var(--gap-h);
+    row-gap: var(--gap-v);
     page-break-after: always;
 }
 
 .qr-label-item {
-    display: flex; align-items: center; justify-content: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
     width: var(--label-w); height: var(--label-h);
-    padding: 0;
     box-sizing: border-box;
     text-align: center;
     overflow: hidden;
     page-break-inside: avoid;
+    /* TANPA border -> cuma dipakai pas desain mockup, gak ikut dicetak */
 }
-/* Wrapper ini yang dirotasi -90deg (ke kiri). Lebar & tinggi-nya sengaja
-   ditukar (swap) dari ukuran label aslinya, karena setelah diputar 90°
-   dimensi visualnya ikut ketuker balik lagi jadi pas sama --label-w/-h. */
-.qr-label-item .qr-label-content {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    width: var(--label-h);
-    height: var(--label-w);
-    transform: rotate(-90deg);
-    flex-shrink: 0;
-}
-.qr-label-item img { width: 12.5mm; height: 12.5mm; flex-shrink: 0; }
-/* Nama warna: kalau kepanjangan, dijadiin 2 baris (bukan overflow/nowrap
-   kayak sebelumnya). Lebih dari 2 baris akan dipotong (ellipsis-safe via
-   line-clamp) supaya tetap muat di dalam label. */
-.qr-label-item .qr-label-warna {
-    font-size: 6.5pt; font-weight: 700; line-height: 1.15; margin-top: 0.3mm;
-    text-transform: uppercase; color: #000;
-    white-space: normal;
-    word-break: break-word;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
+.qr-label-item img { width: 11mm; height: 11mm; flex-shrink: 0; }
+.qr-label-item .qr-label-warna { font-size: 6.5pt; font-weight: 700; line-height: 1.1; margin-top: 0.4mm; text-transform: uppercase; color: #000; }
 
 @media print {
-    @page { size: 210mm 297mm; margin: var(--margin-top) var(--margin-left) 0 var(--margin-left); }
+    /* Margin kiri/atas persis dari mockup PDF-nya (7.4mm / 5.58mm) */
+    @page { size: A4; margin: 5.58mm 0mm 0mm 7.4mm; }
     body * { visibility: hidden; }
     #qrlabel-print-area, #qrlabel-print-area * { visibility: visible; }
     #qrlabel-print-area {
