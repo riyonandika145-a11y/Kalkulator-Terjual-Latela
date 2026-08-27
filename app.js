@@ -2196,6 +2196,110 @@ function updateQrLabelSummary() {
     const elTotal = document.getElementById('qrlabel-total-label'); if (elTotal) elTotal.innerText = `${totalLabel} (${totalLembar} lembar)`;
 }
 
+// =========================================================================
+// DOWNLOAD PDF LABEL — alternatif dari tombol Cetak (window.print). Bikin file
+// PDF langsung dengan ukuran lembar CUSTOM (165.04x216mm, di-print landscape
+// 216x165.04mm) yang udah ke-embed presisi di dalam file-nya sendiri, jadi
+// gak tergantung dialog print browser (yang di sebagian device/browser gak
+// nyediain opsi "Custom paper size").
+//
+// Caranya: tiap SKU di-compose jadi 1 gambar canvas yang UDAH diputar 90
+// derajat (posisi final, bukan pas taro ke PDF-nya baru diputar -- karena
+// fitur rotasi bawaan jsPDF pernah ada bug/gak konsisten di beberapa versi).
+// Rumus posisi grid-nya hasil transformasi presisi dari layout aslinya
+// (portrait 165.04x216mm, grid 9x9) ke ruang landscape (216x165.04mm).
+// =========================================================================
+const btnDownloadPdfQrLabel = document.getElementById('btn-download-pdf-qrlabel');
+
+function composeRotatedLabelCanvas(qrImgEl, warnaText) {
+    const DPI = 10; // px per mm, buat kualitas cetak yang layak
+    const labelW = 16, labelH = 22; // ukuran label ASLI (sebelum rotate), dalam mm
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(labelH * DPI);  // 22mm -> jadi lebar akhir (abis diputar)
+    canvas.height = Math.round(labelW * DPI); // 16mm -> jadi tinggi akhir (abis diputar)
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(90 * Math.PI / 180); // muter 90 derajat (searah jarum jam, sama kayak CSS rotate(90deg))
+    // Dari titik ini, gambar kontennya kayak versi ASLI (16mm lebar x 22mm tinggi),
+    // origin-nya di tengah -> abis di-rotate bakal otomatis kepasang bener.
+    const qrSizePx = 11 * DPI;
+    const halfH = (labelH / 2) * DPI;
+    ctx.drawImage(qrImgEl, -qrSizePx / 2, -halfH + 1 * DPI, qrSizePx, qrSizePx);
+    ctx.fillStyle = '#000';
+    ctx.font = `bold ${Math.round(2.4 * DPI)}px Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText((warnaText || '').toUpperCase(), 0, -halfH + 1 * DPI + qrSizePx + 0.6 * DPI);
+    ctx.restore();
+
+    return canvas;
+}
+
+function loadImageFromDataUrl(dataUrl) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = dataUrl;
+    });
+}
+
+if (btnDownloadPdfQrLabel) {
+    btnDownloadPdfQrLabel.addEventListener('click', async () => {
+        if (!qrLabelBasket.length) { updateStatusMessage('(!) Tambah minimal 1 SKU dulu buat di-download.'); return; }
+        if (typeof QRCode === 'undefined') { updateStatusMessage('(!) Library QR Code gagal dimuat, cek koneksi internet.'); return; }
+
+        btnDownloadPdfQrLabel.disabled = true;
+        updateStatusMessage('Menyiapkan file PDF label...');
+
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: [216, 165.04], orientation: 'landscape' });
+            let itemsOnPage = 0;
+            let pageStarted = false;
+
+            for (const row of qrLabelBasket) {
+                const sku = row.sku;
+                const jumlahLembar = row.qty || 1;
+
+                let qrDataUrl;
+                try { qrDataUrl = await QRCode.toDataURL(sku, { width: 200, margin: 1 }); }
+                catch (err) { continue; }
+                const qrImgEl = await loadImageFromDataUrl(qrDataUrl);
+                const labelCanvas = composeRotatedLabelCanvas(qrImgEl, row.warna || '');
+                const labelDataUrl = labelCanvas.toDataURL('image/png');
+
+                const totalLabelSku = jumlahLembar * LABEL_PER_LEMBAR;
+                for (let i = 0; i < totalLabelSku; i++) {
+                    if (itemsOnPage >= LABEL_PER_LEMBAR || !pageStarted) {
+                        if (pageStarted) doc.addPage([216, 165.04], 'landscape');
+                        pageStarted = true;
+                        itemsOnPage = 0;
+                    }
+                    const posInSheet = itemsOnPage;
+                    const col = posInSheet % 9;
+                    const rowIdx = Math.floor(posInSheet / 9);
+                    // Posisi hasil transformasi presisi dari grid portrait (165.04x216mm) ke landscape (216x165.04mm)
+                    const xLand = 193 - rowIdx * 24;
+                    const yLand = 5 + col * 17.38;
+                    doc.addImage(labelDataUrl, 'PNG', xLand, yLand, 22, 16);
+                    itemsOnPage++;
+                }
+            }
+
+            doc.save(`Label_QR_${new Date().toISOString().slice(0, 10)}.pdf`);
+            updateStatusMessage('Sukses download PDF label.');
+        } catch (err) {
+            updateStatusMessage('(!) Gagal generate PDF: ' + err.message);
+        }
+
+        btnDownloadPdfQrLabel.disabled = false;
+    });
+}
 
 if (btnCetakQrLabel) {
     btnCetakQrLabel.addEventListener('click', async () => {
