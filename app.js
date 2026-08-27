@@ -2187,7 +2187,7 @@ function renderQrLabelBasketTable() {
     updateQrLabelSummary();
 }
 
-const LABEL_PER_LEMBAR = 81; // grid 9 kolom x 9 baris, sesuai mockup PDF terakhir (kertas A4, jarak seragam)
+const LABEL_PER_LEMBAR = 81; // grid 9 kolom x 9 baris, ukuran lembar asli (custom, bukan A4), di-print landscape
 
 function updateQrLabelSummary() {
     const totalLembar = qrLabelBasket.reduce((sum, row) => sum + (row.qty || 0), 0);
@@ -2209,9 +2209,16 @@ if (btnCetakQrLabel) {
         printArea.innerHTML = '';
 
         let currentSheet = null;
+        let currentGrid = null;
         let posInSheet = 0;
 
-        const newSheet = () => { currentSheet = document.createElement('div'); currentSheet.className = 'qr-label-sheet'; printArea.appendChild(currentSheet); posInSheet = 0; };
+        const newSheet = () => {
+            currentSheet = document.createElement('div'); currentSheet.className = 'qr-label-sheet';
+            currentGrid = document.createElement('div'); currentGrid.className = 'qr-label-grid';
+            currentSheet.appendChild(currentGrid);
+            printArea.appendChild(currentSheet);
+            posInSheet = 0;
+        };
 
         for (const row of qrLabelBasket) {
             const sku = row.sku;
@@ -2227,7 +2234,7 @@ if (btnCetakQrLabel) {
                 const div = document.createElement('div');
                 div.className = 'qr-label-item';
                 div.innerHTML = `<img src="${qrDataUrl}" alt="QR ${sku}"><div class="qr-label-warna">${row.warna || ''}</div>`;
-                currentSheet.appendChild(div);
+                currentGrid.appendChild(div);
                 posInSheet++;
             }
         }
