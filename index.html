@@ -241,7 +241,7 @@
                 <section id="view-qrlabel" class="content-view">
                     <h2 class="page-title">Cetak Label QR Code</h2>
                     <div class="info-note-box" style="margin-bottom:15px; font-size:12px; color:var(--text-muted); background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.10); border-radius:12px; padding:10px 14px;">
-                        Isi QR Code = kode SKU dari Master SKU. Template pakai ukuran lembar stiker asli <strong>165x216mm</strong> (bukan A4), label 16x22mm, grid 9x9 = 81 label/lembar. <strong>Cetak dalam mode Landscape/Horizontal</strong> di dialog print. Pilih Jenis Barang & Warna, isi <strong>Qty Lembar</strong> (misal isi 2 = cetak 2 lembar penuh = 162 label), klik Tambah. Ulangi buat SKU lain, lalu klik Cetak Label.
+                        Isi QR Code = kode SKU dari Master SKU. Template pakai ukuran lembar stiker asli <strong>165x216mm</strong> (bukan A4), label 16x22mm, grid 9x9 = 81 label/lembar. Kalau di dialog print browser gak ada opsi "Custom" paper size, pakai tombol <strong>Download PDF</strong> — ukurannya udah presisi ke-embed di file-nya, tinggal print dari PDF viewer. Pilih Jenis Barang & Warna, isi <strong>Qty Lembar</strong> (misal isi 2 = cetak 2 lembar penuh = 162 label), klik Tambah. Ulangi buat SKU lain, lalu klik Cetak Label / Download PDF.
                     </div>
 
                     <div class="sku-list-card" style="width: 100%; margin-bottom:20px;">
@@ -270,7 +270,10 @@
                                 <span style="font-size:12px; color:var(--text-muted); display:block;">SKU Terpilih: <strong id="qrlabel-selected-count">0</strong></span>
                                 <span style="font-size:12px; color:var(--text-muted); display:block;">Total Label (Fisik): <strong id="qrlabel-total-label">0</strong></span>
                             </div>
-                            <button id="btn-cetak-qrlabel" class="btn-action btn-pink-solid">Cetak Label</button>
+                            <div style="display:flex; gap:8px;">
+                                <button id="btn-download-pdf-qrlabel" class="btn-action btn-blue-solid">Download PDF</button>
+                                <button id="btn-cetak-qrlabel" class="btn-action btn-pink-solid">Cetak Label</button>
+                            </div>
                         </div>
                     </div>
 
