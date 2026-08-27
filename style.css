@@ -1733,33 +1733,54 @@ body[data-theme="light"] .rop-slider-row input[type="range"] { background: rgba(
 
 /* =========================================================================
    CETAK LABEL QR CODE
-   Grid & ukurannya direkonstruksi PERSIS dari mockup PDF terakhir yang
-   dikasih user (Fix_Inimah.pdf) — grid rata 9 kolom x 9 baris, jarak antar
-   label SERAGAM (gak kayak template Labelindo yang groupnya gak rata).
-   Border di mockup itu cuma buat nunjukin batas stiker pas desain, JANGAN
-   ikut dicetak di hasil akhir.
-   Konten (QR + teks) LURUS, gak di-rotate (beda dari revisi sebelumnya).
-   Kertas: A4.
+   Spesifikasi presisi dari technical drawing terakhir (bukan A4 lagi,
+   langsung pakai ukuran lembar stiker aslinya):
+   - Label: 16mm (lebar) x 22mm (tinggi), grid 9 kolom x 9 baris = 81 label
+   - Jarak antar kolom: 1.38mm, jarak antar baris: 2mm
+   - Margin kiri & kanan: 5mm, margin atas & bawah: 1mm
+   -> total lembar (bentuk asli/portrait): 165.04mm x 216mm
+   Karena lembarnya sendiri portrait tapi mau di-print HORIZONTAL/landscape,
+   seluruh grid-nya (.qr-label-grid) diputar 90 derajat di dalam "kanvas"
+   halaman print yang di-set landscape (216mm x 165.04mm). Jangan bingung:
+   ini beda dari revisi rotate sebelumnya yang muter isi tiap label
+   satu-satu — sekarang yang diputar itu GRID-nya secara utuh sebagai satu
+   kesatuan, sementara isi tiap label (QR+teks) tetap lurus relatif ke
+   grid-nya sendiri.
    ========================================================================= */
 #qrlabel-print-area { display: none; }
 
 :root {
-    --label-w: 14.27mm;
-    --label-h: 16.82mm;
-    --gap-h: 2.73mm;  /* pitch horizontal 17.0mm - lebar label */
-    --gap-v: 6.69mm;  /* pitch vertikal 23.5mm - tinggi label */
+    --label-w: 16mm;
+    --label-h: 22mm;
+    --gap-h: 1.38mm;
+    --gap-v: 2mm;
+    --sheet-portrait-w: 165.04mm; /* bentuk asli lembar stiker (belum diputar) */
+    --sheet-portrait-h: 216mm;
+    --sheet-landscape-w: 216mm; /* ukuran halaman print (landscape, buat @page) */
+    --sheet-landscape-h: 165.04mm;
 }
 
-/* 1 .qr-label-sheet = 1 lembar fisik (81 label, grid 9x9 rata/seragam).
-   Dipaksa ganti halaman print di tiap akhir sheet biar hasil cetaknya
-   kebagi rapi per lembar. */
+/* 1 .qr-label-sheet = 1 lembar fisik = 1 halaman print (landscape).
+   Isinya di-center-in pakai flex, biar .qr-label-grid (yang diputar)
+   otomatis pas di tengah tanpa perlu itung translate manual. */
 .qr-label-sheet {
+    width: var(--sheet-landscape-w); height: var(--sheet-landscape-h);
+    display: flex; align-items: center; justify-content: center;
+    page-break-after: always;
+}
+
+/* Kanvas grid dalam bentuk ASLI-nya (portrait, sesuai lembar stiker fisik),
+   baru diputar 90 derajat pas dirender ke halaman landscape. */
+.qr-label-grid {
+    width: var(--sheet-portrait-w); height: var(--sheet-portrait-h);
+    box-sizing: border-box;
+    padding: 1mm 5mm; /* atas/bawah 1mm, kiri/kanan 5mm */
     display: grid;
     grid-template-columns: repeat(9, var(--label-w));
     grid-auto-rows: var(--label-h);
     column-gap: var(--gap-h);
     row-gap: var(--gap-v);
-    page-break-after: always;
+    transform: rotate(90deg);
 }
 
 .qr-label-item {
@@ -1768,15 +1789,13 @@ body[data-theme="light"] .rop-slider-row input[type="range"] { background: rgba(
     box-sizing: border-box;
     text-align: center;
     overflow: hidden;
-    page-break-inside: avoid;
     /* TANPA border -> cuma dipakai pas desain mockup, gak ikut dicetak */
 }
-.qr-label-item img { width: 11mm; height: 11mm; flex-shrink: 0; }
-.qr-label-item .qr-label-warna { font-size: 6.5pt; font-weight: 700; line-height: 1.1; margin-top: 0.4mm; text-transform: uppercase; color: #000; }
+.qr-label-item img { width: 12mm; height: 12mm; flex-shrink: 0; }
+.qr-label-item .qr-label-warna { font-size: 7pt; font-weight: 700; line-height: 1.1; margin-top: 0.5mm; text-transform: uppercase; color: #000; }
 
 @media print {
-    /* Margin kiri/atas persis dari mockup PDF-nya (7.4mm / 5.58mm) */
-    @page { size: A4; margin: 5.58mm 0mm 0mm 7.4mm; }
+    @page { size: 216mm 165.04mm; margin: 0; }
     body * { visibility: hidden; }
     #qrlabel-print-area, #qrlabel-print-area * { visibility: visible; }
     #qrlabel-print-area {
