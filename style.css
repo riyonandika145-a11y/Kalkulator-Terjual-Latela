@@ -828,12 +828,29 @@ body::after {
     cursor: pointer;
 }
 .help-popup-item:hover { background: rgba(244,114,182,0.14); }
+.help-popup-credit {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px 4px 12px;
+    margin-top: 4px;
+    border-top: 1px solid rgba(255,255,255,0.10);
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+.help-popup-credit-photo {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.20);
+}
 
 body[data-theme="light"] .help-picker-popup {
     background: #ffffff;
     border-color: rgba(0,0,0,0.10);
     box-shadow: 0 10px 30px rgba(0,0,0,0.15);
 }
+body[data-theme="light"] .help-popup-credit { border-top-color: rgba(0,0,0,0.10); }
 body[data-theme="light"] .btn-help-dot {
     background: rgba(0,0,0,0.05);
     border-color: rgba(0,0,0,0.14);
