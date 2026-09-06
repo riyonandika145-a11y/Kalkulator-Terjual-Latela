@@ -146,6 +146,7 @@ const akunRole = document.getElementById('akun-role');
 const btnSimpanAkun = document.getElementById('btn-simpan-akun');
 const btnRefreshAkun = document.getElementById('btn-refresh-akun');
 const akunMenuAksesRow = document.getElementById('akun-menu-akses-row');
+const akunCanApprovePo = document.getElementById('akun-can-approve-po');
 
 // Semua menu yang bisa di-toggle per akun (di luar "kelolaakun" -> selalu khusus Admin)
 const SEMUA_MENU_TERSEDIA = ['dashboard', 'kalkulator', 'barangkeluar', 'mastersku', 'qrlabel', 'history', 'procurement', 'barang', 'pembelian'];
@@ -211,7 +212,7 @@ if (btnLoginSubmit) {
             .then(result => {
                 btnLoginSubmit.disabled = false;
                 if (result && result.success) {
-                    setSession({ username: u, nama: result.nama, role: result.role, menus: parseMenuString(result.menus) });
+                    setSession({ username: u, nama: result.nama, role: result.role, menus: parseMenuString(result.menus), canApprovePo: String(result.canApprovePo).trim().toLowerCase() === 'yes' });
                     if (loginErrorMsg) loginErrorMsg.innerText = '';
                     if (loginUsername) loginUsername.value = ''; if (loginPassword) loginPassword.value = '';
                     showApp(); applyRoleUI();
@@ -247,19 +248,21 @@ function fetchUsers() {
     if (!tbody) return;
     fetch(`${GOOGLE_SCRIPT_URL}?action=fetch_users`).then(res => res.json()).then(list => {
         globalUserListCache = Array.isArray(list) ? list : [];
-        if (!globalUserListCache.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada akun.</td></tr>`; return; }
+        if (!globalUserListCache.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada akun.</td></tr>`; return; }
         tbody.innerHTML = '';
         globalUserListCache.forEach(u => {
             const roleLabel = u.role === 'full' ? 'Akses Penuh' : 'Akses Terbatas';
             const menuList = parseMenuString(u.menus);
             const menuLabel = u.role === 'full' ? 'Semua Menu' : (menuList.length ? menuList.map(m => LABEL_MENU[m] || m).join(', ') : '(!) Belum ada menu dipilih');
+            const canApprove = u.role === 'full' || String(u.canApprovePo).trim().toLowerCase() === 'yes';
+            const approveLabel = canApprove ? '✅ Ya' : '-';
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td><strong>${u.username}</strong></td><td>${u.nama || '-'}</td><td>${roleLabel}</td><td style="font-size:12px; max-width:280px;">${menuLabel}</td><td style="white-space:nowrap;"><button class="btn-action btn-gray-outline btn-edit-akun" data-username="${u.username}">Edit</button> <button class="btn-action btn-gray-outline btn-hapus-akun" data-username="${u.username}">Hapus</button></td>`;
+            tr.innerHTML = `<td><strong>${u.username}</strong></td><td>${u.nama || '-'}</td><td>${roleLabel}</td><td style="font-size:12px; max-width:280px;">${menuLabel}</td><td style="text-align:center;">${approveLabel}</td><td style="white-space:nowrap;"><button class="btn-action btn-gray-outline btn-edit-akun" data-username="${u.username}">Edit</button> <button class="btn-action btn-gray-outline btn-hapus-akun" data-username="${u.username}">Hapus</button></td>`;
             tbody.appendChild(tr);
         });
         tbody.querySelectorAll('.btn-hapus-akun').forEach(btn => btn.addEventListener('click', () => deleteUser(btn.getAttribute('data-username'))));
         tbody.querySelectorAll('.btn-edit-akun').forEach(btn => btn.addEventListener('click', () => editAkunPrefill(btn.getAttribute('data-username'))));
-    }).catch(() => { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data akun.</td></tr>`; });
+    }).catch(() => { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data akun.</td></tr>`; });
 }
 
 // Isi ulang form pakai data akun yang mau diedit (password dikosongin -> wajib diisi ulang buat nyimpen)
@@ -271,6 +274,7 @@ function editAkunPrefill(username) {
     if (akunPassword) akunPassword.value = '';
     if (akunRole) { akunRole.value = u.role === 'full' ? 'full' : 'terbatas'; toggleAkunMenuAksesRow(); }
     setCheckedAkunMenus(parseMenuString(u.menus));
+    if (akunCanApprovePo) akunCanApprovePo.checked = String(u.canApprovePo).trim().toLowerCase() === 'yes';
     updateStatusMessage(`Mode edit akun "${username}" — isi ulang Password lalu klik Simpan Akun buat nyimpen perubahan.`);
     if (akunUsername) akunUsername.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
@@ -285,16 +289,17 @@ if (btnSimpanAkun) {
 
         const menus = r === 'full' ? [] : getCheckedAkunMenus();
         if (r !== 'full' && !menus.length) { updateStatusMessage('(!) Centang minimal 1 menu buat akun Akses Terbatas.'); return; }
+        const canApprovePo = akunCanApprovePo ? akunCanApprovePo.checked : false;
 
         updateStatusMessage('Menyimpan akun...');
         const payload = new URLSearchParams();
-        payload.append('action', 'save_user'); payload.append('username', u); payload.append('nama', n); payload.append('password', p); payload.append('role', r); payload.append('menus', menus.join(','));
+        payload.append('action', 'save_user'); payload.append('username', u); payload.append('nama', n); payload.append('password', p); payload.append('role', r); payload.append('menus', menus.join(',')); payload.append('canApprovePo', canApprovePo ? 'yes' : '');
         fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
             .then(res => res.json())
             .then(() => {
                 updateStatusMessage(`Akun "${u}" berhasil disimpan.`);
                 if (akunUsername) akunUsername.value = ''; if (akunNama) akunNama.value = ''; if (akunPassword) akunPassword.value = ''; if (akunRole) { akunRole.value = 'terbatas'; toggleAkunMenuAksesRow(); }
-                setCheckedAkunMenus([]);
+                setCheckedAkunMenus([]); if (akunCanApprovePo) akunCanApprovePo.checked = false;
                 fetchUsers();
             })
             .catch(() => updateStatusMessage('(!) Gagal menyimpan akun.'));
@@ -1496,6 +1501,9 @@ function fetchPoListFromCloud() {
 
         const sessionUser = getSession();
         const isFullAccess = sessionUser && sessionUser.role === 'full';
+        // Admin Keuangan: akun (biasanya Terbatas) yang dikasih izin approve/reject PO
+        // secara khusus lewat Kelola Akun, terpisah dari role Admin penuh.
+        const canApprovePo = isFullAccess || (sessionUser && sessionUser.canApprovePo === true);
 
         tbody.innerHTML = '';
         globalPoListCache.forEach(po => {
@@ -1506,14 +1514,14 @@ function fetchPoListFromCloud() {
             const badgeText = statusApproved ? 'Approved' : (statusRejected ? 'Rejected' : 'Pending');
 
             let aksiHtml = '';
-            if (statusLower === 'pending' && isFullAccess) {
+            if (statusLower === 'pending' && canApprovePo) {
                 aksiHtml += `<select class="dropdown-aksi-po" data-id="${po.id}" style="margin-right:6px;">
                     <option value="">-- Pilih Aksi --</option>
                     <option value="Approved">Approve</option>
                     <option value="Rejected">Reject</option>
                 </select>`;
             }
-            aksiHtml += `<button class="btn-action btn-blue-solid btn-cetak-po" data-id="${po.id}" ${statusApproved ? '' : 'disabled title="PO harus di-approve dulu sebelum bisa dicetak"'}>Cetak PDF</button>`;
+            aksiHtml += `<button class="btn-action btn-blue-solid btn-cetak-po" data-id="${po.id}" ${statusApproved ? '' : 'disabled title="PO harus di-approve Admin Keuangan dulu sebelum bisa dicetak"'}>Cetak PDF</button>`;
 
             const tr = document.createElement('tr');
             tr.innerHTML = `<td><strong class="po-no-clickable" data-id="${po.id}" style="cursor:pointer; text-decoration:underline; color:var(--pink-main);">${po.noPo || '-'}</strong></td><td>${formatTanggalDisplay(po.tanggal)}</td><td>${po.vendor || '-'}</td><td>${po.dibuatOleh || '-'}</td><td><span class="badge-status ${badgeClass}">${badgeText}</span></td><td>${aksiHtml}</td>`;
