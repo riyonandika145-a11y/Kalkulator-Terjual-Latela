@@ -150,6 +150,10 @@
                     <button id="btn-help-picker" class="btn-help-dot" title="Bantuan" aria-label="Bantuan">?</button>
                     <div id="help-picker-popup" class="help-picker-popup">
                         <button id="btn-download-guide" class="help-popup-item">Download Guide</button>
+                        <div class="help-popup-credit">
+                            <img src="foto-creator.jpg" alt="Riyo Nandika" class="help-popup-credit-photo">
+                            <span>Created by: <strong>Riyo Nandika</strong></span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -335,11 +339,12 @@
                                     <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" class="akun-menu-check" value="pembelian"> Histori Pembelian</label>
                                 </div>
                                 <span style="font-size:11px; color:var(--text-muted); display:block; margin-top:6px;">Menu "Kelola Akun" selalu khusus Admin, gak bisa dikasih ke akun Terbatas.</span>
+                                <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.10);"><input type="checkbox" id="akun-can-approve-po"> <strong>Bisa Approve/Reject PO (Admin Keuangan)</strong> — terpisah dari Role, bisa dikasih ke akun Terbatas juga</label>
                             </div>
                         </div>
                         <div class="proc-row-actions"><button id="btn-simpan-akun" class="btn-action btn-pink-solid">Simpan Akun</button></div>
                     </div>
-                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Daftar Akun</h3><button id="btn-refresh-akun" class="btn-action btn-pink-outline">Refresh</button></div><div class="table-responsive"><table><thead><tr><th>Username</th><th>Nama</th><th>Role</th><th>Menu Akses</th><th>Aksi</th></tr></thead><tbody id="tbody-akun-list"><tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data akun...</td></tr></tbody></table></div></div>
+                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Daftar Akun</h3><button id="btn-refresh-akun" class="btn-action btn-pink-outline">Refresh</button></div><div class="table-responsive"><table><thead><tr><th>Username</th><th>Nama</th><th>Role</th><th>Menu Akses</th><th>Approve PO</th><th>Aksi</th></tr></thead><tbody id="tbody-akun-list"><tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data akun...</td></tr></tbody></table></div></div>
                 </section>
 
                 <section id="view-barang" class="content-view">
