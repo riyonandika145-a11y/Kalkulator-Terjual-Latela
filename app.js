@@ -145,6 +145,25 @@ const akunPassword = document.getElementById('akun-password');
 const akunRole = document.getElementById('akun-role');
 const btnSimpanAkun = document.getElementById('btn-simpan-akun');
 const btnRefreshAkun = document.getElementById('btn-refresh-akun');
+const akunMenuAksesRow = document.getElementById('akun-menu-akses-row');
+
+// Semua menu yang bisa di-toggle per akun (di luar "kelolaakun" -> selalu khusus Admin)
+const SEMUA_MENU_TERSEDIA = ['dashboard', 'kalkulator', 'barangkeluar', 'mastersku', 'qrlabel', 'history', 'procurement', 'barang', 'pembelian'];
+const LABEL_MENU = { dashboard: 'Dashboard', kalkulator: 'Kalkulator Terjual', barangkeluar: 'Barang Keluar', mastersku: 'Master SKU', qrlabel: 'Cetak Label QR', history: 'History', procurement: 'Procurement', barang: 'Data Barang', pembelian: 'Histori Pembelian' };
+
+function toggleAkunMenuAksesRow() {
+    if (!akunMenuAksesRow || !akunRole) return;
+    akunMenuAksesRow.style.display = akunRole.value === 'full' ? 'none' : '';
+}
+if (akunRole) { akunRole.addEventListener('change', toggleAkunMenuAksesRow); toggleAkunMenuAksesRow(); }
+
+function getCheckedAkunMenus() {
+    return Array.from(document.querySelectorAll('.akun-menu-check:checked')).map(cb => cb.value);
+}
+function setCheckedAkunMenus(menus) {
+    const set = new Set(menus || []);
+    document.querySelectorAll('.akun-menu-check').forEach(cb => { cb.checked = set.has(cb.value); });
+}
 
 function getSession() {
     try { return JSON.parse(localStorage.getItem('latelaSession') || 'null'); } catch (err) { return null; }
@@ -165,9 +184,16 @@ function applyRoleUI() {
     const sess = getSession();
     const isFullAccess = sess && sess.role === 'full';
     if (userSessionName) userSessionName.innerText = sess ? sess.nama : '-';
+
+    // Admin (Akses Penuh) otomatis liat semua menu. Akun Terbatas cuma liat menu
+    // yang dicentang admin buat dia (disimpan di sess.menus, array of data-target).
+    const allowedMenus = isFullAccess ? SEMUA_MENU_TERSEDIA : ((sess && Array.isArray(sess.menus)) ? sess.menus : []);
+    SEMUA_MENU_TERSEDIA.forEach(target => {
+        const btn = document.querySelector(`.menu-item[data-target="${target}"]`);
+        if (btn) btn.style.display = allowedMenus.includes(target) ? '' : 'none';
+    });
+    // "Kelola Akun" selalu khusus Admin, gak pernah bisa dikasih ke akun Terbatas.
     if (menuKelolaAkun) menuKelolaAkun.style.display = isFullAccess ? '' : 'none';
-    if (menuBarang) menuBarang.style.display = isFullAccess ? '' : 'none';
-    if (menuPembelian) menuPembelian.style.display = isFullAccess ? '' : 'none';
 }
 
 if (btnLoginSubmit) {
@@ -185,7 +211,7 @@ if (btnLoginSubmit) {
             .then(result => {
                 btnLoginSubmit.disabled = false;
                 if (result && result.success) {
-                    setSession({ username: u, nama: result.nama, role: result.role });
+                    setSession({ username: u, nama: result.nama, role: result.role, menus: parseMenuString(result.menus) });
                     if (loginErrorMsg) loginErrorMsg.innerText = '';
                     if (loginUsername) loginUsername.value = ''; if (loginPassword) loginPassword.value = '';
                     showApp(); applyRoleUI();
@@ -210,21 +236,43 @@ function bootstrapAfterLogin() {
 }
 
 // --- KELOLA AKUN (khusus Akses Penuh) ---
+function parseMenuString(raw) {
+    if (Array.isArray(raw)) return raw;
+    if (!raw) return [];
+    return raw.toString().split(',').map(s => s.trim()).filter(Boolean);
+}
+
 function fetchUsers() {
     const tbody = document.getElementById('tbody-akun-list');
     if (!tbody) return;
     fetch(`${GOOGLE_SCRIPT_URL}?action=fetch_users`).then(res => res.json()).then(list => {
         globalUserListCache = Array.isArray(list) ? list : [];
-        if (!globalUserListCache.length) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada akun.</td></tr>`; return; }
+        if (!globalUserListCache.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada akun.</td></tr>`; return; }
         tbody.innerHTML = '';
         globalUserListCache.forEach(u => {
             const roleLabel = u.role === 'full' ? 'Akses Penuh' : 'Akses Terbatas';
+            const menuList = parseMenuString(u.menus);
+            const menuLabel = u.role === 'full' ? 'Semua Menu' : (menuList.length ? menuList.map(m => LABEL_MENU[m] || m).join(', ') : '(!) Belum ada menu dipilih');
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td><strong>${u.username}</strong></td><td>${u.nama || '-'}</td><td>${roleLabel}</td><td><button class="btn-action btn-gray-outline btn-hapus-akun" data-username="${u.username}">Hapus</button></td>`;
+            tr.innerHTML = `<td><strong>${u.username}</strong></td><td>${u.nama || '-'}</td><td>${roleLabel}</td><td style="font-size:12px; max-width:280px;">${menuLabel}</td><td style="white-space:nowrap;"><button class="btn-action btn-gray-outline btn-edit-akun" data-username="${u.username}">Edit</button> <button class="btn-action btn-gray-outline btn-hapus-akun" data-username="${u.username}">Hapus</button></td>`;
             tbody.appendChild(tr);
         });
         tbody.querySelectorAll('.btn-hapus-akun').forEach(btn => btn.addEventListener('click', () => deleteUser(btn.getAttribute('data-username'))));
-    }).catch(() => { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data akun.</td></tr>`; });
+        tbody.querySelectorAll('.btn-edit-akun').forEach(btn => btn.addEventListener('click', () => editAkunPrefill(btn.getAttribute('data-username'))));
+    }).catch(() => { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data akun.</td></tr>`; });
+}
+
+// Isi ulang form pakai data akun yang mau diedit (password dikosongin -> wajib diisi ulang buat nyimpen)
+function editAkunPrefill(username) {
+    const u = globalUserListCache.find(x => x.username === username);
+    if (!u) return;
+    if (akunUsername) akunUsername.value = u.username;
+    if (akunNama) akunNama.value = u.nama || '';
+    if (akunPassword) akunPassword.value = '';
+    if (akunRole) { akunRole.value = u.role === 'full' ? 'full' : 'terbatas'; toggleAkunMenuAksesRow(); }
+    setCheckedAkunMenus(parseMenuString(u.menus));
+    updateStatusMessage(`Mode edit akun "${username}" — isi ulang Password lalu klik Simpan Akun buat nyimpen perubahan.`);
+    if (akunUsername) akunUsername.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 if (btnSimpanAkun) {
@@ -235,14 +283,18 @@ if (btnSimpanAkun) {
         const r = akunRole ? akunRole.value : 'terbatas';
         if (!u || !n || !p) { updateStatusMessage('(!) Username, Nama, dan Password wajib diisi.'); return; }
 
+        const menus = r === 'full' ? [] : getCheckedAkunMenus();
+        if (r !== 'full' && !menus.length) { updateStatusMessage('(!) Centang minimal 1 menu buat akun Akses Terbatas.'); return; }
+
         updateStatusMessage('Menyimpan akun...');
         const payload = new URLSearchParams();
-        payload.append('action', 'save_user'); payload.append('username', u); payload.append('nama', n); payload.append('password', p); payload.append('role', r);
+        payload.append('action', 'save_user'); payload.append('username', u); payload.append('nama', n); payload.append('password', p); payload.append('role', r); payload.append('menus', menus.join(','));
         fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
             .then(res => res.json())
             .then(() => {
                 updateStatusMessage(`Akun "${u}" berhasil disimpan.`);
-                if (akunUsername) akunUsername.value = ''; if (akunNama) akunNama.value = ''; if (akunPassword) akunPassword.value = ''; if (akunRole) akunRole.value = 'terbatas';
+                if (akunUsername) akunUsername.value = ''; if (akunNama) akunNama.value = ''; if (akunPassword) akunPassword.value = ''; if (akunRole) { akunRole.value = 'terbatas'; toggleAkunMenuAksesRow(); }
+                setCheckedAkunMenus([]);
                 fetchUsers();
             })
             .catch(() => updateStatusMessage('(!) Gagal menyimpan akun.'));
