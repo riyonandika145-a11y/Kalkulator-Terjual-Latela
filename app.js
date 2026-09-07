@@ -1549,8 +1549,45 @@ function updatePoStatus(id, status) {
         body: JSON.stringify({ id, status, diprosesOleh: sessionUser ? sessionUser.nama : '-' })
     })
         .then(res => res.json())
-        .then(() => { updateStatusMessage(status === 'Approved' ? "PO berhasil di-approve." : "PO berhasil di-reject."); fetchPoListFromCloud(); })
+        .then(() => {
+            if (status === 'Approved') {
+                return pushApprovedPoToHistoriPembelian(id)
+                    .then(() => updateStatusMessage("PO berhasil di-approve & item-nya masuk ke Histori Pembelian."))
+                    .catch(() => updateStatusMessage("(!) PO ter-approve, tapi gagal masukin sebagian/semua item ke Histori Pembelian. Cek manual."));
+            }
+            updateStatusMessage("PO berhasil di-reject.");
+        })
+        .then(() => fetchPoListFromCloud())
         .catch(() => updateStatusMessage("(!) Gagal memproses PO."));
+}
+
+// Dipanggil begitu PO di-approve Admin Keuangan -> tiap item di PO itu otomatis
+// dibikinin 1 baris di Histori Pembelian (purchase_history), biar gak perlu
+// input ulang manual. Expense/Status Bayar dikosongin dulu -> diisi manual
+// belakangan pas harga & pembayarannya udah jelas.
+function pushApprovedPoToHistoriPembelian(id) {
+    const po = globalPoListCache.find(p => String(p.id) === String(id));
+    if (!po) return Promise.resolve();
+    let items = [];
+    try { items = JSON.parse(po.items || '[]'); } catch (err) { items = []; }
+    if (!items.length) return Promise.resolve();
+
+    const requests = items.map(item => {
+        const notesParts = [];
+        if (item.namaKain) notesParts.push(`Kain: ${item.namaKain}`);
+        if (item.kodeWarnaVendor) notesParts.push(`Kode Warna Vendor: ${item.kodeWarnaVendor}`);
+        const notes = notesParts.join(' | ');
+
+        return fetch(`${PEMBELIAN_API_BASE}/submit`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                noPo: po.noPo, barang: item.jenisBarang || '', kode: item.kodeVendor || '', variasi: item.warnaLatela || '',
+                qty: item.qty || 0, satuan: item.satuan || '', tanggalPengajuan: po.tanggal || '', requestor: po.dibuatOleh || '',
+                expense: 0, statusPembayaran: '', statusPurchasing: 'On Order', tanggalComplete: '', notes: notes
+            })
+        });
+    });
+    return Promise.all(requests);
 }
 
 function cetakPoFromList(id) {
