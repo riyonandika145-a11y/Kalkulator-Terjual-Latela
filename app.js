@@ -546,14 +546,24 @@ function fetchPembelianList() {
     if (!tbody) return;
     pembelianAddingNew = false;
     pembelianEditingRowIndex = null;
-    tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data histori pembelian...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="15" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data histori pembelian...</td></tr>`;
     fetch(`${PEMBELIAN_API_BASE}/list`).then(res => res.json()).then(list => {
         // alias "id" (dari D1) jadi "rowIndex" biar semua kode render yang udah
         // ada (data-rowindex, dsb) tetap kompatibel tanpa perlu diubah ulang
         globalPembelianListCache = Array.isArray(list) ? list.map(r => ({ ...r, rowIndex: r.id })) : [];
         pembelianCurrentPage = 1;
         renderPembelianTable(globalPembelianListCache);
-    }).catch(() => { tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data histori pembelian.</td></tr>`; });
+    }).catch(() => { tbody.innerHTML = `<tr><td colspan="15" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data histori pembelian.</td></tr>`; });
+}
+
+// Cek apakah suatu item udah lewat tenggat bayar tapi statusnya masih belum "Sudah Bayar"
+function isPembelianTerlambat(p) {
+    if (!p.tenggatBayar) return false;
+    if ((p.statusPembayaran || '').toLowerCase() === 'sudah bayar') return false;
+    const tenggat = new Date(p.tenggatBayar);
+    if (isNaN(tenggat.getTime())) return false;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return tenggat < today;
 }
 
 function badgeClassStatusBayar(status) {
@@ -607,6 +617,7 @@ function buildPembelianNewRowHtml() {
         <td><input type="date" class="inline-edit-field" data-field="tanggalPengajuan" value="${todayDateString()}" style="width:130px;"></td>
         <td><input type="text" class="inline-edit-field" data-field="requestor" placeholder="Requestor" style="width:90px;"></td>
         <td><input type="number" class="inline-edit-field" data-field="expense" placeholder="Total" style="width:90px;"></td>
+        <td><input type="date" class="inline-edit-field" data-field="tenggatBayar" style="width:130px;"></td>
         <td><select class="inline-edit-field" data-field="statusPembayaran" style="width:100px;">${buildSelectOptionsHtml(PEMBELIAN_STATUS_BAYAR_OPTIONS, 'Belum Bayar')}</select></td>
         <td><select class="inline-edit-field" data-field="statusPurchasing" style="width:100px;">${buildSelectOptionsHtml(PEMBELIAN_STATUS_PURCHASING_OPTIONS, 'On Order')}</select></td>
         <td><input type="date" class="inline-edit-field" data-field="tanggalComplete" style="width:130px;"></td>
@@ -624,7 +635,7 @@ function renderPembelianTable(list) {
     if (!tbody) return;
 
     if (!list.length) {
-        tbody.innerHTML = (pembelianAddingNew ? buildPembelianNewRowHtml() : '') + (pembelianAddingNew ? '' : `<tr><td colspan="14" style="text-align:center; color:#94a3b8; font-style:italic;">Tidak ada data yang cocok.</td></tr>`);
+        tbody.innerHTML = (pembelianAddingNew ? buildPembelianNewRowHtml() : '') + (pembelianAddingNew ? '' : `<tr><td colspan="15" style="text-align:center; color:#94a3b8; font-style:italic;">Tidak ada data yang cocok.</td></tr>`);
         wirePembelianNewRowHandlers(tbody);
         renderPembelianPagination(list);
         return;
@@ -652,6 +663,7 @@ function renderPembelianTable(list) {
                 <td><input type="date" class="inline-edit-field" data-field="tanggalPengajuan" value="${normalizeDateForInput(p.tanggalPengajuan)}" style="width:130px;"></td>
                 <td><input type="text" class="inline-edit-field" data-field="requestor" value="${(p.requestor || '').toString().replace(/"/g, '&quot;')}" style="width:90px;"></td>
                 <td><input type="number" class="inline-edit-field" data-field="expense" value="${p.expense !== undefined && p.expense !== null ? p.expense : ''}" style="width:90px;"></td>
+                <td><input type="date" class="inline-edit-field" data-field="tenggatBayar" value="${normalizeDateForInput(p.tenggatBayar)}" style="width:130px;"></td>
                 <td><select class="inline-edit-field" data-field="statusPembayaran" style="width:100px;">${buildSelectOptionsHtml(PEMBELIAN_STATUS_BAYAR_OPTIONS, p.statusPembayaran)}</select></td>
                 <td><select class="inline-edit-field" data-field="statusPurchasing" style="width:100px;">${buildSelectOptionsHtml(PEMBELIAN_STATUS_PURCHASING_OPTIONS, p.statusPurchasing)}</select></td>
                 <td><input type="date" class="inline-edit-field" data-field="tanggalComplete" value="${normalizeDateForInput(p.tanggalComplete)}" style="width:130px;"></td>
@@ -663,7 +675,10 @@ function renderPembelianTable(list) {
         } else {
             // --- MODE TAMPIL BIASA ---
             const expenseFmt = (p.expense !== undefined && p.expense !== null && p.expense !== '') ? `Rp ${Number(p.expense).toLocaleString('id-ID')}` : '-';
-            tr.innerHTML = `<td><strong>${p.noPo || '-'}</strong></td><td>${p.barang || '-'}</td><td>${p.kode || '-'}</td><td>${p.variasi || '-'}</td><td style="text-align:right;">${p.qty !== undefined && p.qty !== null && p.qty !== '' ? p.qty : '-'}</td><td>${p.satuan || '-'}</td><td>${formatTanggalDisplay(p.tanggalPengajuan)}</td><td>${p.requestor || '-'}</td><td style="text-align:right;">${expenseFmt}</td><td><span class="badge-status ${badgeClassStatusBayar(p.statusPembayaran)}">${p.statusPembayaran || '-'}</span></td><td><span class="badge-status ${badgeClassStatusPurchasing(p.statusPurchasing)}">${p.statusPurchasing || '-'}</span></td><td>${p.tanggalComplete ? formatTanggalDisplay(p.tanggalComplete) : '-'}</td><td>${p.notes || '-'}</td><td style="text-align:center;">
+            const terlambat = isPembelianTerlambat(p);
+            const tenggatFmt = p.tenggatBayar ? formatTanggalDisplay(p.tenggatBayar) : '-';
+            const tenggatHtml = terlambat ? `<span style="color:#dc2626; font-weight:700;">${tenggatFmt} ⚠</span>` : tenggatFmt;
+            tr.innerHTML = `<td><strong>${p.noPo || '-'}</strong></td><td>${p.barang || '-'}</td><td>${p.kode || '-'}</td><td>${p.variasi || '-'}</td><td style="text-align:right;">${p.qty !== undefined && p.qty !== null && p.qty !== '' ? p.qty : '-'}</td><td>${p.satuan || '-'}</td><td>${formatTanggalDisplay(p.tanggalPengajuan)}</td><td>${p.requestor || '-'}</td><td style="text-align:right;">${expenseFmt}</td><td>${tenggatHtml}</td><td><span class="badge-status ${badgeClassStatusBayar(p.statusPembayaran)}">${p.statusPembayaran || '-'}</span></td><td><span class="badge-status ${badgeClassStatusPurchasing(p.statusPurchasing)}">${p.statusPurchasing || '-'}</span></td><td>${p.tanggalComplete ? formatTanggalDisplay(p.tanggalComplete) : '-'}</td><td>${p.notes || '-'}</td><td style="text-align:center;">
                 <button class="btn-aksi-titik3" data-rowindex="${p.rowIndex}">&#8942;</button>
             </td>`;
         }
@@ -713,7 +728,7 @@ function savePembelianNewRow(btnSaveEl) {
             kode: getVal('kode').trim(), variasi: getVal('variasi').trim(),
             qty: getVal('qty'), satuan: getVal('satuan'),
             tanggalPengajuan: getVal('tanggalPengajuan'), requestor: getVal('requestor').trim(),
-            expense: getVal('expense'), statusPembayaran: getVal('statusPembayaran'),
+            expense: getVal('expense'), tenggatBayar: getVal('tenggatBayar'), statusPembayaran: getVal('statusPembayaran'),
             statusPurchasing: getVal('statusPurchasing'), tanggalComplete: getVal('tanggalComplete'),
             notes: getVal('notes').trim()
         })
@@ -751,7 +766,7 @@ function savePembelianInlineEdit(btnSaveEl) {
             kode: getVal('kode').trim(), variasi: getVal('variasi').trim(),
             qty: getVal('qty'), satuan: getVal('satuan'),
             tanggalPengajuan: getVal('tanggalPengajuan'), requestor: getVal('requestor').trim(),
-            expense: getVal('expense'), statusPembayaran: getVal('statusPembayaran'),
+            expense: getVal('expense'), tenggatBayar: getVal('tenggatBayar'), statusPembayaran: getVal('statusPembayaran'),
             statusPurchasing: getVal('statusPurchasing'), tanggalComplete: getVal('tanggalComplete'),
             notes: getVal('notes').trim()
         })
@@ -800,20 +815,30 @@ function renderPembelianPagination(list) {
 }
 
 
-if (searchPembelianInput) {
-    searchPembelianInput.addEventListener('input', () => {
-        const q = searchPembelianInput.value.trim().toLowerCase();
-        pembelianCurrentPage = 1; // reset ke halaman 1 tiap kali search berubah
-        if (!q) { renderPembelianTable(globalPembelianListCache); return; }
-        const filtered = globalPembelianListCache.filter(p =>
+const filterStatusBayarPembelian = document.getElementById('filter-status-bayar-pembelian');
+
+function applyPembelianFilters() {
+    const q = searchPembelianInput ? searchPembelianInput.value.trim().toLowerCase() : '';
+    const statusFilter = filterStatusBayarPembelian ? filterStatusBayarPembelian.value : '';
+    pembelianCurrentPage = 1; // reset ke halaman 1 tiap kali filter berubah
+
+    const filtered = globalPembelianListCache.filter(p => {
+        const matchQ = !q ||
             (p.noPo || '').toString().toLowerCase().includes(q) ||
             (p.barang || '').toString().toLowerCase().includes(q) ||
             (p.requestor || '').toString().toLowerCase().includes(q) ||
-            (p.variasi || '').toString().toLowerCase().includes(q)
-        );
-        renderPembelianTable(filtered);
+            (p.variasi || '').toString().toLowerCase().includes(q);
+        if (!matchQ) return false;
+
+        if (!statusFilter) return true;
+        if (statusFilter === 'terlambat') return isPembelianTerlambat(p);
+        return (p.statusPembayaran || '') === statusFilter;
     });
+    renderPembelianTable(filtered);
 }
+
+if (searchPembelianInput) searchPembelianInput.addEventListener('input', applyPembelianFilters);
+if (filterStatusBayarPembelian) filterStatusBayarPembelian.addEventListener('change', applyPembelianFilters);
 
 function normalizeDateForInput(raw) {
     if (!raw) return '';
@@ -1583,7 +1608,7 @@ function pushApprovedPoToHistoriPembelian(id) {
             body: JSON.stringify({
                 noPo: po.noPo, barang: item.jenisBarang || '', kode: item.kodeVendor || '', variasi: item.warnaLatela || '',
                 qty: item.qty || 0, satuan: item.satuan || '', tanggalPengajuan: po.tanggal || '', requestor: po.dibuatOleh || '',
-                expense: 0, statusPembayaran: '', statusPurchasing: 'On Order', tanggalComplete: '', notes: notes
+                expense: 0, tenggatBayar: '', statusPembayaran: '', statusPurchasing: 'On Order', tanggalComplete: '', notes: notes
             })
         });
     });
