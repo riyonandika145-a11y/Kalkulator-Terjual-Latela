@@ -57,6 +57,7 @@ export default {
         const search = (url.searchParams.get('search') || '').trim();
         let query = `SELECT id, no_po as noPo, barang, kode, variasi, qty, satuan,
                             tanggal_pengajuan as tanggalPengajuan, requestor, total_bayar as expense,
+                            tenggat_bayar as tenggatBayar,
                             status_pembayaran as statusPembayaran, status_purchasing as statusPurchasing,
                             tanggal_complete as tanggalComplete, notes
                      FROM purchase_history`;
@@ -76,12 +77,12 @@ export default {
       if (path === '/api/pembelian/submit' && request.method === 'POST') {
         const b = await readBody(request);
         const result = await env.DB.prepare(
-          `INSERT INTO purchase_history (no_po, barang, kode, variasi, qty, satuan, tanggal_pengajuan, requestor, total_bayar, status_pembayaran, status_purchasing, tanggal_complete, notes)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          `INSERT INTO purchase_history (no_po, barang, kode, variasi, qty, satuan, tanggal_pengajuan, requestor, total_bayar, tenggat_bayar, status_pembayaran, status_purchasing, tanggal_complete, notes)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         ).bind(
           b.noPo || '', b.barang || '', b.kode || '', b.variasi || '',
           b.qty || 0, b.satuan || '', b.tanggalPengajuan || '', b.requestor || '',
-          b.expense || 0, b.statusPembayaran || '', b.statusPurchasing || '',
+          b.expense || 0, b.tenggatBayar || '', b.statusPembayaran || '', b.statusPurchasing || '',
           b.tanggalComplete || '', b.notes || ''
         ).run();
         return json({ success: true, id: result.meta.last_row_id });
@@ -90,11 +91,11 @@ export default {
       if (path === '/api/pembelian/update' && request.method === 'POST') {
         const b = await readBody(request);
         await env.DB.prepare(
-          `UPDATE purchase_history SET no_po=?, barang=?, kode=?, variasi=?, qty=?, satuan=?, tanggal_pengajuan=?, requestor=?, total_bayar=?, status_pembayaran=?, status_purchasing=?, tanggal_complete=?, notes=? WHERE id=?`
+          `UPDATE purchase_history SET no_po=?, barang=?, kode=?, variasi=?, qty=?, satuan=?, tanggal_pengajuan=?, requestor=?, total_bayar=?, tenggat_bayar=?, status_pembayaran=?, status_purchasing=?, tanggal_complete=?, notes=? WHERE id=?`
         ).bind(
           b.noPo || '', b.barang || '', b.kode || '', b.variasi || '',
           b.qty || 0, b.satuan || '', b.tanggalPengajuan || '', b.requestor || '',
-          b.expense || 0, b.statusPembayaran || '', b.statusPurchasing || '',
+          b.expense || 0, b.tenggatBayar || '', b.statusPembayaran || '', b.statusPurchasing || '',
           b.tanggalComplete || '', b.notes || '', b.id
         ).run();
         return json({ success: true });
