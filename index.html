@@ -90,6 +90,9 @@
                 <button class="menu-item" data-target="procurement">
                     <span class="menu-text">Procurement</span>
                 </button>
+                <button class="menu-item" data-target="listpo">
+                    <span class="menu-text">List PO & Approval</span>
+                </button>
 
                 <button class="menu-item" data-target="kelolaakun" id="menu-kelola-akun" style="display:none;">
                     <span class="menu-text">Kelola Akun</span>
@@ -312,7 +315,10 @@
                         <div class="proc-row-actions"><button id="btn-reset-po">Reset</button><button id="btn-export-po">Submit ke List PO</button><button id="btn-add-proc">+ Tambah Item</button></div>
                     </div>
                     <div class="sku-list-card" style="width: 100%;"><h3>Daftar Item Surat Pesanan (PO)</h3><div class="table-responsive"><table><thead><tr><th>Jenis Barang</th><th>Kode Warna Latela</th><th>Kode Warna Vendor</th><th>Vendor</th><th>Kode Vendor</th><th>Nama Kain</th><th style="text-align: right; padding-right:25px;">Jumlah Order</th><th style="text-align: right; padding-right:25px;">Harga Total</th><th>Termin</th></tr></thead><tbody id="tbody-procurement-list"></tbody></table></div></div>
+                </section>
 
+                <section id="view-listpo" class="content-view">
+                    <h2 class="page-title">List PO & Approval</h2>
                     <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Daftar PO & Status Approval</h3><button id="btn-refresh-po-list" class="btn-action btn-pink-outline">Refresh</button></div><div class="table-responsive"><table><thead><tr><th>No PO</th><th>Tanggal</th><th>Vendor</th><th>Dibuat Oleh</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tbody-po-list"><tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data PO...</td></tr></tbody></table></div></div>
                 </section>
 
@@ -338,11 +344,12 @@
                                     <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" class="akun-menu-check" value="qrlabel"> Cetak Label QR</label>
                                     <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" class="akun-menu-check" value="history"> History</label>
                                     <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" class="akun-menu-check" value="procurement"> Procurement</label>
+                                    <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" class="akun-menu-check" value="listpo"> List PO & Approval</label>
                                     <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" class="akun-menu-check" value="barang"> Data Barang</label>
                                     <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" class="akun-menu-check" value="pembelian"> Histori Pembelian</label>
                                 </div>
                                 <span style="font-size:11px; color:var(--text-muted); display:block; margin-top:6px;">Menu "Kelola Akun" selalu khusus Admin, gak bisa dikasih ke akun Terbatas.</span>
-                                <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.10);"><input type="checkbox" id="akun-can-approve-po"> <strong>Bisa Approve/Reject PO (Admin Keuangan)</strong> — terpisah dari Role, bisa dikasih ke akun Terbatas juga</label>
+                                <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.10);"><input type="checkbox" id="akun-can-approve-po"> <strong>Bisa Approve/Reject PO (Admin Keuangan)</strong> — terpisah dari Role & menu "Procurement". Centang ini otomatis kasih akses ke halaman "List PO & Approval" (walau menu itu gak dicentang), tapi TETAP GAK BISA bikin PO baru kecuali "Procurement" juga dicentang.</label>
                             </div>
                         </div>
                         <div class="proc-row-actions"><button id="btn-simpan-akun" class="btn-action btn-pink-solid">Simpan Akun</button></div>
