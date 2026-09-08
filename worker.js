@@ -52,6 +52,17 @@ export default {
         return json({ success: true });
       }
 
+      // 🌟 HAPUS PO DARI LIST (khusus Admin, dicek di sisi frontend). Menghapus
+      // baris ini TIDAK ikut menghapus item yang sudah kelanjur masuk ke
+      // Histori Pembelian (kalau PO-nya sempat ke-approve dulu sebelum dihapus) --
+      // dua tabel ini independen, jadi datanya tetap aman di Histori Pembelian.
+      if (path === '/api/po/delete' && request.method === 'POST') {
+        const b = await readBody(request);
+        if (!b.id) return json({ success: false, message: 'ID PO tidak valid' });
+        await env.DB.prepare(`DELETE FROM po_list WHERE id = ?`).bind(b.id).run();
+        return json({ success: true });
+      }
+
       // ==================== PURCHASE HISTORY (Histori Pembelian) ====================
       if (path === '/api/pembelian/list' && request.method === 'GET') {
         const search = (url.searchParams.get('search') || '').trim();
