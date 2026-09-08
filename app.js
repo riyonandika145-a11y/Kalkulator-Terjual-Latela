@@ -168,8 +168,8 @@ const akunMenuAksesRow = document.getElementById('akun-menu-akses-row');
 const akunCanApprovePo = document.getElementById('akun-can-approve-po');
 
 // Semua menu yang bisa di-toggle per akun (di luar "kelolaakun" -> selalu khusus Admin)
-const SEMUA_MENU_TERSEDIA = ['dashboard', 'kalkulator', 'barangkeluar', 'mastersku', 'qrlabel', 'history', 'procurement', 'barang', 'pembelian'];
-const LABEL_MENU = { dashboard: 'Dashboard', kalkulator: 'Kalkulator Terjual', barangkeluar: 'Barang Keluar', mastersku: 'Master SKU', qrlabel: 'Cetak Label QR', history: 'History', procurement: 'Procurement', barang: 'Data Barang', pembelian: 'Histori Pembelian' };
+const SEMUA_MENU_TERSEDIA = ['dashboard', 'kalkulator', 'barangkeluar', 'mastersku', 'qrlabel', 'history', 'procurement', 'listpo', 'barang', 'pembelian'];
+const LABEL_MENU = { dashboard: 'Dashboard', kalkulator: 'Kalkulator Terjual', barangkeluar: 'Barang Keluar', mastersku: 'Master SKU', qrlabel: 'Cetak Label QR', history: 'History', procurement: 'Procurement', listpo: 'List PO & Approval', barang: 'Data Barang', pembelian: 'Histori Pembelian' };
 
 function toggleAkunMenuAksesRow() {
     if (!akunMenuAksesRow || !akunRole) return;
@@ -207,7 +207,14 @@ function applyRoleUI() {
 
     // Admin (Akses Penuh) otomatis liat semua menu. Akun Terbatas cuma liat menu
     // yang dicentang admin buat dia (disimpan di sess.menus, array of data-target).
-    const allowedMenus = isFullAccess ? SEMUA_MENU_TERSEDIA : ((sess && Array.isArray(sess.menus)) ? sess.menus : []);
+    let allowedMenus = isFullAccess ? SEMUA_MENU_TERSEDIA : ((sess && Array.isArray(sess.menus)) ? sess.menus : []);
+    // Admin Keuangan (canApprovePo) OTOMATIS bisa buka "List PO & Approval" walau
+    // menu itu gak dicentang -- soalnya percuma dikasih izin approve tapi gak bisa
+    // liat halamannya sama sekali. Ini TERPISAH dari menu "Procurement" (bikin PO
+    // baru), yang tetap harus dicentang manual sendiri kalau memang mau dikasih.
+    if (!isFullAccess && sess && sess.canApprovePo && !allowedMenus.includes('listpo')) {
+        allowedMenus = allowedMenus.concat(['listpo']);
+    }
     SEMUA_MENU_TERSEDIA.forEach(target => {
         const btn = document.querySelector(`.menu-item[data-target="${target}"]`);
         if (btn) btn.style.display = allowedMenus.includes(target) ? '' : 'none';
@@ -1579,6 +1586,11 @@ function fetchPoListFromCloud() {
                 </select>`;
             }
             aksiHtml += `<button class="btn-action btn-blue-solid btn-cetak-po" data-id="${po.id}" ${statusApproved ? '' : 'disabled title="PO harus di-approve Admin Keuangan dulu sebelum bisa dicetak"'}>Cetak PDF</button>`;
+            // Hapus PO dari List -> khusus Admin (akses penuh), gak dikasih ke Admin Keuangan/akun terbatas lain
+            // biar gak ada kesalahan/penyalahgunaan hapus data approval.
+            if (isFullAccess) {
+                aksiHtml += ` <button class="btn-action btn-gray-outline btn-hapus-po" data-id="${po.id}" data-nopo="${po.noPo || ''}" title="Hapus PO dari List (data di Histori Pembelian yang sudah terlanjur masuk TIDAK ikut terhapus)">Hapus</button>`;
+            }
 
             const tr = document.createElement('tr');
             tr.innerHTML = `<td><strong class="po-no-clickable" data-id="${po.id}" style="cursor:pointer; text-decoration:underline; color:var(--pink-main);">${po.noPo || '-'}</strong></td><td>${formatTanggalDisplay(po.tanggal)}</td><td>${po.vendor || '-'}</td><td>${po.dibuatOleh || '-'}</td><td><span class="badge-status ${badgeClass}">${badgeText}</span></td><td>${aksiHtml}</td>`;
@@ -1595,7 +1607,26 @@ function fetchPoListFromCloud() {
             else if (val === 'Rejected') { if (confirm('Yakin mau reject PO ini?')) updatePoStatus(id, 'Rejected'); else sel.value = ''; }
         }));
         tbody.querySelectorAll('.btn-cetak-po').forEach(btn => btn.addEventListener('click', () => cetakPoFromList(btn.getAttribute('data-id'))));
+        tbody.querySelectorAll('.btn-hapus-po').forEach(btn => btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-id');
+            const noPo = btn.getAttribute('data-nopo');
+            if (confirm(`Yakin mau hapus PO "${noPo}" dari List? Aksi ini gak bisa dibatalkan.`)) deletePoFromList(id);
+        }));
     }).catch(() => { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data PO.</td></tr>`; });
+}
+
+function deletePoFromList(id) {
+    updateStatusMessage('Menghapus PO...');
+    fetch(`${PO_API_BASE}/delete`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+    })
+        .then(res => res.json())
+        .then(result => {
+            if (result && result.success) { updateStatusMessage('PO berhasil dihapus dari List.'); fetchPoListFromCloud(); }
+            else updateStatusMessage('(!) Gagal menghapus PO: ' + (result && result.message ? result.message : 'unknown error'));
+        })
+        .catch(() => updateStatusMessage('(!) Gagal menghapus PO.'));
 }
 
 function updatePoStatus(id, status) {
@@ -1697,7 +1728,7 @@ menuItems.forEach(item => {
         const target = item.getAttribute('data-target');
         const targetView = document.getElementById(`view-${target}`);
         if (targetView) targetView.classList.add('active');
-        if (target === 'procurement') fetchPoListFromCloud();
+        if (target === 'listpo') fetchPoListFromCloud();
         if (target === 'kelolaakun') fetchUsers();
         if (target === 'barang') fetchBarangList();
         if (target === 'pembelian') fetchPembelianList();
