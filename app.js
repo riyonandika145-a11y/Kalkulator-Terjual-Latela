@@ -1556,12 +1556,25 @@ function openPoDetailModal(id) {
 if (btnPoDetailClose) btnPoDetailClose.addEventListener('click', () => { if (poDetailModal) poDetailModal.classList.remove('show'); });
 if (poDetailModal) poDetailModal.addEventListener('click', (e) => { if (e.target === poDetailModal) poDetailModal.classList.remove('show'); });
 
+// Hitung total harga & rangkum termin dari semua item di 1 PO (item-nya
+// sendiri disimpen sebagai JSON string di kolom po_list.items). Kalau termin
+// tiap item beda-beda, ditampilin semua (dipisah "/") -- kalau sama semua
+// (kasus paling umum, 1 PO = 1 kesepakatan termin), cukup tampil 1x.
+function summarizePoItems(itemsJson) {
+    let items = [];
+    try { items = JSON.parse(itemsJson || '[]'); } catch (err) { items = []; }
+    const totalHarga = items.reduce((sum, it) => sum + (Number(it.harga) || 0), 0);
+    const terminUnik = Array.from(new Set(items.map(it => (it.termin || '').toString().trim()).filter(Boolean)));
+    const terminLabel = terminUnik.length ? terminUnik.join(' / ') : '-';
+    return { totalHarga, terminLabel };
+}
+
 function fetchPoListFromCloud() {
     const tbody = document.getElementById('tbody-po-list');
     if (!tbody) return;
     fetch(`${PO_API_BASE}/list`).then(res => res.json()).then(list => {
         globalPoListCache = Array.isArray(list) ? list : [];
-        if (!globalPoListCache.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada PO yang disubmit.</td></tr>`; return; }
+        if (!globalPoListCache.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada PO yang disubmit.</td></tr>`; return; }
 
         const sessionUser = getSession();
         const isFullAccess = sessionUser && sessionUser.role === 'full';
@@ -1576,6 +1589,8 @@ function fetchPoListFromCloud() {
             const statusRejected = statusLower === 'rejected';
             const badgeClass = statusApproved ? 'badge-status-approved' : (statusRejected ? 'badge-status-rejected' : 'badge-status-pending');
             const badgeText = statusApproved ? 'Approved' : (statusRejected ? 'Rejected' : 'Pending');
+            const { totalHarga, terminLabel } = summarizePoItems(po.items);
+            const totalHargaFmt = totalHarga ? `Rp ${totalHarga.toLocaleString('id-ID')}` : '-';
 
             let aksiHtml = '';
             if (statusLower === 'pending' && canApprovePo) {
@@ -1593,7 +1608,7 @@ function fetchPoListFromCloud() {
             }
 
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td><strong class="po-no-clickable" data-id="${po.id}" style="cursor:pointer; text-decoration:underline; color:var(--pink-main);">${po.noPo || '-'}</strong></td><td>${formatTanggalDisplay(po.tanggal)}</td><td>${po.vendor || '-'}</td><td>${po.dibuatOleh || '-'}</td><td><span class="badge-status ${badgeClass}">${badgeText}</span></td><td>${aksiHtml}</td>`;
+            tr.innerHTML = `<td><strong class="po-no-clickable" data-id="${po.id}" style="cursor:pointer; text-decoration:underline; color:var(--pink-main);">${po.noPo || '-'}</strong></td><td>${formatTanggalDisplay(po.tanggal)}</td><td>${po.vendor || '-'}</td><td>${po.dibuatOleh || '-'}</td><td style="text-align:right;">${totalHargaFmt}</td><td>${terminLabel}</td><td><span class="badge-status ${badgeClass}">${badgeText}</span></td><td>${aksiHtml}</td>`;
             tbody.appendChild(tr);
         });
 
@@ -1612,7 +1627,7 @@ function fetchPoListFromCloud() {
             const noPo = btn.getAttribute('data-nopo');
             if (confirm(`Yakin mau hapus PO "${noPo}" dari List? Aksi ini gak bisa dibatalkan.`)) deletePoFromList(id);
         }));
-    }).catch(() => { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data PO.</td></tr>`; });
+    }).catch(() => { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data PO.</td></tr>`; });
 }
 
 function deletePoFromList(id) {
