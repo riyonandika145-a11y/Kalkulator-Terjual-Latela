@@ -101,6 +101,25 @@ const procVendorSelect = document.getElementById('proc-vendor-select');
 const procKodeVendor = document.getElementById('proc-kode-vendor');
 const procNamaKain = document.getElementById('proc-nama-kain');
 const procQty = document.getElementById('proc-qty');
+const procHarga = document.getElementById('proc-harga');
+const procTermin = document.getElementById('proc-termin');
+
+// Terima "12,5" ATAU "12.5" sebagai angka desimal yang sama (user Indonesia
+// biasa pakai koma). Titik ribuan (mis. "1.200") juga otomatis dibersihin
+// SELAMA cuma ada 1 pemisah desimal di akhir -- kalau ambigu, dianggap koma
+// desimal dulu (kasus paling umum di form ini: qty & harga kecil-kecil).
+function parseAngkaKoma(raw) {
+    if (raw === undefined || raw === null) return NaN;
+    let s = raw.toString().trim();
+    if (!s) return NaN;
+    if (s.includes(',')) {
+        // Ada koma -> koma dianggap pemisah desimal, titik (kalau ada) dianggap pemisah ribuan.
+        // "1.200,5" -> "1200.5" ; "12,5" -> "12.5"
+        s = s.replace(/\./g, '').replace(',', '.');
+    }
+    // Cuma ada titik doang (tanpa koma) -> dibiarin apa adanya, titik dianggap desimal biasa (mis. "12.5")
+    return parseFloat(s);
+}
 const procSatuan = document.getElementById('proc-satuan');
 const btnAddProc = document.getElementById('btn-add-proc');
 const btnExportPo = document.getElementById('btn-export-po');
@@ -1272,12 +1291,15 @@ if (btnAddProc) {
             : (procVendor ? procVendor.value : '');
         const kodeVendor = procKodeVendor ? procKodeVendor.value : ''; 
         const namaKain = procNamaKain ? procNamaKain.value : ''; 
-        const qty = procQty ? parseInt(procQty.value, 10) : 0;
-        const satuan = procSatuan ? procSatuan.value : 'Roll'; 
+        const qty = procQty ? parseAngkaKoma(procQty.value) : NaN;
+        const satuan = procSatuan ? procSatuan.value : 'Roll';
+        const harga = procHarga && procHarga.value.trim() !== '' ? parseAngkaKoma(procHarga.value) : 0;
+        const termin = procTermin ? procTermin.value.trim() : '';
 
         if (vendorSelectAktif && !procVendorSelect.value) { updateStatusMessage("(!) Gagal: Pilih vendor terlebih dahulu (ada lebih dari 1 vendor untuk warna ini)."); return; }
-        if(!jenisBarang || !warnaLatela || !vendor || isNaN(qty) || qty <= 0) { updateStatusMessage("(!) Gagal: Isi Qty dengan benar."); return; }
-        currentPoBasket.push({ jenisBarang, warnaLatela, kodeWarnaVendor, vendor, kodeVendor, namaKain, qty, satuan });
+        if(!jenisBarang || !warnaLatela || !vendor || isNaN(qty) || qty <= 0) { updateStatusMessage("(!) Gagal: Isi Qty dengan benar (angka desimal boleh pakai koma, mis. 12,5)."); return; }
+        if (procHarga && procHarga.value.trim() !== '' && isNaN(harga)) { updateStatusMessage("(!) Gagal: Format Harga Total gak valid."); return; }
+        currentPoBasket.push({ jenisBarang, warnaLatela, kodeWarnaVendor, vendor, kodeVendor, namaKain, qty, satuan, harga, termin });
         renderProcurementTable(); 
 
         // 🔄 RESET FORM SETELAH ITEM DITAMBAHKAN (biar siap input item baru)
@@ -1285,6 +1307,8 @@ if (btnAddProc) {
         if (procWarnaLatela) { procWarnaLatela.innerHTML = '<option value="">-- Pilih Warna Latela --</option>'; procWarnaLatela.disabled = true; }
         kosongkanFieldVendorDetail();
         if (procQty) procQty.value = '';
+        if (procHarga) procHarga.value = '';
+        if (procTermin) procTermin.value = '';
 
         updateStatusMessage(`Sukses menambah pesanan ${jenisBarang} (${warnaLatela}) ke list PO.`);
     });
@@ -1293,12 +1317,13 @@ if (btnAddProc) {
 function renderProcurementTable() {
     if (!tbodyProcurementList) return;
     if(currentPoBasket.length === 0) {
-        tbodyProcurementList.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #94a3b8; font-style: italic;">Belum ada item ditambahkan ke Surat PO.</td></tr>`; return;
+        tbodyProcurementList.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #94a3b8; font-style: italic;">Belum ada item ditambahkan ke Surat PO.</td></tr>`; return;
     }
     tbodyProcurementList.innerHTML = '';
     currentPoBasket.forEach((item) => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td><strong>${item.jenisBarang}</strong></td><td><code>${item.warnaLatela}</code></td><td>${item.kodeWarnaVendor}</td><td>${item.vendor}</td><td><strong>${item.kodeVendor}</strong></td><td>${item.namaKain}</td><td style="text-align: right; padding-right:25px; color:#2563eb;">${item.qty} ${item.satuan}</td>`;
+        const hargaFmt = item.harga ? `Rp ${Number(item.harga).toLocaleString('id-ID')}` : '-';
+        tr.innerHTML = `<td><strong>${item.jenisBarang}</strong></td><td><code>${item.warnaLatela}</code></td><td>${item.kodeWarnaVendor}</td><td>${item.vendor}</td><td><strong>${item.kodeVendor}</strong></td><td>${item.namaKain}</td><td style="text-align: right; padding-right:25px; color:#2563eb;">${item.qty} ${item.satuan}</td><td style="text-align: right; padding-right:25px;">${hargaFmt}</td><td>${item.termin || '-'}</td>`;
         tbodyProcurementList.appendChild(tr);
     });
 }
@@ -1311,6 +1336,8 @@ if (btnResetPo) {
         if (procWarnaLatela) { procWarnaLatela.value = ''; procWarnaLatela.disabled = true; }
         kosongkanFieldVendorDetail();
         if (procQty) procQty.value = '';
+        if (procHarga) procHarga.value = '';
+        if (procTermin) procTermin.value = '';
         if (procSatuan) procSatuan.value = 'Roll';
         
         // Reset Tanggal PO ke Hari Ini Kembali
@@ -1377,19 +1404,20 @@ function generatePoPdf(noPoValue, rawSelectedDate, vendorHeader, items) {
     doc.text('Tanggal', infoLabelX, 84); doc.text(':', infoColonX, 84); doc.text(formattedDate, infoValueX, 84);
     doc.text('Vendor', infoLabelX, 98); doc.text(':', infoColonX, 98); doc.text(vendorHeader, infoValueX, 98);
 
-    // --- TABEL ITEM (sesuai struktur template: NO | NAMA PRODUK | WARNA | KODE VENDOR | YDS | KG | ROLL) ---
+    // --- TABEL ITEM (sesuai struktur template: NO | NAMA PRODUK | WARNA | KODE VENDOR | QTY | SATUAN | HARGA | TERMIN) ---
+    // Qty & Satuan digabung jadi 2 kolom generik (bukan kolom terpisah per jenis satuan
+    // kayak sebelumnya) biar otomatis ke-cover semua satuan -- termasuk Pcs, atau
+    // satuan baru lain yang mungkin ditambah lagi nanti -- tanpa perlu ubah kode PDF-nya lagi.
     const bodyRows = items.map((item, idx) => {
-        const isYds = item.satuan === 'Yards';
-        const isKg = item.satuan === 'Kg';
-        const isRoll = item.satuan === 'Roll';
         return [
             idx + 1,
             item.namaKain !== undefined && item.namaKain !== null && item.namaKain !== '' ? String(item.namaKain) : '-',
             item.warnaLatela !== undefined && item.warnaLatela !== null && item.warnaLatela !== '' ? String(item.warnaLatela) : '-',
             item.kodeWarnaVendor !== undefined && item.kodeWarnaVendor !== null && item.kodeWarnaVendor !== '' ? String(item.kodeWarnaVendor) : '-',
-            isYds ? item.qty : '',
-            isKg ? item.qty : '',
-            isRoll ? item.qty : ''
+            item.qty !== undefined && item.qty !== null && item.qty !== '' ? String(item.qty) : '-',
+            item.satuan !== undefined && item.satuan !== null && item.satuan !== '' ? String(item.satuan) : '-',
+            item.harga ? `Rp ${Number(item.harga).toLocaleString('id-ID')}` : '-',
+            item.termin !== undefined && item.termin !== null && item.termin !== '' ? String(item.termin) : '-'
         ];
     });
 
@@ -1402,22 +1430,26 @@ function generatePoPdf(noPoValue, rawSelectedDate, vendorHeader, items) {
                 { content: 'NO', rowSpan: 2 },
                 { content: 'NAMA PRODUK', rowSpan: 2 },
                 { content: 'KODE WARNA', colSpan: 2, styles: { halign: 'center' } },
-                { content: 'QUANTITY', colSpan: 3, styles: { halign: 'center' } }
+                { content: 'QTY', rowSpan: 2 },
+                { content: 'SATUAN', rowSpan: 2 },
+                { content: 'HARGA', rowSpan: 2 },
+                { content: 'TERMIN', rowSpan: 2 }
             ],
-            ['WARNA', 'KODE VENDOR', 'YDS', 'KG', 'ROLL']
+            ['WARNA', 'KODE VENDOR']
         ],
         body: bodyRows,
         theme: 'grid',
-        styles: { fontSize: 9, halign: 'center', valign: 'middle', lineColor: [0,0,0], lineWidth: 0.75, minCellHeight: 24, textColor: [0,0,0] },
-        headStyles: { fillColor: [20,20,20], textColor: [255,255,255], fontStyle: 'bold' },
+        styles: { fontSize: 8, halign: 'center', valign: 'middle', lineColor: [0,0,0], lineWidth: 0.75, minCellHeight: 24, textColor: [0,0,0] },
+        headStyles: { fillColor: [20,20,20], textColor: [255,255,255], fontStyle: 'bold', fontSize: 8 },
         columnStyles: {
-            0: { cellWidth: 30 },
-            1: { cellWidth: contentWidth - (30 + 90 + 90 + 50 + 50 + 50) },
-            2: { cellWidth: 90 },
-            3: { cellWidth: 90 },
-            4: { cellWidth: 50 },
-            5: { cellWidth: 50 },
-            6: { cellWidth: 50 }
+            0: { cellWidth: 22 },
+            1: { cellWidth: contentWidth - (22 + 75 + 75 + 40 + 45 + 70 + 60) },
+            2: { cellWidth: 75 },
+            3: { cellWidth: 75 },
+            4: { cellWidth: 40 },
+            5: { cellWidth: 45 },
+            6: { cellWidth: 70 },
+            7: { cellWidth: 60 }
         }
     });
 
@@ -1590,6 +1622,22 @@ function updatePoStatus(id, status) {
 // dibikinin 1 baris di Histori Pembelian (purchase_history), biar gak perlu
 // input ulang manual. Expense/Status Bayar dikosongin dulu -> diisi manual
 // belakangan pas harga & pembayarannya udah jelas.
+// Coba hitung Tenggat Bayar dari teks Termin bebas (mis. "NET 30", "30 hari", "COD").
+// Kalau nemu angka di teksnya, dianggap "sekian hari dari Tanggal Pengajuan".
+// "COD" (cash on delivery) dianggap jatuh tempo di tanggal yang sama.
+// Kalau gak kebaca polanya sama sekali, dibiarin kosong -> nanti diisi manual.
+function hitungTenggatDariTermin(tanggalPengajuan, terminText) {
+    if (!tanggalPengajuan || !terminText) return '';
+    const t = terminText.toString().toLowerCase();
+    const d = new Date(tanggalPengajuan);
+    if (isNaN(d.getTime())) return '';
+    if (t.includes('cod')) return d.toISOString().slice(0, 10);
+    const match = t.match(/(\d+)/);
+    if (!match) return '';
+    d.setDate(d.getDate() + parseInt(match[1], 10));
+    return d.toISOString().slice(0, 10);
+}
+
 function pushApprovedPoToHistoriPembelian(id) {
     const po = globalPoListCache.find(p => String(p.id) === String(id));
     if (!po) return Promise.resolve();
@@ -1601,14 +1649,16 @@ function pushApprovedPoToHistoriPembelian(id) {
         const notesParts = [];
         if (item.namaKain) notesParts.push(`Kain: ${item.namaKain}`);
         if (item.kodeWarnaVendor) notesParts.push(`Kode Warna Vendor: ${item.kodeWarnaVendor}`);
+        if (item.termin) notesParts.push(`Termin: ${item.termin}`);
         const notes = notesParts.join(' | ');
+        const tenggatBayar = hitungTenggatDariTermin(po.tanggal, item.termin);
 
         return fetch(`${PEMBELIAN_API_BASE}/submit`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 noPo: po.noPo, barang: item.jenisBarang || '', kode: item.kodeVendor || '', variasi: item.warnaLatela || '',
                 qty: item.qty || 0, satuan: item.satuan || '', tanggalPengajuan: po.tanggal || '', requestor: po.dibuatOleh || '',
-                expense: 0, tenggatBayar: '', statusPembayaran: '', statusPurchasing: 'On Order', tanggalComplete: '', notes: notes
+                expense: item.harga || 0, tenggatBayar: tenggatBayar, statusPembayaran: '', statusPurchasing: 'On Order', tanggalComplete: '', notes: notes
             })
         });
     });
