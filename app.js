@@ -14,6 +14,7 @@ if ('serviceWorker' in navigator) {
 // CLOUD DATABASE CONFIGURATION (GOOGLE SHEETS)
 // =========================================================================
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9ZVSAObK0DbfXadHO9LIQGEaLlmFruZ4AR7HFpsYC2ONmKLGQCQ_93TuS_DpOwog/exec";
+const USERS_API_BASE = '/api/users'; // Data akun (Kelola Akun) sekarang di D1, bukan Google Sheets lagi
 
 
 // SIGNATURE IMAGE (CV ARSA) - base64 agar tidak perlu file eksternal
@@ -231,9 +232,10 @@ if (btnLoginSubmit) {
         if (loginErrorMsg) loginErrorMsg.innerText = 'Memeriksa...';
         btnLoginSubmit.disabled = true;
 
-        const payload = new URLSearchParams();
-        payload.append('action', 'login'); payload.append('username', u); payload.append('password', p);
-        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
+        fetch(`${USERS_API_BASE}/login`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: u, password: p })
+        })
             .then(res => res.json())
             .then(result => {
                 btnLoginSubmit.disabled = false;
@@ -272,7 +274,7 @@ function parseMenuString(raw) {
 function fetchUsers() {
     const tbody = document.getElementById('tbody-akun-list');
     if (!tbody) return;
-    fetch(`${GOOGLE_SCRIPT_URL}?action=fetch_users`).then(res => res.json()).then(list => {
+    fetch(`${USERS_API_BASE}/list`).then(res => res.json()).then(list => {
         globalUserListCache = Array.isArray(list) ? list : [];
         if (!globalUserListCache.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada akun.</td></tr>`; return; }
         tbody.innerHTML = '';
@@ -318,9 +320,10 @@ if (btnSimpanAkun) {
         const canApprovePo = akunCanApprovePo ? akunCanApprovePo.checked : false;
 
         updateStatusMessage('Menyimpan akun...');
-        const payload = new URLSearchParams();
-        payload.append('action', 'save_user'); payload.append('username', u); payload.append('nama', n); payload.append('password', p); payload.append('role', r); payload.append('menus', menus.join(',')); payload.append('canApprovePo', canApprovePo ? 'yes' : '');
-        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
+        fetch(`${USERS_API_BASE}/save`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: u, nama: n, password: p, role: r, menus: menus.join(','), canApprovePo: canApprovePo ? 'yes' : '' })
+        })
             .then(res => res.json())
             .then(() => {
                 updateStatusMessage(`Akun "${u}" berhasil disimpan.`);
@@ -334,9 +337,10 @@ if (btnSimpanAkun) {
 
 function deleteUser(username) {
     if (!confirm(`Yakin ingin menghapus akun "${username}"?`)) return;
-    const payload = new URLSearchParams();
-    payload.append('action', 'delete_user'); payload.append('username', username);
-    fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload })
+    fetch(`${USERS_API_BASE}/delete`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username })
+    })
         .then(res => res.json())
         .then(() => { updateStatusMessage(`Akun "${username}" berhasil dihapus.`); fetchUsers(); })
         .catch(() => updateStatusMessage('(!) Gagal menghapus akun.'));
