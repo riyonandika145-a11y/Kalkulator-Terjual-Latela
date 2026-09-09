@@ -336,20 +336,20 @@
                         <div class="proc-row-top" id="akun-menu-akses-row">
                             <div class="proc-field-col" style="flex:1 1 100%;">
                                 <span class="proc-field-label">Menu yang Bisa Diakses:</span>
-                                <div id="akun-menu-checklist" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; padding:12px; border-radius:12px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.10);">
-                                    <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" class="akun-menu-check" value="dashboard"> Dashboard</label>
-                                    <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" class="akun-menu-check" value="kalkulator"> Kalkulator Terjual</label>
-                                    <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" class="akun-menu-check" value="barangkeluar"> Barang Keluar</label>
-                                    <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" class="akun-menu-check" value="mastersku"> Master SKU</label>
-                                    <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" class="akun-menu-check" value="qrlabel"> Cetak Label QR</label>
-                                    <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" class="akun-menu-check" value="history"> History</label>
-                                    <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" class="akun-menu-check" value="procurement"> Procurement</label>
-                                    <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" class="akun-menu-check" value="listpo"> List PO & Approval</label>
-                                    <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" class="akun-menu-check" value="barang"> Data Barang</label>
-                                    <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" class="akun-menu-check" value="pembelian"> Histori Pembelian</label>
+                                <div id="akun-menu-checklist" class="akun-menu-checklist-grid">
+                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="dashboard"><span>Dashboard</span></label>
+                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="kalkulator"><span>Kalkulator Terjual</span></label>
+                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="barangkeluar"><span>Barang Keluar</span></label>
+                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="mastersku"><span>Master SKU</span></label>
+                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="qrlabel"><span>Cetak Label QR</span></label>
+                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="history"><span>History</span></label>
+                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="procurement"><span>Procurement</span></label>
+                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="listpo"><span>List PO & Approval</span></label>
+                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="barang"><span>Data Barang</span></label>
+                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="pembelian"><span>Histori Pembelian</span></label>
                                 </div>
                                 <span style="font-size:11px; color:var(--text-muted); display:block; margin-top:6px;">Menu "Kelola Akun" selalu khusus Admin, gak bisa dikasih ke akun Terbatas.</span>
-                                <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.10);"><input type="checkbox" id="akun-can-approve-po"> <strong>Bisa Approve/Reject PO (Admin Keuangan)</strong> — terpisah dari Role & menu "Procurement". Centang ini otomatis kasih akses ke halaman "List PO & Approval" (walau menu itu gak dicentang), tapi TETAP GAK BISA bikin PO baru kecuali "Procurement" juga dicentang.</label>
+                                <label class="akun-menu-check-label akun-approve-po-label"><input type="checkbox" id="akun-can-approve-po"><span><strong>Bisa Approve/Reject PO (Admin Keuangan)</strong> — terpisah dari Role & menu "Procurement". Centang ini otomatis kasih akses ke halaman "List PO & Approval" (walau menu itu gak dicentang), tapi TETAP GAK BISA bikin PO baru kecuali "Procurement" juga dicentang.</span></label>
                             </div>
                         </div>
                         <div class="proc-row-actions"><button id="btn-simpan-akun" class="btn-action btn-pink-solid">Simpan Akun</button></div>
