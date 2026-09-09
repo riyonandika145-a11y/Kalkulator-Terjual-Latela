@@ -63,6 +63,56 @@ export default {
         return json({ success: true });
       }
 
+      // ==================== USERS (Kelola Akun) ====================
+      // Migrasi dari Google Sheets/Apps Script ke D1, biar konsisten sama
+      // List PO & Histori Pembelian yang udah duluan pakai D1.
+      if (path === '/api/users/list' && request.method === 'GET') {
+        const { results } = await env.DB.prepare(
+          `SELECT username, nama, role, menus, can_approve_po as canApprovePo FROM users ORDER BY id ASC`
+        ).all();
+        return json(results);
+      }
+
+      if (path === '/api/users/login' && request.method === 'POST') {
+        const b = await readBody(request);
+        const row = await env.DB.prepare(
+          `SELECT username, password, nama, role, menus, can_approve_po as canApprovePo FROM users WHERE username = ?`
+        ).bind(b.username || '').first();
+        if (row && String(row.password) === String(b.password || '')) {
+          return json({
+            success: true,
+            nama: row.nama,
+            role: String(row.role).trim().toLowerCase() === 'full' ? 'full' : 'terbatas',
+            menus: row.menus || '',
+            canApprovePo: row.canApprovePo || ''
+          });
+        }
+        return json({ success: false, message: 'Username atau password salah.' });
+      }
+
+      if (path === '/api/users/save' && request.method === 'POST') {
+        const b = await readBody(request);
+        if (!b.username) return json({ success: false, message: 'Username kosong' });
+        const existing = await env.DB.prepare(`SELECT id FROM users WHERE username = ?`).bind(b.username).first();
+        if (existing) {
+          await env.DB.prepare(
+            `UPDATE users SET password=?, nama=?, role=?, menus=?, can_approve_po=? WHERE username=?`
+          ).bind(b.password || '', b.nama || '', b.role || 'terbatas', b.menus || '', b.canApprovePo || '', b.username).run();
+          return json({ success: true, updated: true });
+        }
+        await env.DB.prepare(
+          `INSERT INTO users (username, password, nama, role, menus, can_approve_po) VALUES (?, ?, ?, ?, ?, ?)`
+        ).bind(b.username, b.password || '', b.nama || '', b.role || 'terbatas', b.menus || '', b.canApprovePo || '').run();
+        return json({ success: true, created: true });
+      }
+
+      if (path === '/api/users/delete' && request.method === 'POST') {
+        const b = await readBody(request);
+        if (!b.username) return json({ success: false, message: 'Username kosong' });
+        await env.DB.prepare(`DELETE FROM users WHERE username = ?`).bind(b.username).run();
+        return json({ success: true });
+      }
+
       // ==================== PURCHASE HISTORY (Histori Pembelian) ====================
       if (path === '/api/pembelian/list' && request.method === 'GET') {
         const search = (url.searchParams.get('search') || '').trim();
