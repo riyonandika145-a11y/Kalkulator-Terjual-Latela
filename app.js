@@ -276,21 +276,19 @@ function fetchUsers() {
     if (!tbody) return;
     fetch(`${USERS_API_BASE}/list`).then(res => res.json()).then(list => {
         globalUserListCache = Array.isArray(list) ? list : [];
-        if (!globalUserListCache.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada akun.</td></tr>`; return; }
+        if (!globalUserListCache.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada akun.</td></tr>`; return; }
         tbody.innerHTML = '';
         globalUserListCache.forEach(u => {
             const roleLabel = u.role === 'full' ? 'Akses Penuh' : 'Akses Terbatas';
             const menuList = parseMenuString(u.menus);
             const menuLabel = u.role === 'full' ? 'Semua Menu' : (menuList.length ? menuList.map(m => LABEL_MENU[m] || m).join(', ') : '(!) Belum ada menu dipilih');
-            const canApprove = u.role === 'full' || String(u.canApprovePo).trim().toLowerCase() === 'yes';
-            const approveLabel = canApprove ? '✅ Ya' : '-';
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td><strong>${u.username}</strong></td><td>${u.nama || '-'}</td><td>${roleLabel}</td><td style="font-size:12px; max-width:280px;">${menuLabel}</td><td style="text-align:center;">${approveLabel}</td><td style="white-space:nowrap;"><button class="btn-action btn-gray-outline btn-edit-akun" data-username="${u.username}">Edit</button> <button class="btn-action btn-gray-outline btn-hapus-akun" data-username="${u.username}">Hapus</button></td>`;
+            tr.innerHTML = `<td><strong>${u.username}</strong></td><td>${u.nama || '-'}</td><td>${roleLabel}</td><td style="font-size:12px; max-width:280px;">${menuLabel}</td><td style="white-space:nowrap;"><button class="btn-action btn-gray-outline btn-edit-akun" data-username="${u.username}">Edit</button> <button class="btn-action btn-gray-outline btn-hapus-akun" data-username="${u.username}">Hapus</button></td>`;
             tbody.appendChild(tr);
         });
         tbody.querySelectorAll('.btn-hapus-akun').forEach(btn => btn.addEventListener('click', () => deleteUser(btn.getAttribute('data-username'))));
         tbody.querySelectorAll('.btn-edit-akun').forEach(btn => btn.addEventListener('click', () => editAkunPrefill(btn.getAttribute('data-username'))));
-    }).catch(() => { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data akun.</td></tr>`; });
+    }).catch(() => { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data akun.</td></tr>`; });
 }
 
 // Isi ulang form pakai data akun yang mau diedit (password dikosongin -> wajib diisi ulang buat nyimpen)
@@ -1573,6 +1571,30 @@ function summarizePoItems(itemsJson) {
     return { totalHarga, terminLabel };
 }
 
+// Versi read-only dari tabel List PO -- dipakai di halaman Procurement biar
+// akun yang cuma bikin PO (gak dikasih akses "List PO & Approval") tetap bisa
+// mantau status approval-nya, TANPA tombol approve/reject/hapus/cetak apapun.
+function renderPoStatusReadOnly(list) {
+    const tbody = document.getElementById('tbody-po-status-readonly');
+    if (!tbody) return;
+    if (!list.length) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada PO yang disubmit.</td></tr>`; return; }
+
+    tbody.innerHTML = '';
+    list.forEach(po => {
+        const statusLower = (po.status || '').toLowerCase();
+        const statusApproved = statusLower === 'approved';
+        const statusRejected = statusLower === 'rejected';
+        const badgeClass = statusApproved ? 'badge-status-approved' : (statusRejected ? 'badge-status-rejected' : 'badge-status-pending');
+        const badgeText = statusApproved ? 'Approved' : (statusRejected ? 'Rejected' : 'Pending');
+        const { totalHarga, terminLabel } = summarizePoItems(po.items);
+        const totalHargaFmt = totalHarga ? `Rp ${totalHarga.toLocaleString('id-ID')}` : '-';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><strong>${po.noPo || '-'}</strong></td><td>${formatTanggalDisplay(po.tanggal)}</td><td>${po.vendor || '-'}</td><td>${po.dibuatOleh || '-'}</td><td style="text-align:right;">${totalHargaFmt}</td><td>${terminLabel}</td><td><span class="badge-status ${badgeClass}">${badgeText}</span></td>`;
+        tbody.appendChild(tr);
+    });
+}
+
 function fetchPoListFromCloud() {
     const tbody = document.getElementById('tbody-po-list');
     if (!tbody) return;
@@ -1615,6 +1637,11 @@ function fetchPoListFromCloud() {
             tr.innerHTML = `<td><strong class="po-no-clickable" data-id="${po.id}" style="cursor:pointer; text-decoration:underline; color:var(--pink-main);">${po.noPo || '-'}</strong></td><td>${formatTanggalDisplay(po.tanggal)}</td><td>${po.vendor || '-'}</td><td>${po.dibuatOleh || '-'}</td><td style="text-align:right;">${totalHargaFmt}</td><td>${terminLabel}</td><td><span class="badge-status ${badgeClass}">${badgeText}</span></td><td>${aksiHtml}</td>`;
             tbody.appendChild(tr);
         });
+
+        // Tabel read-only di halaman Procurement (buat akun yang cuma bisa liat
+        // status approval-nya doang, gak ada tombol approve/reject/hapus/cetak
+        // sama sekali -- itu tetap eksklusif punya "List PO & Approval").
+        renderPoStatusReadOnly(globalPoListCache);
 
         tbody.querySelectorAll('.po-no-clickable').forEach(el => el.addEventListener('click', () => openPoDetailModal(el.getAttribute('data-id'))));
 
@@ -1738,6 +1765,9 @@ function cetakPoFromList(id) {
 if (document.getElementById('btn-refresh-po-list')) {
     document.getElementById('btn-refresh-po-list').addEventListener('click', fetchPoListFromCloud);
 }
+if (document.getElementById('btn-refresh-po-status')) {
+    document.getElementById('btn-refresh-po-status').addEventListener('click', fetchPoListFromCloud);
+}
 
 // 3. MENU NAVIGATION LAYER
 menuItems.forEach(item => {
@@ -1747,7 +1777,7 @@ menuItems.forEach(item => {
         const target = item.getAttribute('data-target');
         const targetView = document.getElementById(`view-${target}`);
         if (targetView) targetView.classList.add('active');
-        if (target === 'listpo') fetchPoListFromCloud();
+        if (target === 'listpo' || target === 'procurement') fetchPoListFromCloud();
         if (target === 'kelolaakun') fetchUsers();
         if (target === 'barang') fetchBarangList();
         if (target === 'pembelian') fetchPembelianList();
