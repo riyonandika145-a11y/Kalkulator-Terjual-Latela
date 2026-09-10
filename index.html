@@ -315,6 +315,8 @@
                         <div class="proc-row-actions"><button id="btn-reset-po">Reset</button><button id="btn-export-po">Submit ke List PO</button><button id="btn-add-proc">+ Tambah Item</button></div>
                     </div>
                     <div class="sku-list-card" style="width: 100%;"><h3>Daftar Item Surat Pesanan (PO)</h3><div class="table-responsive"><table><thead><tr><th>Jenis Barang</th><th>Kode Warna Latela</th><th>Kode Warna Vendor</th><th>Vendor</th><th>Kode Vendor</th><th>Nama Kain</th><th style="text-align: right; padding-right:25px;">Jumlah Order</th><th style="text-align: right; padding-right:25px;">Harga Total</th><th>Termin</th></tr></thead><tbody id="tbody-procurement-list"></tbody></table></div></div>
+
+                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Status PO yang Sudah Disubmit</h3><button id="btn-refresh-po-status" class="btn-action btn-pink-outline">Refresh</button></div><p style="font-size:12px; color:var(--text-muted); margin:-8px 0 12px 0;">Cuma buat pantau status approval-nya aja — untuk approve/reject, hubungi Admin Keuangan.</p><div class="table-responsive"><table><thead><tr><th>No PO</th><th>Tanggal</th><th>Vendor</th><th>Dibuat Oleh</th><th style="text-align:right;">Total Bayar</th><th>Termin</th><th>Status</th></tr></thead><tbody id="tbody-po-status-readonly"><tr><td colspan="7" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data PO...</td></tr></tbody></table></div></div>
                 </section>
 
                 <section id="view-listpo" class="content-view">
@@ -354,7 +356,7 @@
                         </div>
                         <div class="proc-row-actions"><button id="btn-simpan-akun" class="btn-action btn-pink-solid">Simpan Akun</button></div>
                     </div>
-                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Daftar Akun</h3><button id="btn-refresh-akun" class="btn-action btn-pink-outline">Refresh</button></div><div class="table-responsive"><table><thead><tr><th>Username</th><th>Nama</th><th>Role</th><th>Menu Akses</th><th>Approve PO</th><th>Aksi</th></tr></thead><tbody id="tbody-akun-list"><tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data akun...</td></tr></tbody></table></div></div>
+                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Daftar Akun</h3><button id="btn-refresh-akun" class="btn-action btn-pink-outline">Refresh</button></div><div class="table-responsive"><table><thead><tr><th>Username</th><th>Nama</th><th>Role</th><th>Menu Akses</th><th>Aksi</th></tr></thead><tbody id="tbody-akun-list"><tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data akun...</td></tr></tbody></table></div></div>
                 </section>
 
                 <section id="view-barang" class="content-view">
