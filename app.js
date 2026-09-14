@@ -1577,7 +1577,13 @@ function summarizePoItems(itemsJson) {
 function renderPoStatusReadOnly(list) {
     const tbody = document.getElementById('tbody-po-status-readonly');
     if (!tbody) return;
-    if (!list.length) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada PO yang disubmit.</td></tr>`; return; }
+    const sessionUser = getSession();
+    const isFullAccess = sessionUser && sessionUser.role === 'full';
+    const thAksi = document.getElementById('th-po-status-aksi');
+    if (thAksi) thAksi.style.display = isFullAccess ? '' : 'none';
+    const totalCols = isFullAccess ? 8 : 7;
+
+    if (!list.length) { tbody.innerHTML = `<tr><td colspan="${totalCols}" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada PO yang disubmit.</td></tr>`; return; }
 
     tbody.innerHTML = '';
     list.forEach(po => {
@@ -1588,12 +1594,19 @@ function renderPoStatusReadOnly(list) {
         const badgeText = statusApproved ? 'Approved' : (statusRejected ? 'Rejected' : 'Pending');
         const { totalHarga, terminLabel } = summarizePoItems(po.items);
         const totalHargaFmt = totalHarga ? `Rp ${totalHarga.toLocaleString('id-ID')}` : '-';
+        // Hapus PO -> cuma admin akses penuh, sama kayak di halaman List PO & Approval.
+        const aksiCell = isFullAccess ? `<td><button class="btn-action btn-gray-outline btn-hapus-po" data-id="${po.id}" data-nopo="${po.noPo || ''}" title="Hapus PO dari List (data di Histori Pembelian yang sudah terlanjur masuk TIDAK ikut terhapus)">Hapus</button></td>` : '';
 
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td><strong class="po-no-clickable" data-id="${po.id}" style="cursor:pointer; text-decoration:underline; color:var(--pink-main);">${po.noPo || '-'}</strong></td><td>${formatTanggalDisplay(po.tanggal)}</td><td>${po.vendor || '-'}</td><td>${po.dibuatOleh || '-'}</td><td style="text-align:right;">${totalHargaFmt}</td><td>${terminLabel}</td><td><span class="badge-status ${badgeClass}">${badgeText}</span></td>`;
+        tr.innerHTML = `<td><strong class="po-no-clickable" data-id="${po.id}" style="cursor:pointer; text-decoration:underline; color:var(--pink-main);">${po.noPo || '-'}</strong></td><td>${formatTanggalDisplay(po.tanggal)}</td><td>${po.vendor || '-'}</td><td>${po.dibuatOleh || '-'}</td><td style="text-align:right;">${totalHargaFmt}</td><td>${terminLabel}</td><td><span class="badge-status ${badgeClass}">${badgeText}</span></td>${aksiCell}`;
         tbody.appendChild(tr);
     });
     tbody.querySelectorAll('.po-no-clickable').forEach(el => el.addEventListener('click', () => openPoDetailModal(el.getAttribute('data-id'))));
+    tbody.querySelectorAll('.btn-hapus-po').forEach(btn => btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const noPo = btn.getAttribute('data-nopo');
+        if (confirm(`Yakin mau hapus PO "${noPo}" dari List? Aksi ini gak bisa dibatalkan.`)) deletePoFromList(id);
+    }));
 }
 
 function fetchPoListFromCloud() {
