@@ -1590,9 +1590,10 @@ function renderPoStatusReadOnly(list) {
         const totalHargaFmt = totalHarga ? `Rp ${totalHarga.toLocaleString('id-ID')}` : '-';
 
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td><strong>${po.noPo || '-'}</strong></td><td>${formatTanggalDisplay(po.tanggal)}</td><td>${po.vendor || '-'}</td><td>${po.dibuatOleh || '-'}</td><td style="text-align:right;">${totalHargaFmt}</td><td>${terminLabel}</td><td><span class="badge-status ${badgeClass}">${badgeText}</span></td>`;
+        tr.innerHTML = `<td><strong class="po-no-clickable" data-id="${po.id}" style="cursor:pointer; text-decoration:underline; color:var(--pink-main);">${po.noPo || '-'}</strong></td><td>${formatTanggalDisplay(po.tanggal)}</td><td>${po.vendor || '-'}</td><td>${po.dibuatOleh || '-'}</td><td style="text-align:right;">${totalHargaFmt}</td><td>${terminLabel}</td><td><span class="badge-status ${badgeClass}">${badgeText}</span></td>`;
         tbody.appendChild(tr);
     });
+    tbody.querySelectorAll('.po-no-clickable').forEach(el => el.addEventListener('click', () => openPoDetailModal(el.getAttribute('data-id'))));
 }
 
 function fetchPoListFromCloud() {
