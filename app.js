@@ -1413,7 +1413,9 @@ function generatePoPdf(noPoValue, rawSelectedDate, vendorHeader, items) {
     doc.text('Tanggal', infoLabelX, 84); doc.text(':', infoColonX, 84); doc.text(formattedDate, infoValueX, 84);
     doc.text('Vendor', infoLabelX, 98); doc.text(':', infoColonX, 98); doc.text(vendorHeader, infoValueX, 98);
 
-    // --- TABEL ITEM (sesuai struktur template: NO | NAMA PRODUK | WARNA | KODE VENDOR | QTY | SATUAN | HARGA | TERMIN) ---
+    // --- TABEL ITEM (sesuai struktur template: NO | NAMA PRODUK | WARNA | KODE VENDOR | QTY | SATUAN) ---
+    // Harga & Termin sengaja GAK ditampilin di PDF cetakan (cukup sampai kolom Satuan) --
+    // datanya tetap ada & dipakai di sistem (List PO, Histori Pembelian), cuma gak ikut dicetak.
     // Qty & Satuan digabung jadi 2 kolom generik (bukan kolom terpisah per jenis satuan
     // kayak sebelumnya) biar otomatis ke-cover semua satuan -- termasuk Pcs, atau
     // satuan baru lain yang mungkin ditambah lagi nanti -- tanpa perlu ubah kode PDF-nya lagi.
@@ -1424,9 +1426,7 @@ function generatePoPdf(noPoValue, rawSelectedDate, vendorHeader, items) {
             item.warnaLatela !== undefined && item.warnaLatela !== null && item.warnaLatela !== '' ? String(item.warnaLatela) : '-',
             item.kodeWarnaVendor !== undefined && item.kodeWarnaVendor !== null && item.kodeWarnaVendor !== '' ? String(item.kodeWarnaVendor) : '-',
             item.qty !== undefined && item.qty !== null && item.qty !== '' ? String(item.qty) : '-',
-            item.satuan !== undefined && item.satuan !== null && item.satuan !== '' ? String(item.satuan) : '-',
-            item.harga ? `Rp ${Number(item.harga).toLocaleString('id-ID')}` : '-',
-            item.termin !== undefined && item.termin !== null && item.termin !== '' ? String(item.termin) : '-'
+            item.satuan !== undefined && item.satuan !== null && item.satuan !== '' ? String(item.satuan) : '-'
         ];
     });
 
@@ -1440,25 +1440,21 @@ function generatePoPdf(noPoValue, rawSelectedDate, vendorHeader, items) {
                 { content: 'NAMA PRODUK', rowSpan: 2 },
                 { content: 'KODE WARNA', colSpan: 2, styles: { halign: 'center' } },
                 { content: 'QTY', rowSpan: 2 },
-                { content: 'SATUAN', rowSpan: 2 },
-                { content: 'HARGA', rowSpan: 2 },
-                { content: 'TERMIN', rowSpan: 2 }
+                { content: 'SATUAN', rowSpan: 2 }
             ],
             ['WARNA', 'KODE VENDOR']
         ],
         body: bodyRows,
         theme: 'grid',
-        styles: { fontSize: 8, halign: 'center', valign: 'middle', lineColor: [0,0,0], lineWidth: 0.75, minCellHeight: 24, textColor: [0,0,0] },
-        headStyles: { fillColor: [20,20,20], textColor: [255,255,255], fontStyle: 'bold', fontSize: 8 },
+        styles: { fontSize: 9, halign: 'center', valign: 'middle', lineColor: [0,0,0], lineWidth: 0.75, minCellHeight: 24, textColor: [0,0,0] },
+        headStyles: { fillColor: [20,20,20], textColor: [255,255,255], fontStyle: 'bold' },
         columnStyles: {
-            0: { cellWidth: 22 },
-            1: { cellWidth: contentWidth - (22 + 75 + 75 + 40 + 45 + 70 + 60) },
-            2: { cellWidth: 75 },
-            3: { cellWidth: 75 },
-            4: { cellWidth: 40 },
-            5: { cellWidth: 45 },
-            6: { cellWidth: 70 },
-            7: { cellWidth: 60 }
+            0: { cellWidth: 30 },
+            1: { cellWidth: contentWidth - (30 + 90 + 90 + 50 + 60) },
+            2: { cellWidth: 90 },
+            3: { cellWidth: 90 },
+            4: { cellWidth: 50 },
+            5: { cellWidth: 60 }
         }
     });
 
@@ -1579,11 +1575,8 @@ function renderPoStatusReadOnly(list) {
     if (!tbody) return;
     const sessionUser = getSession();
     const isFullAccess = sessionUser && sessionUser.role === 'full';
-    const thAksi = document.getElementById('th-po-status-aksi');
-    if (thAksi) thAksi.style.display = isFullAccess ? '' : 'none';
-    const totalCols = isFullAccess ? 8 : 7;
 
-    if (!list.length) { tbody.innerHTML = `<tr><td colspan="${totalCols}" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada PO yang disubmit.</td></tr>`; return; }
+    if (!list.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada PO yang disubmit.</td></tr>`; return; }
 
     tbody.innerHTML = '';
     list.forEach(po => {
@@ -1594,14 +1587,21 @@ function renderPoStatusReadOnly(list) {
         const badgeText = statusApproved ? 'Approved' : (statusRejected ? 'Rejected' : 'Pending');
         const { totalHarga, terminLabel } = summarizePoItems(po.items);
         const totalHargaFmt = totalHarga ? `Rp ${totalHarga.toLocaleString('id-ID')}` : '-';
-        // Hapus PO -> cuma admin akses penuh, sama kayak di halaman List PO & Approval.
-        const aksiCell = isFullAccess ? `<td><button class="btn-action btn-gray-outline btn-hapus-po" data-id="${po.id}" data-nopo="${po.noPo || ''}" title="Hapus PO dari List (data di Histori Pembelian yang sudah terlanjur masuk TIDAK ikut terhapus)">Hapus</button></td>` : '';
+
+        // Cetak PDF -> siapapun yang bisa liat tabel ini (berarti punya akses menu Procurement),
+        // sama kayak di List PO & Approval: cuma aktif kalau PO-nya udah Approved.
+        let aksiCell = `<button class="btn-action btn-blue-solid btn-cetak-po" data-id="${po.id}" ${statusApproved ? '' : 'disabled title="PO harus di-approve Admin Keuangan dulu sebelum bisa dicetak"'}>Cetak PDF</button>`;
+        // Hapus PO -> tetap cuma admin akses penuh, sama kayak di halaman List PO & Approval.
+        if (isFullAccess) {
+            aksiCell += ` <button class="btn-action btn-gray-outline btn-hapus-po" data-id="${po.id}" data-nopo="${po.noPo || ''}" title="Hapus PO dari List (data di Histori Pembelian yang sudah terlanjur masuk TIDAK ikut terhapus)">Hapus</button>`;
+        }
 
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td><strong class="po-no-clickable" data-id="${po.id}" style="cursor:pointer; text-decoration:underline; color:var(--pink-main);">${po.noPo || '-'}</strong></td><td>${formatTanggalDisplay(po.tanggal)}</td><td>${po.vendor || '-'}</td><td>${po.dibuatOleh || '-'}</td><td style="text-align:right;">${totalHargaFmt}</td><td>${terminLabel}</td><td><span class="badge-status ${badgeClass}">${badgeText}</span></td>${aksiCell}`;
+        tr.innerHTML = `<td><strong class="po-no-clickable" data-id="${po.id}" style="cursor:pointer; text-decoration:underline; color:var(--pink-main);">${po.noPo || '-'}</strong></td><td>${formatTanggalDisplay(po.tanggal)}</td><td>${po.vendor || '-'}</td><td>${po.dibuatOleh || '-'}</td><td style="text-align:right;">${totalHargaFmt}</td><td>${terminLabel}</td><td><span class="badge-status ${badgeClass}">${badgeText}</span></td><td>${aksiCell}</td>`;
         tbody.appendChild(tr);
     });
     tbody.querySelectorAll('.po-no-clickable').forEach(el => el.addEventListener('click', () => openPoDetailModal(el.getAttribute('data-id'))));
+    tbody.querySelectorAll('.btn-cetak-po').forEach(btn => btn.addEventListener('click', () => cetakPoFromList(btn.getAttribute('data-id'))));
     tbody.querySelectorAll('.btn-hapus-po').forEach(btn => btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
         const noPo = btn.getAttribute('data-nopo');
