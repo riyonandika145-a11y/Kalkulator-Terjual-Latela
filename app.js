@@ -1591,6 +1591,8 @@ function renderPoStatusReadOnly(list) {
         // Cetak PDF -> siapapun yang bisa liat tabel ini (berarti punya akses menu Procurement),
         // sama kayak di List PO & Approval: cuma aktif kalau PO-nya udah Approved.
         let aksiCell = `<button class="btn-action btn-blue-solid btn-cetak-po" data-id="${po.id}" ${statusApproved ? '' : 'disabled title="PO harus di-approve Admin Keuangan dulu sebelum bisa dicetak"'}>Cetak PDF</button>`;
+        // Copy Text -> buat kirim manual ke WhatsApp, gak butuh approval dulu (beda alur dari Cetak PDF).
+        aksiCell += ` <button class="btn-action btn-pink-outline btn-copy-po-text" data-id="${po.id}" title="Copy teks ringkasan PO buat dikirim ke WhatsApp">Copy Text</button>`;
         // Hapus PO -> tetap cuma admin akses penuh, sama kayak di halaman List PO & Approval.
         if (isFullAccess) {
             aksiCell += ` <button class="btn-action btn-gray-outline btn-hapus-po" data-id="${po.id}" data-nopo="${po.noPo || ''}" title="Hapus PO dari List (data di Histori Pembelian yang sudah terlanjur masuk TIDAK ikut terhapus)">Hapus</button>`;
@@ -1602,6 +1604,7 @@ function renderPoStatusReadOnly(list) {
     });
     tbody.querySelectorAll('.po-no-clickable').forEach(el => el.addEventListener('click', () => openPoDetailModal(el.getAttribute('data-id'))));
     tbody.querySelectorAll('.btn-cetak-po').forEach(btn => btn.addEventListener('click', () => cetakPoFromList(btn.getAttribute('data-id'))));
+    tbody.querySelectorAll('.btn-copy-po-text').forEach(btn => btn.addEventListener('click', () => copyPoTextToClipboard(btn.getAttribute('data-id'))));
     tbody.querySelectorAll('.btn-hapus-po').forEach(btn => btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
         const noPo = btn.getAttribute('data-nopo');
@@ -1641,6 +1644,8 @@ function fetchPoListFromCloud() {
                 </select>`;
             }
             aksiHtml += `<button class="btn-action btn-blue-solid btn-cetak-po" data-id="${po.id}" ${statusApproved ? '' : 'disabled title="PO harus di-approve Admin Keuangan dulu sebelum bisa dicetak"'}>Cetak PDF</button>`;
+            // Copy Text -> buat kirim manual ke WhatsApp, gak butuh approval dulu (beda alur dari Cetak PDF).
+            aksiHtml += ` <button class="btn-action btn-pink-outline btn-copy-po-text" data-id="${po.id}" title="Copy teks ringkasan PO buat dikirim ke WhatsApp">Copy Text</button>`;
             // Hapus PO dari List -> khusus Admin (akses penuh), gak dikasih ke Admin Keuangan/akun terbatas lain
             // biar gak ada kesalahan/penyalahgunaan hapus data approval.
             if (isFullAccess) {
@@ -1667,6 +1672,7 @@ function fetchPoListFromCloud() {
             else if (val === 'Rejected') { if (confirm('Yakin mau reject PO ini?')) updatePoStatus(id, 'Rejected'); else sel.value = ''; }
         }));
         tbody.querySelectorAll('.btn-cetak-po').forEach(btn => btn.addEventListener('click', () => cetakPoFromList(btn.getAttribute('data-id'))));
+        tbody.querySelectorAll('.btn-copy-po-text').forEach(btn => btn.addEventListener('click', () => copyPoTextToClipboard(btn.getAttribute('data-id'))));
         tbody.querySelectorAll('.btn-hapus-po').forEach(btn => btn.addEventListener('click', () => {
             const id = btn.getAttribute('data-id');
             const noPo = btn.getAttribute('data-nopo');
@@ -1754,6 +1760,46 @@ function pushApprovedPoToHistoriPembelian(id) {
         });
     });
     return Promise.all(requests);
+}
+
+// Bikin teks ringkasan PO buat dikirim manual ke WhatsApp (gak semua pemesanan
+// butuh surat PO PDF formal). Item-nya dikelompokkan per Nama Kain -- tiap
+// grup jadi 1 blok: judul *Nama Kain* (bold ala WhatsApp, pake tanda bintang),
+// terus daftar "Kode {kode warna vendor} = {qty} {satuan}" di bawahnya.
+function generatePoWhatsAppText(items) {
+    const groups = {};
+    const order = [];
+    items.forEach(item => {
+        const kain = (item.namaKain || '-').toString().trim();
+        if (!groups[kain]) { groups[kain] = []; order.push(kain); }
+        groups[kain].push(item);
+    });
+    const blocks = order.map(kain => {
+        const lines = groups[kain].map(item => {
+            const kode = (item.kodeWarnaVendor !== undefined && item.kodeWarnaVendor !== null && item.kodeWarnaVendor !== '') ? item.kodeWarnaVendor : '-';
+            const qty = (item.qty !== undefined && item.qty !== null && item.qty !== '') ? item.qty : '-';
+            const satuan = item.satuan || '';
+            return `Kode ${kode} = ${qty} ${satuan}`.trim();
+        });
+        return `*${kain}*\n\n${lines.join('\n')}`;
+    });
+    return blocks.join('\n\n');
+}
+
+function copyPoTextToClipboard(id) {
+    const po = (globalPoListCache || []).find(p => p.id === id);
+    if (!po) { updateStatusMessage("(!) Data PO tidak ditemukan."); return; }
+
+    let items = [];
+    try {
+        items = typeof po.items === 'string' ? JSON.parse(po.items || '[]') : (po.items || []);
+    } catch (err) { updateStatusMessage("(!) Gagal membaca data item PO (format items tidak valid)."); return; }
+    if (!Array.isArray(items) || items.length === 0) { updateStatusMessage("(!) Data item PO kosong/rusak."); return; }
+
+    const text = generatePoWhatsAppText(items);
+    navigator.clipboard.writeText(text)
+        .then(() => updateStatusMessage(`Teks PO ${po.noPo} berhasil di-copy, siap di-paste ke WhatsApp.`))
+        .catch(() => updateStatusMessage("(!) Gagal copy ke clipboard (browser mungkin gak ngizinin akses clipboard)."));
 }
 
 function cetakPoFromList(id) {
