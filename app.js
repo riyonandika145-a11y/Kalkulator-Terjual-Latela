@@ -502,7 +502,6 @@ function deleteBarang(rowIndex) {
 }
 
 if (btnBarangEditCancel) btnBarangEditCancel.addEventListener('click', () => { if (barangEditModal) barangEditModal.classList.remove('show'); });
-if (barangEditModal) barangEditModal.addEventListener('click', (e) => { if (e.target === barangEditModal) barangEditModal.classList.remove('show'); });
 
 if (btnBarangEditSave) {
     btnBarangEditSave.addEventListener('click', () => {
@@ -1552,7 +1551,6 @@ function openPoDetailModal(id) {
     if (poDetailModal) poDetailModal.classList.add('show');
 }
 if (btnPoDetailClose) btnPoDetailClose.addEventListener('click', () => { if (poDetailModal) poDetailModal.classList.remove('show'); });
-if (poDetailModal) poDetailModal.addEventListener('click', (e) => { if (e.target === poDetailModal) poDetailModal.classList.remove('show'); });
 
 // Hitung total harga & rangkum termin dari semua item di 1 PO (item-nya
 // sendiri disimpen sebagai JSON string di kolom po_list.items). Kalau termin
