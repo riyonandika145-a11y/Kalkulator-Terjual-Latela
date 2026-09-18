@@ -294,7 +294,10 @@
                 </section>
 
                 <section id="view-procurement" class="content-view">
-                    <h2 class="page-title">Procurement & PO Generator</h2>
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
+                        <h2 class="page-title" style="margin-bottom:0;">Procurement & PO Generator</h2>
+                        <button id="btn-refresh-procurement-data" class="btn-action btn-pink-outline" title="Tarik ulang data Jenis Barang & Vendor (Master SKU tetap sama)">Refresh Data</button>
+                    </div>
                     <div class="procurement-form-container">
                         <div class="proc-row-top">
                             <div class="proc-field-col"><span class="proc-field-label">Nomor PO:</span><input type="text" id="proc-no-po" placeholder="Ketik nomor PO..."></div>
@@ -356,7 +359,7 @@
                         </div>
                         <div class="proc-row-actions"><button id="btn-simpan-akun" class="btn-action btn-pink-solid">Simpan Akun</button></div>
                     </div>
-                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Daftar Akun</h3><button id="btn-refresh-akun" class="btn-action btn-pink-outline">Refresh</button></div><div class="table-responsive"><table><thead><tr><th>Username</th><th>Nama</th><th>Role</th><th>Menu Akses</th><th>Aksi</th></tr></thead><tbody id="tbody-akun-list"><tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data akun...</td></tr></tbody></table></div></div>
+                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Daftar Akun</h3><button id="btn-refresh-akun" class="btn-action btn-pink-outline">Refresh</button></div><div class="table-responsive"><table><thead><tr><th>Username</th><th>Password</th><th>Nama</th><th>Role</th><th>Menu Akses</th><th>Aksi</th></tr></thead><tbody id="tbody-akun-list"><tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data akun...</td></tr></tbody></table></div></div>
                 </section>
 
                 <section id="view-barang" class="content-view">
