@@ -68,7 +68,7 @@ export default {
       // List PO & Histori Pembelian yang udah duluan pakai D1.
       if (path === '/api/users/list' && request.method === 'GET') {
         const { results } = await env.DB.prepare(
-          `SELECT username, nama, role, menus, can_approve_po as canApprovePo FROM users ORDER BY id ASC`
+          `SELECT username, password, nama, role, menus, can_approve_po as canApprovePo FROM users ORDER BY id ASC`
         ).all();
         return json(results);
       }
