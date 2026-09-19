@@ -1326,6 +1326,12 @@ if (btnAddProc) {
         if (vendorSelectAktif && !procVendorSelect.value) { updateStatusMessage("(!) Gagal: Pilih vendor terlebih dahulu (ada lebih dari 1 vendor untuk warna ini)."); return; }
         if(!jenisBarang || !warnaLatela || !vendor || isNaN(qty) || qty <= 0) { updateStatusMessage("(!) Gagal: Isi Qty dengan benar (angka desimal boleh pakai koma, mis. 12,5)."); return; }
         if (procHarga && procHarga.value.trim() !== '' && isNaN(harga)) { updateStatusMessage("(!) Gagal: Format Harga Total gak valid."); return; }
+        // 1 PO cuma boleh 1 vendor -- kalau basket udah ada isinya, vendor item baru
+        // WAJIB sama persis kayak vendor yang udah ada, gak boleh dicampur.
+        if (currentPoBasket.length > 0 && currentPoBasket[0].vendor !== vendor) {
+            updateStatusMessage(`(!) Gagal: 1 PO cuma boleh 1 vendor. List ini udah pakai vendor "${currentPoBasket[0].vendor}", gak bisa dicampur sama "${vendor}". Submit/Reset dulu list ini, baru bikin PO baru buat vendor lain.`);
+            return;
+        }
         currentPoBasket.push({ jenisBarang, warnaLatela, kodeWarnaVendor, vendor, kodeVendor, namaKain, qty, satuan, harga, termin });
         renderProcurementTable(); 
 
@@ -1506,6 +1512,10 @@ if (btnExportPo) {
         const noPoValue = procNoPo ? procNoPo.value.trim() : '';
         const rawSelectedDate = procTanggalPo ? procTanggalPo.value : '';
         if (!noPoValue) { updateStatusMessage("(!) Nomor PO wajib diisi sebelum submit."); return; }
+        // Jaga-jaga (defensive check) -- 1 PO cuma boleh 1 vendor. Ini seharusnya udah
+        // ke-block pas nambah item, tapi dicek ulang di sini sebelum submit biar aman.
+        const vendorTakSama = currentPoBasket.some(item => item.vendor !== currentPoBasket[0].vendor);
+        if (vendorTakSama) { updateStatusMessage("(!) Gagal: List ini kecampur lebih dari 1 vendor. 1 PO cuma boleh 1 vendor -- Reset dulu, lalu bikin ulang."); return; }
         const vendorHeader = currentPoBasket[0].vendor || '-';
         const sessionUser = getSession();
 
