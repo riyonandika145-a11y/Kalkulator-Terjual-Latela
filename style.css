@@ -1657,8 +1657,13 @@ select#proc-vendor-select.proc-readonly-field:focus {
    warnanya ngikutin status yang lagi dipilih, sama kayak versi badge read-only-nya. */
 select.pembelian-quick-edit {
     border-radius: 20px;
-    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;
-    padding: 3px 22px 3px 10px;
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;
+    padding: 4px 20px 4px 12px;
+    box-sizing: border-box;
+    width: auto; max-width: 100%;
+    text-align: center;
+    text-align-last: center;
+    -moz-text-align-last: center;
     cursor: pointer;
 }
 select.pembelian-quick-edit.qe-pending { background: rgba(245,158,11,0.18); color: #f59e0b; border: 1px solid rgba(245,158,11,0.35); }
