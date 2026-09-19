@@ -1653,6 +1653,18 @@ select#proc-vendor-select.proc-readonly-field:focus {
 .badge-status-approved { background: rgba(16,185,129,0.18); color: #10b981; border: 1px solid rgba(16,185,129,0.35); }
 .badge-status-rejected { background: rgba(239,68,68,0.18); color: #ef4444; border: 1px solid rgba(239,68,68,0.35); }
 
+/* Dropdown quick-edit (Status Bayar / Status Purchasing di Histori Pembelian) --
+   warnanya ngikutin status yang lagi dipilih, sama kayak versi badge read-only-nya. */
+select.pembelian-quick-edit {
+    border-radius: 20px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;
+    padding: 3px 22px 3px 10px;
+    cursor: pointer;
+}
+select.pembelian-quick-edit.qe-pending { background: rgba(245,158,11,0.18); color: #f59e0b; border: 1px solid rgba(245,158,11,0.35); }
+select.pembelian-quick-edit.qe-approved { background: rgba(16,185,129,0.18); color: #10b981; border: 1px solid rgba(16,185,129,0.35); }
+select.pembelian-quick-edit.qe-rejected { background: rgba(239,68,68,0.18); color: #ef4444; border: 1px solid rgba(239,68,68,0.35); }
+
 .dropdown-aksi-po {
     height: 34px; padding: 0 10px; border-radius: 10px;
     font-size: 12px; font-weight: 600; cursor: pointer;
