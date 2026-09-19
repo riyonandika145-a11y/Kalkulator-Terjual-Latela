@@ -724,11 +724,13 @@ function renderPembelianTable(list) {
             const tenggatFmt = p.tenggatBayar ? formatTanggalDisplay(p.tenggatBayar) : '-';
             const tenggatHtml = terlambat ? `<span style="color:#dc2626; font-weight:700;">${tenggatFmt} ⚠</span>` : tenggatFmt;
 
+            const qeColorBayar = badgeClassStatusBayar(p.statusPembayaran).replace('badge-status-', 'qe-');
+            const qeColorPurchasing = badgeClassStatusPurchasing(p.statusPurchasing).replace('badge-status-', 'qe-');
             const statusBayarCell = canEditStatusBayar
-                ? `<select class="pembelian-quick-edit" data-rowindex="${p.rowIndex}" data-field="statusPembayaran" style="width:100%; min-width:110px;">${buildSelectOptionsHtml(PEMBELIAN_STATUS_BAYAR_OPTIONS, p.statusPembayaran)}</select>`
+                ? `<select class="pembelian-quick-edit ${qeColorBayar}" data-rowindex="${p.rowIndex}" data-field="statusPembayaran" style="width:100%; min-width:110px;">${buildSelectOptionsHtml(PEMBELIAN_STATUS_BAYAR_OPTIONS, p.statusPembayaran)}</select>`
                 : `<span class="badge-status ${badgeClassStatusBayar(p.statusPembayaran)}">${p.statusPembayaran || '-'}</span>`;
             const statusPurchasingCell = canEditProcurementFields
-                ? `<select class="pembelian-quick-edit" data-rowindex="${p.rowIndex}" data-field="statusPurchasing" style="width:100%; min-width:110px;">${buildSelectOptionsHtml(PEMBELIAN_STATUS_PURCHASING_OPTIONS, p.statusPurchasing)}</select>`
+                ? `<select class="pembelian-quick-edit ${qeColorPurchasing}" data-rowindex="${p.rowIndex}" data-field="statusPurchasing" style="width:100%; min-width:110px;">${buildSelectOptionsHtml(PEMBELIAN_STATUS_PURCHASING_OPTIONS, p.statusPurchasing)}</select>`
                 : `<span class="badge-status ${badgeClassStatusPurchasing(p.statusPurchasing)}">${p.statusPurchasing || '-'}</span>`;
             const tglCompleteCell = canEditProcurementFields
                 ? `<input type="date" class="pembelian-quick-edit" data-rowindex="${p.rowIndex}" data-field="tanggalComplete" value="${normalizeDateForInput(p.tanggalComplete)}" style="width:130px;">`
@@ -753,6 +755,13 @@ function renderPembelianTable(list) {
     // Kolom quick-edit (Status Bayar / Status Purchasing / Tgl Complete) -> auto-save
     // begitu diganti, gak perlu tombol Simpan terpisah.
     tbody.querySelectorAll('.pembelian-quick-edit').forEach(el => el.addEventListener('change', () => {
+        // Update warna instan (optimistic) sebelum konfirmasi simpan dari server kelar
+        if (el.tagName === 'SELECT') {
+            const field = el.getAttribute('data-field');
+            const newColorClass = (field === 'statusPembayaran' ? badgeClassStatusBayar(el.value) : badgeClassStatusPurchasing(el.value)).replace('badge-status-', 'qe-');
+            el.classList.remove('qe-pending', 'qe-approved', 'qe-rejected');
+            el.classList.add(newColorClass);
+        }
         quickSavePembelianField(el.getAttribute('data-rowindex'), el.getAttribute('data-field'), el.value);
     }));
 
