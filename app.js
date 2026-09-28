@@ -15,6 +15,7 @@ if ('serviceWorker' in navigator) {
 // =========================================================================
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9ZVSAObK0DbfXadHO9LIQGEaLlmFruZ4AR7HFpsYC2ONmKLGQCQ_93TuS_DpOwog/exec";
 const USERS_API_BASE = '/api/users'; // Data akun (Kelola Akun) sekarang di D1, bukan Google Sheets lagi
+const MASTERSKU_API_BASE = '/api/mastersku'; // Master SKU: sumber edit tetap Google Sheets, tapi dipakai app dari cache D1 (lebih cepat)
 
 
 // SIGNATURE IMAGE (CV ARSA) - base64 agar tidak perlu file eksternal
@@ -1194,40 +1195,64 @@ if (btnSyncCloud) {
     });
 }
 
+const btnImportMasterSku = document.getElementById('btn-import-mastersku');
+if (btnImportMasterSku) {
+    btnImportMasterSku.addEventListener('click', () => {
+        if (!confirm('Ini bakal REPLACE TOTAL data Master SKU di Database pakai data yang lagi ada di Google Sheets sekarang. Lanjutkan?')) return;
+        importMasterSkuFromSpreadsheet();
+    });
+}
+
 // 1. ENGINE FETCH SKU CORE
+// Normalisasi 1 baris data SKU mentah dari Google Sheets (nama kolom fleksibel,
+// kategori dirapiin ke 4 nilai baku) -> dipakai pas Import dari Spreadsheet.
+function normalizeSkuRowFromSheet(row) {
+    const skuCode = row['SKU'] || row['sku'] || row['Code'];
+    if (!skuCode) return null;
+    const namaResmi = row['Nama'] || row['nama'] || row['Product'];
+    const typeProduk = row['Type'] || row['type'] || '-';
+    const warnaProduk = row['Warna'] || row['warna'] || '-';
+    const kategoriLogistik = row['Kategori'] || row['kategori'] || 'utama';
+
+    let rawKat = kategoriLogistik.toString().trim().toLowerCase();
+    let katClean = 'utama';
+    if (rawKat.includes('utama')) katClean = 'utama';
+    else if (rawKat.includes('aksesoris')) katClean = 'aksesoris';
+    else if (rawKat.includes('grade')) katClean = 'gradeb';
+    else if (rawKat.includes('random')) katClean = 'random';
+
+    return {
+        sku: skuCode.toString().trim(),
+        nama: namaResmi ? namaResmi.toString().trim().toUpperCase() : "TANPA NAMA",
+        type: typeProduk.toString().trim(),
+        warna: warnaProduk.toString().trim(),
+        kategori: katClean
+    };
+}
+
+// Baca Master SKU dari D1 (cache cepat) -- dipakai sehari-hari (bootstrap, tombol
+// Sync). BUKAN baca langsung dari Google Sheets lagi -- itu sekarang cuma lewat
+// tombol "Import dari Spreadsheet" (importMasterSkuFromSpreadsheet), yang narik
+// dari Sheets terus nge-replace isi D1-nya.
 function fetchMasterSkusFromCloud() {
-    updateStatusMessage("Menghubungkan ke Google Sheets Cloud Database secara Real-Time...");
-    if (tbodyMasterList) tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; font-style: italic;">Sinkronisasi data live...</td></tr>`;
+    updateStatusMessage("Menghubungkan ke Database...");
+    if (tbodyMasterList) tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; font-style: italic;">Sinkronisasi data...</td></tr>`;
     if (loadingOverlay) loadingOverlay.classList.remove('fade-out');
 
-    fetch(`${GOOGLE_SCRIPT_URL}?action=fetch_skus`)
-        .then(response => { if (!response.ok) throw new Error("Gagal terhubung ke Apps Script."); return response.json(); })
-        .then(jsonData => {
+    fetch(`${MASTERSKU_API_BASE}/list`)
+        .then(response => { if (!response.ok) throw new Error("Gagal terhubung ke Database."); return response.json(); })
+        .then(rows => {
             masterSkus = {};
-            jsonData.forEach(row => {
-                const skuCode = row['SKU'] || row['sku'] || row['Code'];
-                const namaResmi = row['Nama'] || row['nama'] || row['Product'];
-                const typeProduk = row['Type'] || row['type'] || '-';
-                const warnaProduk = row['Warna'] || row['warna'] || '-';
-                const kategoriLogistik = row['Kategori'] || row['kategori'] || 'utama';
-
-                let rawKat = kategoriLogistik.toString().trim().toLowerCase();
-                let katClean = 'utama'; 
-                if (rawKat.includes('utama')) katClean = 'utama';
-                else if (rawKat.includes('aksesoris')) katClean = 'aksesoris';
-                else if (rawKat.includes('grade')) katClean = 'gradeb';
-                else if (rawKat.includes('random')) katClean = 'random';
-
-                if (skuCode) {
-                    masterSkus[skuCode.toString().trim()] = {
-                        nama: namaResmi ? namaResmi.toString().trim().toUpperCase() : "TANPA NAMA",
-                        type: typeProduk.toString().trim(),
-                        warna: warnaProduk.toString().trim(),
-                        kategori: katClean
-                    };
-                }
+            (Array.isArray(rows) ? rows : []).forEach(row => {
+                if (!row.sku) return;
+                masterSkus[row.sku.toString().trim()] = {
+                    nama: row.nama || "TANPA NAMA",
+                    type: row.type || '-',
+                    warna: row.warna || '-',
+                    kategori: row.kategori || 'utama'
+                };
             });
-            updateStatusMessage("Master SKU berhasil disinkronisasi secara INSTAN & LIVE!");
+            updateStatusMessage(`Master SKU berhasil disinkronisasi (${Object.keys(masterSkus).length} SKU).`);
             renderMasterSkuDatabaseView();
             populateQrLabelJenisDropdown(); // biar dropdown Jenis Barang di halaman Cetak Label QR ikut ke-refresh kalau lagi kebuka
             populateDashboardDropdown(); 
@@ -1238,6 +1263,39 @@ function fetchMasterSkusFromCloud() {
             if (tbodyMasterList) tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #dc2626; font-weight: bold; padding: 20px;">(!) SISTEM EROR: ${err.message}</td></tr>`;
         })
         .finally(() => { if (loadingOverlay) setTimeout(() => { loadingOverlay.classList.add('fade-out'); }, 300); });
+}
+
+// Import dari Google Sheets -> replace total isi Master SKU di D1. Dipakai
+// SETELAH edit massal di Spreadsheet, biar app-nya kebawa update juga.
+function importMasterSkuFromSpreadsheet() {
+    updateStatusMessage("Menarik data terbaru dari Google Sheets...");
+    if (loadingOverlay) loadingOverlay.classList.remove('fade-out');
+
+    fetch(`${GOOGLE_SCRIPT_URL}?action=fetch_skus`)
+        .then(response => { if (!response.ok) throw new Error("Gagal terhubung ke Google Sheets."); return response.json(); })
+        .then(jsonData => {
+            const rows = (Array.isArray(jsonData) ? jsonData : []).map(normalizeSkuRowFromSheet).filter(Boolean);
+            if (!rows.length) throw new Error("Data dari Spreadsheet kosong, gak ada yang di-import.");
+
+            updateStatusMessage(`Meng-import ${rows.length} SKU ke database...`);
+            return fetch(`${MASTERSKU_API_BASE}/import`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rows })
+            }).then(res => res.json());
+        })
+        .then(result => {
+            if (result && result.success) {
+                updateStatusMessage(`Sukses import ${result.count} SKU dari Spreadsheet ke Database!`);
+                fetchMasterSkusFromCloud(); // refresh tampilan dari D1 yang udah ke-update
+            } else {
+                updateStatusMessage('(!) Gagal import: ' + ((result && result.message) || 'unknown error'));
+                if (loadingOverlay) loadingOverlay.classList.add('fade-out');
+            }
+        })
+        .catch(err => {
+            updateStatusMessage('(!) Gagal import: ' + err.message);
+            if (loadingOverlay) loadingOverlay.classList.add('fade-out');
+        });
 }
 
 // 2. FETCH MAPPING VENDOR DROPDOWN BERANTAI
