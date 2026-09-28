@@ -241,7 +241,7 @@
 
                 <section id="view-mastersku" class="content-view">
                     <h2 class="page-title">Master Data SKU Cloud Database</h2>
-                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Total: <span id="master-sku-count">0</span> SKU</h3><button id="btn-sync-cloud" class="btn-action btn-pink-outline">Sync</button></div>
+                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Total: <span id="master-sku-count">0</span> SKU</h3><div><button id="btn-import-mastersku" class="btn-action btn-blue-solid" title="Tarik data terbaru dari Google Sheets & replace ke Database" style="margin-right:8px;">Import dari Spreadsheet</button><button id="btn-sync-cloud" class="btn-action btn-pink-outline" title="Tarik ulang data dari Database (cepat)">Sync</button></div></div>
                     <div class="table-responsive"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th>Kategori</th></tr></thead><tbody id="tbody-master-list"></tbody></table></div></div>
                 </section>
 
