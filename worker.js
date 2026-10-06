@@ -4,22 +4,35 @@ export default {
     const path = url.pathname;
     const method = request.method;
 
-    // 1. Aturan CORS (Sangat penting agar Frontend bisa akses API)
+    // 1. Aturan CORS
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS, PUT, DELETE",
       "Access-Control-Allow-Headers": "Content-Type",
     };
 
-    // 2. Tangani Preflight Request dari Browser
     if (method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-
-    // Helper function untuk merespon JSON dengan cepat
     const jsonResp = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json", ...corsHeaders } });
+
+    // Helper: Penyelamat huruf besar/kecil (Case Insensitive Mapper)
+    // Otomatis menyesuaikan nama kolom dari DB (misal: 'nopo', 'no_po') ke format yang dibaca Frontend ('noPo')
+    const fixCasing = (rows, expectedKeys) => {
+      return rows.map(row => {
+        const obj = { ...row }; // Gandakan data asli
+        const lowerMap = {};
+        for (let k in row) lowerMap[k.toLowerCase().replace(/_/g, '')] = k;
+        
+        expectedKeys.forEach(ek => {
+           const match = lowerMap[ek.toLowerCase()];
+           if (match) obj[ek] = row[match]; // Buat key baru dengan format yang pas untuk Frontend
+        });
+        return obj;
+      });
+    };
 
     try {
       // ==========================================
-      // [1] API MASTER SKU (Fungsi Baru yang Tadi Berhasil)
+      // [1] API MASTER SKU
       // ==========================================
       if (method === "GET" && path === "/api/mastersku/list") {
         const { results } = await env.DB.prepare("SELECT * FROM master_sku").all();
@@ -44,9 +57,10 @@ export default {
       // [2] API PROCUREMENT & LIST PO
       // ==========================================
       if (method === "GET" && path === "/api/po/list") {
-        // Tampilkan dari yang terbaru
         const { results } = await env.DB.prepare("SELECT * FROM po_list ORDER BY id DESC").all();
-        return jsonResp(results);
+        // Terapkan helper agar noPo dan dibuatOleh terdeteksi
+        const mapped = fixCasing(results, ["noPo", "tanggal", "vendor", "items", "dibuatOleh", "status"]);
+        return jsonResp(mapped);
       }
       
       if (method === "POST" && path === "/api/po/submit") {
@@ -73,7 +87,8 @@ export default {
       // ==========================================
       if (method === "GET" && path === "/api/pembelian/list") {
         const { results } = await env.DB.prepare("SELECT * FROM purchase_history ORDER BY id DESC").all();
-        return jsonResp(results);
+        const mapped = fixCasing(results, ["noPo", "barang", "kode", "variasi", "qty", "satuan", "tanggalPengajuan", "requestor", "expense", "tenggatBayar", "statusPembayaran", "statusPurchasing", "tanggalComplete", "notes"]);
+        return jsonResp(mapped);
       }
       
       if (method === "POST" && path === "/api/pembelian/submit") {
@@ -103,19 +118,20 @@ export default {
         const b = await request.json();
         const user = await env.DB.prepare("SELECT * FROM users WHERE username = ? AND password = ?").bind(b.username, b.password).first();
         if (user) {
-          return jsonResp({ success: true, nama: user.nama, role: user.role, menus: user.menus, canApprovePo: user.canApprovePo });
+          const mappedUser = fixCasing([user], ["nama", "role", "menus", "canApprovePo"])[0];
+          return jsonResp({ success: true, nama: mappedUser.nama, role: mappedUser.role, menus: mappedUser.menus, canApprovePo: mappedUser.canApprovePo });
         }
         return jsonResp({ success: false, message: "Username atau password salah." });
       }
       
       if (method === "GET" && path === "/api/users/list") {
         const { results } = await env.DB.prepare("SELECT * FROM users").all();
-        return jsonResp(results);
+        const mapped = fixCasing(results, ["username", "nama", "password", "role", "menus", "canApprovePo"]);
+        return jsonResp(mapped);
       }
       
       if (method === "POST" && path === "/api/users/save") {
         const b = await request.json();
-        // Insert jika baru, Update jika username sudah ada
         await env.DB.prepare("INSERT INTO users (username, nama, password, role, menus, canApprovePo) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(username) DO UPDATE SET nama=excluded.nama, password=excluded.password, role=excluded.role, menus=excluded.menus, canApprovePo=excluded.canApprovePo")
           .bind(b.username, b.nama, b.password, b.role, b.menus, b.canApprovePo).run();
         return jsonResp({ success: true });
@@ -127,7 +143,6 @@ export default {
         return jsonResp({ success: true });
       }
 
-      // Jika ada API lain yang tidak terdeteksi
       return jsonResp({ success: false, message: "Endpoint tidak ditemukan" }, 404);
 
     } catch (error) {
