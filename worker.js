@@ -14,17 +14,15 @@ export default {
     if (method === "OPTIONS") return new Response(null, { headers: corsHeaders });
     const jsonResp = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json", ...corsHeaders } });
 
-    // Helper: Penyelamat huruf besar/kecil (Case Insensitive Mapper)
-    // Otomatis menyesuaikan nama kolom dari DB (misal: 'nopo', 'no_po') ke format yang dibaca Frontend ('noPo')
+    // Helper: Penyelamat huruf besar/kecil
     const fixCasing = (rows, expectedKeys) => {
       return rows.map(row => {
-        const obj = { ...row }; // Gandakan data asli
+        const obj = { ...row };
         const lowerMap = {};
         for (let k in row) lowerMap[k.toLowerCase().replace(/_/g, '')] = k;
-        
         expectedKeys.forEach(ek => {
            const match = lowerMap[ek.toLowerCase()];
-           if (match) obj[ek] = row[match]; // Buat key baru dengan format yang pas untuk Frontend
+           if (match) obj[ek] = row[match];
         });
         return obj;
       });
@@ -38,18 +36,13 @@ export default {
         const { results } = await env.DB.prepare("SELECT * FROM master_sku").all();
         return jsonResp(results);
       }
-      
       if (method === "POST" && path === "/api/mastersku/import") {
         const { rows = [] } = await request.json();
         if (!rows.length) return jsonResp({ success: false, message: "Data kosong." });
-
         await env.DB.prepare("DELETE FROM master_sku").run();
         const stmt = env.DB.prepare("INSERT INTO master_sku (sku, nama, type, warna, kategori) VALUES (?, ?, ?, ?, ?)");
-        const batchStmts = rows.map(r => stmt.bind(r.sku, r.nama, r.type, r.warna, r.kategori));
-        
-        for (let i = 0; i < batchStmts.length; i += 100) {
-          await env.DB.batch(batchStmts.slice(i, i + 100));
-        }
+        const batchStmts = rows.map(r => stmt.bind(r.sku || "-", r.nama || "-", r.type || "-", r.warna || "-", r.kategori || "-"));
+        for (let i = 0; i < batchStmts.length; i += 100) await env.DB.batch(batchStmts.slice(i, i + 100));
         return jsonResp({ success: true, count: rows.length });
       }
 
@@ -58,15 +51,24 @@ export default {
       // ==========================================
       if (method === "GET" && path === "/api/po/list") {
         const { results } = await env.DB.prepare("SELECT * FROM po_list ORDER BY id DESC").all();
-        // Terapkan helper agar noPo dan dibuatOleh terdeteksi
-        const mapped = fixCasing(results, ["noPo", "tanggal", "vendor", "items", "dibuatOleh", "status"]);
+        // Memastikan 'id' juga ikut ter-mapping
+        const mapped = fixCasing(results, ["id", "noPo", "tanggal", "vendor", "items", "dibuatOleh", "status"]);
         return jsonResp(mapped);
       }
       
       if (method === "POST" && path === "/api/po/submit") {
         const b = await request.json();
+        
+        // PELINDUNG DATABASE: Isi yg kosong jadi "-" dan jadikan item sbg String Teks
+        const noPo = b.noPo || "-";
+        const tanggal = b.tanggal || "-";
+        const vendor = b.vendor || "-";
+        const dibuatOleh = b.dibuatOleh || "-";
+        const itemsStr = typeof b.items === 'object' ? JSON.stringify(b.items) : (b.items || "[]");
+
         await env.DB.prepare("INSERT INTO po_list (noPo, tanggal, vendor, items, dibuatOleh, status) VALUES (?, ?, ?, ?, ?, 'Pending')")
-          .bind(b.noPo, b.tanggal, b.vendor, b.items, b.dibuatOleh).run();
+          .bind(noPo, tanggal, vendor, itemsStr, dibuatOleh).run();
+          
         return jsonResp({ success: true });
       }
       
@@ -87,21 +89,27 @@ export default {
       // ==========================================
       if (method === "GET" && path === "/api/pembelian/list") {
         const { results } = await env.DB.prepare("SELECT * FROM purchase_history ORDER BY id DESC").all();
-        const mapped = fixCasing(results, ["noPo", "barang", "kode", "variasi", "qty", "satuan", "tanggalPengajuan", "requestor", "expense", "tenggatBayar", "statusPembayaran", "statusPurchasing", "tanggalComplete", "notes"]);
+        const mapped = fixCasing(results, ["id", "noPo", "barang", "kode", "variasi", "qty", "satuan", "tanggalPengajuan", "requestor", "expense", "tenggatBayar", "statusPembayaran", "statusPurchasing", "tanggalComplete", "notes"]);
         return jsonResp(mapped);
       }
       
       if (method === "POST" && path === "/api/pembelian/submit") {
         const b = await request.json();
+        const qty = b.qty ? Number(b.qty) : 0;
+        const expense = b.expense ? Number(b.expense) : 0;
+        
         await env.DB.prepare("INSERT INTO purchase_history (noPo, barang, kode, variasi, qty, satuan, tanggalPengajuan, requestor, expense, tenggatBayar, statusPembayaran, statusPurchasing, tanggalComplete, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-          .bind(b.noPo, b.barang, b.kode, b.variasi, b.qty, b.satuan, b.tanggalPengajuan, b.requestor, b.expense, b.tenggatBayar, b.statusPembayaran, b.statusPurchasing, b.tanggalComplete, b.notes).run();
+          .bind(b.noPo || "-", b.barang || "-", b.kode || "-", b.variasi || "-", qty, b.satuan || "-", b.tanggalPengajuan || "-", b.requestor || "-", expense, b.tenggatBayar || "-", b.statusPembayaran || "Unpaid", b.statusPurchasing || "Proses", b.tanggalComplete || "-", b.notes || "-").run();
         return jsonResp({ success: true });
       }
       
       if (method === "POST" && path === "/api/pembelian/update") {
         const b = await request.json();
+        const qty = b.qty ? Number(b.qty) : 0;
+        const expense = b.expense ? Number(b.expense) : 0;
+
         await env.DB.prepare("UPDATE purchase_history SET noPo=?, barang=?, kode=?, variasi=?, qty=?, satuan=?, tanggalPengajuan=?, requestor=?, expense=?, tenggatBayar=?, statusPembayaran=?, statusPurchasing=?, tanggalComplete=?, notes=? WHERE id=?")
-          .bind(b.noPo, b.barang, b.kode, b.variasi, b.qty, b.satuan, b.tanggalPengajuan, b.requestor, b.expense, b.tenggatBayar, b.statusPembayaran, b.statusPurchasing, b.tanggalComplete, b.notes, b.id).run();
+          .bind(b.noPo || "-", b.barang || "-", b.kode || "-", b.variasi || "-", qty, b.satuan || "-", b.tanggalPengajuan || "-", b.requestor || "-", expense, b.tenggatBayar || "-", b.statusPembayaran || "Unpaid", b.statusPurchasing || "Proses", b.tanggalComplete || "-", b.notes || "-", b.id).run();
         return jsonResp({ success: true });
       }
       
@@ -112,7 +120,7 @@ export default {
       }
 
       // ==========================================
-      // [4] API KELOLA AKUN (LOGIN & USERS)
+      // [4] API KELOLA AKUN
       // ==========================================
       if (method === "POST" && path === "/api/users/login") {
         const b = await request.json();
@@ -144,7 +152,6 @@ export default {
       }
 
       return jsonResp({ success: false, message: "Endpoint tidak ditemukan" }, 404);
-
     } catch (error) {
       return jsonResp({ success: false, message: error.message }, 500);
     }
