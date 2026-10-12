@@ -1,4 +1,3 @@
-
 // =========================================================================
 // PWA: REGISTRASI SERVICE WORKER (biar bisa di-install jadi app desktop)
 // =========================================================================
@@ -14,12 +13,12 @@ if ('serviceWorker' in navigator) {
 // CLOUD DATABASE CONFIGURATION (GOOGLE SHEETS)
 // =========================================================================
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9ZVSAObK0DbfXadHO9LIQGEaLlmFruZ4AR7HFpsYC2ONmKLGQCQ_93TuS_DpOwog/exec";
-const USERS_API_BASE = '/api/users'; // Data akun (Kelola Akun) sekarang di D1, bukan Google Sheets lagi
-const MASTERSKU_API_BASE = '/api/mastersku'; // Master SKU: sumber edit tetap Google Sheets, tapi dipakai app dari cache D1 (lebih cepat)
+const USERS_API_BASE = '/api/users'; 
+const MASTERSKU_API_BASE = '/api/mastersku'; 
 
 
 // SIGNATURE IMAGE (CV ARSA) - base64 agar tidak perlu file eksternal
-const SIGNATURE_CV_ARSA_BASE64 = "data:image/png;base64,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";
+const SIGNATURE_CV_ARSA_BASE64 = "data:image/png;base64,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";
 
 // --- DOM SELEKTORS ---
 const loadingOverlay = document.getElementById('loading-overlay'); 
@@ -94,7 +93,7 @@ const btnAddManual = document.getElementById('btn-add-manual');
 
 // SELEKTOR PROCUREMENT DROPDOWN BERANTAI & TANGGAL
 const procNoPo = document.getElementById('proc-no-po');
-const procTanggalPo = document.getElementById('proc-tanggal-po'); // 🌟 SELEKTOR TANGGAL BARU
+const procTanggalPo = document.getElementById('proc-tanggal-po'); 
 const procJenisBarang = document.getElementById('proc-jenis-barang');
 const procWarnaLatela = document.getElementById('proc-warna-latela');
 const procKodeWarnaVendor = document.getElementById('proc-kode-warna-vendor');
@@ -107,20 +106,13 @@ const procHarga = document.getElementById('proc-harga');
 const procTerminAngka = document.getElementById('proc-termin-angka');
 const procTerminSatuan = document.getElementById('proc-termin-satuan');
 
-// Terima "12,5" ATAU "12.5" sebagai angka desimal yang sama (user Indonesia
-// biasa pakai koma). Titik ribuan (mis. "1.200") juga otomatis dibersihin
-// SELAMA cuma ada 1 pemisah desimal di akhir -- kalau ambigu, dianggap koma
-// desimal dulu (kasus paling umum di form ini: qty & harga kecil-kecil).
 function parseAngkaKoma(raw) {
     if (raw === undefined || raw === null) return NaN;
     let s = raw.toString().trim();
     if (!s) return NaN;
     if (s.includes(',')) {
-        // Ada koma -> koma dianggap pemisah desimal, titik (kalau ada) dianggap pemisah ribuan.
-        // "1.200,5" -> "1200.5" ; "12,5" -> "12.5"
         s = s.replace(/\./g, '').replace(',', '.');
     }
-    // Cuma ada titik doang (tanpa koma) -> dibiarin apa adanya, titik dianggap desimal biasa (mis. "12.5")
     return parseFloat(s);
 }
 const procSatuan = document.getElementById('proc-satuan');
@@ -170,7 +162,6 @@ const btnRefreshAkun = document.getElementById('btn-refresh-akun');
 const akunMenuAksesRow = document.getElementById('akun-menu-akses-row');
 const akunCanApprovePo = document.getElementById('akun-can-approve-po');
 
-// Semua menu yang bisa di-toggle per akun (di luar "kelolaakun" -> selalu khusus Admin)
 const SEMUA_MENU_TERSEDIA = ['dashboard', 'kalkulator', 'barangkeluar', 'mastersku', 'qrlabel', 'history', 'procurement', 'listpo', 'barang', 'pembelian'];
 const LABEL_MENU = { dashboard: 'Dashboard', kalkulator: 'Kalkulator Terjual', barangkeluar: 'Barang Keluar', mastersku: 'Master SKU', qrlabel: 'Cetak Label QR', history: 'History', procurement: 'Procurement', listpo: 'List PO & Approval', barang: 'Data Barang', pembelian: 'Histori Pembelian' };
 
@@ -208,13 +199,7 @@ function applyRoleUI() {
     const isFullAccess = sess && sess.role === 'full';
     if (userSessionName) userSessionName.innerText = sess ? sess.nama : '-';
 
-    // Admin (Akses Penuh) otomatis liat semua menu. Akun Terbatas cuma liat menu
-    // yang dicentang admin buat dia (disimpan di sess.menus, array of data-target).
     let allowedMenus = isFullAccess ? SEMUA_MENU_TERSEDIA : ((sess && Array.isArray(sess.menus)) ? sess.menus : []);
-    // Admin Keuangan (canApprovePo) OTOMATIS bisa buka "List PO & Approval" walau
-    // menu itu gak dicentang -- soalnya percuma dikasih izin approve tapi gak bisa
-    // liat halamannya sama sekali. Ini TERPISAH dari menu "Procurement" (bikin PO
-    // baru), yang tetap harus dicentang manual sendiri kalau memang mau dikasih.
     if (!isFullAccess && sess && sess.canApprovePo && !allowedMenus.includes('listpo')) {
         allowedMenus = allowedMenus.concat(['listpo']);
     }
@@ -222,7 +207,6 @@ function applyRoleUI() {
         const btn = document.querySelector(`.menu-item[data-target="${target}"]`);
         if (btn) btn.style.display = allowedMenus.includes(target) ? '' : 'none';
     });
-    // "Kelola Akun" selalu khusus Admin, gak pernah bisa dikasih ke akun Terbatas.
     if (menuKelolaAkun) menuKelolaAkun.style.display = isFullAccess ? '' : 'none';
 }
 
@@ -260,10 +244,9 @@ if (btnLogout) {
     btnLogout.addEventListener('click', () => { clearSession(); showLogin(); });
 }
 
-// Dipanggil sekali setelah login sukses (baik langsung login, atau session lama masih valid)
 function bootstrapAfterLogin() {
     fetchPoListFromCloud();
-    fetchBarangList(); // sekali doang di sini -- BUKAN tiap menu "Data Barang" diklik
+    fetchBarangList(); 
     if (getSession() && getSession().role === 'full') fetchUsers();
 }
 
@@ -286,9 +269,6 @@ function fetchUsers() {
             const menuList = parseMenuString(u.menus);
             const menuLabel = u.role === 'full' ? 'Semua Menu' : (menuList.length ? menuList.map(m => LABEL_MENU[m] || m).join(', ') : '(!) Belum ada menu dipilih');
             const tr = document.createElement('tr');
-            // Password disamarkan default (titik-titik), klik ikon mata buat nampilin -- biar
-            // gak kebuka polos kalau lagi share layar. Halaman ini sendiri udah eksklusif
-            // Admin doang yang bisa buka, jadi datanya aman ditampilin di sini.
             tr.innerHTML = `<td><strong>${u.username}</strong></td><td><span class="akun-password-cell" data-password="${u.password || ''}" style="cursor:pointer; font-family:monospace;" title="Klik buat lihat/sembunyiin password">••••••••</span></td><td>${u.nama || '-'}</td><td>${roleLabel}</td><td style="font-size:12px; max-width:280px;">${menuLabel}</td><td style="white-space:nowrap;"><button class="btn-action btn-gray-outline btn-edit-akun" data-username="${u.username}">Edit</button> <button class="btn-action btn-gray-outline btn-hapus-akun" data-username="${u.username}">Hapus</button></td>`;
             tbody.appendChild(tr);
         });
@@ -301,7 +281,6 @@ function fetchUsers() {
     }).catch(() => { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data akun.</td></tr>`; });
 }
 
-// Isi ulang form pakai data akun yang mau diedit (password dikosongin -> wajib diisi ulang buat nyimpen)
 function editAkunPrefill(username) {
     const u = globalUserListCache.find(x => x.username === username);
     if (!u) return;
@@ -407,11 +386,7 @@ function renderBarangTable(list) {
 }
 
 // =========================================================================
-// HELPER BERSAMA: menu titik-3 (dipakai di tabel Barang, Pembelian, dst).
-// Cuma 1 elemen yang di-reuse & ditaruh langsung di <body>, diposisikan pakai
-// getBoundingClientRect() pas tombolnya diklik. Ini biar menu-nya gak ke-crop
-// sama overflow:auto di container tabel yang bisa di-scroll (bug lama, dropdown
-// ke-render tapi kepotong invisible sama container-nya).
+// HELPER BERSAMA: menu titik-3
 // =========================================================================
 let _aksiTitik3Menu = null;
 function openAksiTitik3Menu(btn, items) {
@@ -444,7 +419,7 @@ document.addEventListener('scroll', closeAksiTitik3Menu, true);
 
 
 
-// --- SEARCH BARANG (filter live dari cache, gak perlu fetch ulang) ---
+// --- SEARCH BARANG ---
 const searchBarangInput = document.getElementById('search-barang');
 if (searchBarangInput) {
     searchBarangInput.addEventListener('input', () => {
@@ -480,8 +455,6 @@ function openBarangEditModal(rowIndex) {
     if (barangEditModal) barangEditModal.classList.add('show');
 }
 
-// Mode TAMBAH: buka modal yang sama tapi kosong, rowIndex dikosongin
-// (dipakai sebagai penanda "ini data baru" pas disimpan nanti)
 function openBarangAddModal() {
     if (barangEditModalTitle) barangEditModalTitle.innerText = 'Tambah Barang';
     if (barangEditRowIndex) barangEditRowIndex.value = '';
@@ -553,19 +526,16 @@ if (btnBarangEditSave) {
 if (btnRefreshBarang) btnRefreshBarang.addEventListener('click', fetchBarangList);
 
 // --- HISTORI PEMBELIAN (khusus Akses Penuh) ---
-// Setiap submit di sini otomatis nulis ke 2 spreadsheet sekaligus di Google Sheets:
-// Payment Tracking & Purchasing Control (masing-masing pakai appendRow, jadi
-// otomatis masuk ke baris kosong paling bawah tanpa perlu ngecek manual).
 const btnTambahPembelian = document.getElementById('btn-tambah-pembelian');
 const btnRefreshPembelian = document.getElementById('btn-refresh-pembelian');
 const searchPembelianInput = document.getElementById('search-pembelian');
 
-let pembelianAddingNew = false; // true kalau lagi nampilin baris kosong buat input item baru
+let pembelianAddingNew = false; 
 
 if (btnTambahPembelian) {
     btnTambahPembelian.addEventListener('click', () => {
         pembelianAddingNew = true;
-        pembelianCurrentPage = 1; // biar baris barunya kelihatan di halaman pertama
+        pembelianCurrentPage = 1; 
         renderPembelianTable(pembelianLastList.length ? pembelianLastList : globalPembelianListCache);
     });
 }
@@ -585,15 +555,12 @@ function fetchPembelianList() {
     pembelianEditingRowIndex = null;
     tbody.innerHTML = `<tr><td colspan="15" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data histori pembelian...</td></tr>`;
     fetch(`${PEMBELIAN_API_BASE}/list`).then(res => res.json()).then(list => {
-        // alias "id" (dari D1) jadi "rowIndex" biar semua kode render yang udah
-        // ada (data-rowindex, dsb) tetap kompatibel tanpa perlu diubah ulang
         globalPembelianListCache = Array.isArray(list) ? list.map(r => ({ ...r, rowIndex: r.id })) : [];
         pembelianCurrentPage = 1;
         renderPembelianTable(globalPembelianListCache);
     }).catch(() => { tbody.innerHTML = `<tr><td colspan="15" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data histori pembelian.</td></tr>`; });
 }
 
-// Cek apakah suatu item udah lewat tenggat bayar tapi statusnya masih belum "Sudah Bayar"
 function isPembelianTerlambat(p) {
     if (!p.tenggatBayar) return false;
     if ((p.statusPembayaran || '').toLowerCase() === 'sudah bayar') return false;
@@ -616,15 +583,10 @@ function badgeClassStatusPurchasing(status) {
     return 'badge-status-pending';
 }
 
-// 🔧 PAGINATION: data bisa ribuan baris (7000+), kalau di-render semua
-// sekaligus ke DOM, browser jadi berat banget & ngelag di SEMUA halaman
-// (karena halaman yang gak lagi dibuka cuma "disembunyikan", bukan
-// beneran dihapus, jadi elemennya tetap nempel di memori). Makanya
-// cuma render 1 halaman dalam satu waktu, jumlahnya bisa dipilih user.
 let pembelianCurrentPage = 1;
 let PEMBELIAN_PAGE_SIZE = 50;
-let pembelianLastList = []; // list yang lagi ditampilin (buat re-render pas ganti halaman/page size/batal edit)
-let pembelianEditingRowIndex = null; // rowIndex baris yang lagi di-edit inline (null = gak ada yang lagi diedit)
+let pembelianLastList = []; 
+let pembelianEditingRowIndex = null; 
 
 const pembelianPageSizeSelect = document.getElementById('pembelian-page-size');
 if (pembelianPageSizeSelect) {
@@ -671,9 +633,6 @@ function renderPembelianTable(list) {
     const tbody = document.getElementById('tbody-pembelian-list');
     if (!tbody) return;
 
-    // Hak edit langsung di baris (gak perlu masuk mode Edit lewat titik-3):
-    // - Status Bayar -> khusus Admin Keuangan (canApprovePo) atau Admin akses penuh
-    // - Status Purchasing & Tgl Complete -> khusus akun yang punya akses menu Procurement, atau Admin akses penuh
     const sessionUserPembelian = getSession();
     const isFullAccessPembelian = sessionUserPembelian && sessionUserPembelian.role === 'full';
     const canEditStatusBayar = isFullAccessPembelian || (sessionUserPembelian && sessionUserPembelian.canApprovePo === true);
@@ -697,7 +656,6 @@ function renderPembelianTable(list) {
         const isEditing = pembelianEditingRowIndex !== null && String(pembelianEditingRowIndex) === String(p.rowIndex);
 
         if (isEditing) {
-            // --- MODE EDIT: semua cell jadi input/select langsung di baris ---
             tr.innerHTML = `
                 <td><input type="text" class="inline-edit-field" data-field="noPo" value="${(p.noPo || '').toString().replace(/"/g, '&quot;')}" style="width:90px;"></td>
                 <td><input type="text" class="inline-edit-field" data-field="barang" value="${(p.barang || '').toString().replace(/"/g, '&quot;')}" style="width:100px;"></td>
@@ -718,8 +676,6 @@ function renderPembelianTable(list) {
                     <button class="btn-inline-cancel">Batal</button>
                 </td>`;
         } else {
-            // --- MODE TAMPIL BIASA (Status Bayar / Status Purchasing / Tgl Complete
-            // bisa langsung diedit di sini juga, TANPA perlu masuk mode Edit -- tergantung hak akses) ---
             const expenseFmt = (p.expense !== undefined && p.expense !== null && p.expense !== '') ? `Rp ${Number(p.expense).toLocaleString('id-ID')}` : '-';
             const terlambat = isPembelianTerlambat(p);
             const tenggatFmt = p.tenggatBayar ? formatTanggalDisplay(p.tenggatBayar) : '-';
@@ -753,10 +709,7 @@ function renderPembelianTable(list) {
         ]);
     }));
 
-    // Kolom quick-edit (Status Bayar / Status Purchasing / Tgl Complete) -> auto-save
-    // begitu diganti, gak perlu tombol Simpan terpisah.
     tbody.querySelectorAll('.pembelian-quick-edit').forEach(el => el.addEventListener('change', () => {
-        // Update warna instan (optimistic) sebelum konfirmasi simpan dari server kelar
         if (el.tagName === 'SELECT') {
             const field = el.getAttribute('data-field');
             const newColorClass = (field === 'statusPembayaran' ? badgeClassStatusBayar(el.value) : badgeClassStatusPurchasing(el.value)).replace('badge-status-', 'qe-');
@@ -766,7 +719,6 @@ function renderPembelianTable(list) {
         quickSavePembelianField(el.getAttribute('data-rowindex'), el.getAttribute('data-field'), el.value);
     }));
 
-    // Tombol Simpan/Batal buat mode inline-edit
     tbody.querySelectorAll('.btn-inline-save').forEach(btn => btn.addEventListener('click', () => savePembelianInlineEdit(btn)));
     tbody.querySelectorAll('.btn-inline-cancel').forEach(btn => btn.addEventListener('click', () => { pembelianEditingRowIndex = null; renderPembelianTable(pembelianLastList); }));
 
@@ -774,10 +726,6 @@ function renderPembelianTable(list) {
     renderPembelianPagination(list);
 }
 
-// Simpan 1 kolom doang (Status Bayar / Status Purchasing / Tgl Complete) yang diubah
-// langsung di baris (quick-edit), tanpa perlu masuk mode Edit penuh. Backend-nya
-// tetap butuh semua kolom (full replace), jadi di sini digabung data existing +
-// 1 field yang baru diubah.
 function quickSavePembelianField(rowIndex, fieldName, newValue) {
     const p = (pembelianLastList || []).find(x => String(x.rowIndex) === String(rowIndex));
     if (!p) { updateStatusMessage('(!) Data baris tidak ditemukan, coba Refresh.'); return; }
@@ -798,9 +746,9 @@ function quickSavePembelianField(rowIndex, fieldName, newValue) {
         .then(res => res.json())
         .then(result => {
             if (result && result.success) {
-                p[fieldName] = newValue; // update cache lokal biar konsisten tanpa perlu fetch ulang
+                p[fieldName] = newValue; 
                 updateStatusMessage('Perubahan berhasil disimpan.');
-                renderPembelianTable(pembelianLastList); // re-render (misal buat update tanda ⚠ terlambat kalau Status Bayar berubah)
+                renderPembelianTable(pembelianLastList); 
             } else {
                 updateStatusMessage('(!) Gagal menyimpan perubahan.');
             }
@@ -808,7 +756,6 @@ function quickSavePembelianField(rowIndex, fieldName, newValue) {
         .catch(() => updateStatusMessage('(!) Gagal menyimpan perubahan.'));
 }
 
-// Wiring khusus tombol Simpan/Batal di baris "tambah item baru"
 function wirePembelianNewRowHandlers(tbody) {
     const btnSaveNew = tbody.querySelector('.btn-inline-save-new');
     const btnCancelNew = tbody.querySelector('.btn-inline-cancel-new');
@@ -854,7 +801,7 @@ function savePembelianNewRow(btnSaveEl) {
 
 function savePembelianInlineEdit(btnSaveEl) {
     const tr = btnSaveEl.closest('tr');
-    const rowIndex = btnSaveEl.getAttribute('data-rowindex'); // ini sekarang = id asli di database
+    const rowIndex = btnSaveEl.getAttribute('data-rowindex'); 
 
     const getVal = (field) => { const el = tr.querySelector(`.inline-edit-field[data-field="${field}"]`); return el ? el.value : ''; };
     const noPo = getVal('noPo').trim();
@@ -925,7 +872,7 @@ const filterStatusBayarPembelian = document.getElementById('filter-status-bayar-
 function applyPembelianFilters() {
     const q = searchPembelianInput ? searchPembelianInput.value.trim().toLowerCase() : '';
     const statusFilter = filterStatusBayarPembelian ? filterStatusBayarPembelian.value : '';
-    pembelianCurrentPage = 1; // reset ke halaman 1 tiap kali filter berubah
+    pembelianCurrentPage = 1; 
 
     const filtered = globalPembelianListCache.filter(p => {
         const matchQ = !q ||
@@ -983,7 +930,6 @@ window.addEventListener('DOMContentLoaded', () => {
         sidebarElement.classList.add('collapsed');
     }
 
-    // 🌟 INITIALIZE: OTOMATIS KUNCI TANGGAL PO KE HARI INI
     if (procTanggalPo) {
         const hariIni = new Date();
         const yyyy = hariIni.getFullYear();
@@ -1001,11 +947,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
     startLiveClock();
     fetchLiveWeather();
-    setInterval(fetchLiveWeather, 15 * 60 * 1000); // refresh cuaca tiap 15 menit
+    setInterval(fetchLiveWeather, 15 * 60 * 1000); 
 });
 
 // =========================================================================
-// THEME PICKER — pilih preset tema, tersimpan di localStorage
+// THEME PICKER 
 // =========================================================================
 const THEME_STORAGE_KEY = 'latelaThemePreset';
 
@@ -1091,7 +1037,7 @@ function startLiveClock() {
 }
 
 // =========================================================================
-// WIDGET CUACA LIVE — Open-Meteo (gratis, tanpa API key) — Lokasi Bandung
+// WIDGET CUACA LIVE
 // =========================================================================
 const WEATHER_CODE_MAP = {
     0: { text: 'Cerah', icon: '☀️' },
@@ -1118,7 +1064,6 @@ const WEATHER_CODE_MAP = {
 };
 
 function fetchLiveWeather() {
-    // Koordinat Bandung, Jawa Barat
     const lat = -6.9175, lon = 107.6191;
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=Asia%2FJakarta`;
 
@@ -1204,8 +1149,6 @@ if (btnImportMasterSku) {
 }
 
 // 1. ENGINE FETCH SKU CORE
-// Normalisasi 1 baris data SKU mentah dari Google Sheets (nama kolom fleksibel,
-// kategori dirapiin ke 4 nilai baku) -> dipakai pas Import dari Spreadsheet.
 function normalizeSkuRowFromSheet(row) {
     const skuCode = row['SKU'] || row['sku'] || row['Code'];
     if (!skuCode) return null;
@@ -1230,10 +1173,6 @@ function normalizeSkuRowFromSheet(row) {
     };
 }
 
-// Baca Master SKU dari D1 (cache cepat) -- dipakai sehari-hari (bootstrap, tombol
-// Sync). BUKAN baca langsung dari Google Sheets lagi -- itu sekarang cuma lewat
-// tombol "Import dari Spreadsheet" (importMasterSkuFromSpreadsheet), yang narik
-// dari Sheets terus nge-replace isi D1-nya.
 function fetchMasterSkusFromCloud() {
     updateStatusMessage("Menghubungkan ke Database...");
     if (tbodyMasterList) tbodyMasterList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; font-style: italic;">Sinkronisasi data...</td></tr>`;
@@ -1254,7 +1193,7 @@ function fetchMasterSkusFromCloud() {
             });
             updateStatusMessage(`Master SKU berhasil disinkronisasi (${Object.keys(masterSkus).length} SKU).`);
             renderMasterSkuDatabaseView();
-            populateQrLabelJenisDropdown(); // biar dropdown Jenis Barang di halaman Cetak Label QR ikut ke-refresh kalau lagi kebuka
+            populateQrLabelJenisDropdown(); 
             populateDashboardDropdown(); 
             populateManualNamaDropdown(); 
             resetKalkulatorDataState();
@@ -1265,8 +1204,6 @@ function fetchMasterSkusFromCloud() {
         .finally(() => { if (loadingOverlay) setTimeout(() => { loadingOverlay.classList.add('fade-out'); }, 300); });
 }
 
-// Import dari Google Sheets -> replace total isi Master SKU di D1. Dipakai
-// SETELAH edit massal di Spreadsheet, biar app-nya kebawa update juga.
 function importMasterSkuFromSpreadsheet() {
     updateStatusMessage("Menarik data terbaru dari Google Sheets...");
     if (loadingOverlay) loadingOverlay.classList.remove('fade-out');
@@ -1286,7 +1223,7 @@ function importMasterSkuFromSpreadsheet() {
         .then(result => {
             if (result && result.success) {
                 updateStatusMessage(`Sukses import ${result.count} SKU dari Spreadsheet ke Database!`);
-                fetchMasterSkusFromCloud(); // refresh tampilan dari D1 yang udah ke-update
+                fetchMasterSkusFromCloud(); 
             } else {
                 updateStatusMessage('(!) Gagal import: ' + ((result && result.message) || 'unknown error'));
                 if (loadingOverlay) loadingOverlay.classList.add('fade-out');
@@ -1320,9 +1257,6 @@ function fetchVendorMappingFromCloud() {
         .catch(err => console.error("Gagal load vendor mapping:", err));
 }
 
-// Tombol "Refresh Data" di halaman Procurement -- narik ulang data Jenis Barang
-// & Vendor (dropdown form PO), sekaligus Master SKU biar konsisten. Ini manual
-// trigger doang, gak jalan otomatis tiap buka halaman ini.
 if (document.getElementById('btn-refresh-procurement-data')) {
     document.getElementById('btn-refresh-procurement-data').addEventListener('click', () => {
         updateStatusMessage('Menarik ulang data Jenis Barang & Vendor...');
@@ -1353,13 +1287,11 @@ if (procJenisBarang) {
     });
 }
 
-// Helper: baca satu field dari row vendor, coba beberapa kemungkinan nama kolom
 function ambilFieldVendor(row, possibleKeys) {
     for (const k of possibleKeys) { if (row[k] !== undefined && row[k] !== null && row[k] !== '') return row[k]; }
     return null;
 }
 
-// Helper: kosongkan semua field detail vendor & kembalikan ke mode input readonly (non-dropdown)
 function kosongkanFieldVendorDetail() {
     if (procKodeWarnaVendor) procKodeWarnaVendor.value = '';
     if (procVendor) { procVendor.value = ''; procVendor.style.display = ''; }
@@ -1368,7 +1300,6 @@ function kosongkanFieldVendorDetail() {
     if (procNamaKain) procNamaKain.value = '';
 }
 
-// Helper: isi field readonly (Kd Warna, Kd Vendor, Nama Kain) dari satu row vendor yang sudah pasti dipilih
 function isiFieldDariRowVendor(row) {
     if (procKodeWarnaVendor) procKodeWarnaVendor.value = ambilFieldVendor(row, ['Kode Warna Vendor', 'kode_warna_vendor', 'Kode warna vendor']) || '-';
     if (procKodeVendor) procKodeVendor.value = ambilFieldVendor(row, ['Kode Vendor', 'kode_vendor', 'Kode vendor']) || '-';
@@ -1381,7 +1312,6 @@ if (procWarnaLatela) {
         const selectedWarna = procWarnaLatela.value;
         if (!selectedJenis || !selectedWarna) { kosongkanFieldVendorDetail(); return; }
 
-        // Cari SEMUA row yang cocok Jenis+Warna (bisa lebih dari 1 vendor untuk kombinasi yang sama)
         const matchedRows = globalVendorRawData.filter(row => {
             let jenis = ambilFieldVendor(row, ['Jenis Barang', 'jenis_barang', 'Jenis barang', 'JENIS BARANG']);
             let warna = ambilFieldVendor(row, ['Kode Warna Latela', 'kode_warna_latela', 'Kode warna latela', 'KODE WARNA LATELA']);
@@ -1391,12 +1321,10 @@ if (procWarnaLatela) {
         if (matchedRows.length === 0) {
             kosongkanFieldVendorDetail();
         } else if (matchedRows.length === 1) {
-            // Hanya 1 vendor cocok -> tampilkan sebagai field readonly seperti biasa, tanpa dropdown
             if (procVendor) { procVendor.style.display = ''; procVendor.value = ambilFieldVendor(matchedRows[0], ['Vendor', 'vendor']) || '-'; }
             if (procVendorSelect) { procVendorSelect.style.display = 'none'; procVendorSelect.innerHTML = '<option value="">-- Pilih Vendor --</option>'; }
             isiFieldDariRowVendor(matchedRows[0]);
         } else {
-            // Lebih dari 1 vendor cocok -> tampilkan dropdown pilihan vendor, field lain dikosongkan dulu sampai user pilih
             if (procKodeWarnaVendor) procKodeWarnaVendor.value = '';
             if (procKodeVendor) procKodeVendor.value = '';
             if (procNamaKain) procNamaKain.value = '';
@@ -1404,7 +1332,6 @@ if (procWarnaLatela) {
             if (procVendorSelect) {
                 procVendorSelect.style.display = '';
                 procVendorSelect.innerHTML = '<option value="">-- Pilih Vendor --</option>';
-                // Nama vendor bisa duplikat di data (mis. vendor sama, baris beda), jadi index disimpan di value agar match-nya presisi ke row yang benar
                 matchedRows.forEach((row, idx) => {
                     const namaVendor = ambilFieldVendor(row, ['Vendor', 'vendor']) || '-';
                     const opt = document.createElement('option');
@@ -1412,7 +1339,6 @@ if (procWarnaLatela) {
                     opt.innerText = namaVendor;
                     procVendorSelect.appendChild(opt);
                 });
-                // Simpan referensi rows yang sedang aktif di dropdown ini agar handler change bisa ambil row yang tepat
                 procVendorSelect._matchedRows = matchedRows;
             }
         }
@@ -1438,7 +1364,6 @@ if (btnAddProc) {
         const jenisBarang = procJenisBarang ? procJenisBarang.value : ''; 
         const warnaLatela = procWarnaLatela ? procWarnaLatela.value : '';
         const kodeWarnaVendor = procKodeWarnaVendor ? procKodeWarnaVendor.value : ''; 
-        // Vendor diambil dari elemen yang sedang aktif: dropdown kalau >1 vendor, input readonly kalau cuma 1
         const vendorSelectAktif = procVendorSelect && procVendorSelect.style.display !== 'none';
         const vendor = vendorSelectAktif
             ? (procVendorSelect.selectedOptions[0] ? procVendorSelect.selectedOptions[0].innerText : '')
@@ -1458,8 +1383,6 @@ if (btnAddProc) {
         if (vendorSelectAktif && !procVendorSelect.value) { updateStatusMessage("(!) Gagal: Pilih vendor terlebih dahulu (ada lebih dari 1 vendor untuk warna ini)."); return; }
         if(!jenisBarang || !warnaLatela || !vendor || isNaN(qty) || qty <= 0) { updateStatusMessage("(!) Gagal: Isi Qty dengan benar (angka desimal boleh pakai koma, mis. 12,5)."); return; }
         if (procHarga && procHarga.value.trim() !== '' && isNaN(harga)) { updateStatusMessage("(!) Gagal: Format Harga Total gak valid."); return; }
-        // 1 PO cuma boleh 1 vendor -- kalau basket udah ada isinya, vendor item baru
-        // WAJIB sama persis kayak vendor yang udah ada, gak boleh dicampur.
         if (currentPoBasket.length > 0 && currentPoBasket[0].vendor !== vendor) {
             const pesanError = `Gagal ditambahkan!\n\n1 PO cuma boleh 1 vendor.\nList ini udah pakai vendor "${currentPoBasket[0].vendor}", gak bisa dicampur sama "${vendor}".\n\nSubmit/Reset dulu list ini, baru bikin PO baru buat vendor lain.`;
             alert(pesanError);
@@ -1469,7 +1392,6 @@ if (btnAddProc) {
         currentPoBasket.push({ jenisBarang, warnaLatela, kodeWarnaVendor, vendor, kodeVendor, namaKain, qty, satuan, harga, termin, terminHariTotal });
         renderProcurementTable(); 
 
-        // 🔄 RESET FORM SETELAH ITEM DITAMBAHKAN (biar siap input item baru)
         if (procJenisBarang) procJenisBarang.value = '';
         if (procWarnaLatela) { procWarnaLatela.innerHTML = '<option value="">-- Pilih Warna Latela --</option>'; procWarnaLatela.disabled = true; }
         kosongkanFieldVendorDetail();
@@ -1507,7 +1429,6 @@ if (btnResetPo) {
         if (procTerminAngka) procTerminAngka.value = ''; if (procTerminSatuan) procTerminSatuan.value = 'Hari';
         if (procSatuan) procSatuan.value = 'Roll';
         
-        // Reset Tanggal PO ke Hari Ini Kembali
         if (procTanggalPo) {
             const hariIni = new Date();
             const yyyy = hariIni.getFullYear();
@@ -1521,15 +1442,10 @@ if (btnResetPo) {
 }
 
 function generatePoPdf(noPoValue, rawSelectedDate, vendorHeader, items) {
-    // 🔧 Google Sheets kadang otomatis mengubah teks yang "kelihatan kayak angka" (misal
-    // Nomor PO "202") jadi tipe data Number beneran. jsPDF cuma nerima string murni untuk
-    // doc.text(), jadi semua nilai yang bakal ditulis WAJIB dipaksa jadi string dulu.
     noPoValue = noPoValue !== undefined && noPoValue !== null ? String(noPoValue) : '';
     vendorHeader = vendorHeader !== undefined && vendorHeader !== null ? String(vendorHeader) : '-';
 
     let formattedDate = '-';
-    // Google Sheets kadang juga otomatis mengubah teks tanggal jadi objek Date beneran.
-    // Normalize dulu jadi string "yyyy-mm-dd" biar aman diproses, apapun bentuk aslinya.
     let dateStr = '';
     if (rawSelectedDate instanceof Date) {
         const yyyy = rawSelectedDate.getFullYear();
@@ -1537,33 +1453,30 @@ function generatePoPdf(noPoValue, rawSelectedDate, vendorHeader, items) {
         const dd = String(rawSelectedDate.getDate()).padStart(2, '0');
         dateStr = `${yyyy}-${mm}-${dd}`;
     } else if (rawSelectedDate) {
-        dateStr = rawSelectedDate.toString().slice(0, 10); // ambil 10 karakter pertama (yyyy-mm-dd), buang jam kalau ada format ISO lengkap
+        dateStr = rawSelectedDate.toString().slice(0, 10); 
     }
     if (dateStr) {
         const parts = dateStr.split('-');
-        if (parts.length === 3) formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
+        if (parts.length === 3) formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`; 
     }
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
-    const marginLeft = 28.35; // 1 cm
-    const marginRight = 28.35; // 1 cm
+    const marginLeft = 28.35; 
+    const marginRight = 28.35; 
     const contentWidth = pageWidth - marginLeft - marginRight;
 
-    // --- HEADER: NAMA PERUSAHAAN (KIRI) & JUDUL (KANAN) ---
     doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
     doc.text('CV ARSA (ARSATEX)', marginLeft, 50);
     doc.text('ORDER PEMBELIAN', pageWidth - marginRight, 50, { align: 'right' });
 
-    // --- ALAMAT (KIRI) ---
     doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
     doc.text('Jl. Majalaya No. 47', marginLeft, 70);
     doc.text('Kp Majalaya Rt 001/002 Kel/Kec. Majalaya', marginLeft, 84);
     doc.text('Bandung. Jawa Barat', marginLeft, 98);
     doc.text('No Tlp :', marginLeft, 112);
 
-    // --- INFO PO (KANAN) ---
     const infoLabelX = pageWidth - marginRight - 230;
     const infoColonX = pageWidth - marginRight - 140;
     const infoValueX = pageWidth - marginRight - 132;
@@ -1571,12 +1484,6 @@ function generatePoPdf(noPoValue, rawSelectedDate, vendorHeader, items) {
     doc.text('Tanggal', infoLabelX, 84); doc.text(':', infoColonX, 84); doc.text(formattedDate, infoValueX, 84);
     doc.text('Vendor', infoLabelX, 98); doc.text(':', infoColonX, 98); doc.text(vendorHeader, infoValueX, 98);
 
-    // --- TABEL ITEM (sesuai struktur template: NO | NAMA PRODUK | WARNA | KODE VENDOR | QTY | SATUAN) ---
-    // Harga & Termin sengaja GAK ditampilin di PDF cetakan (cukup sampai kolom Satuan) --
-    // datanya tetap ada & dipakai di sistem (List PO, Histori Pembelian), cuma gak ikut dicetak.
-    // Qty & Satuan digabung jadi 2 kolom generik (bukan kolom terpisah per jenis satuan
-    // kayak sebelumnya) biar otomatis ke-cover semua satuan -- termasuk Pcs, atau
-    // satuan baru lain yang mungkin ditambah lagi nanti -- tanpa perlu ubah kode PDF-nya lagi.
     const bodyRows = items.map((item, idx) => {
         return [
             idx + 1,
@@ -1616,7 +1523,6 @@ function generatePoPdf(noPoValue, rawSelectedDate, vendorHeader, items) {
         }
     });
 
-    // --- TANDA TANGAN ---
     const finalY = doc.lastAutoTable.finalY + 60;
     doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
     const signLeftCenterX = marginLeft + (contentWidth * 0.15);
@@ -1624,7 +1530,6 @@ function generatePoPdf(noPoValue, rawSelectedDate, vendorHeader, items) {
     doc.text('CV ARSA', signLeftCenterX, finalY, { align: 'center' });
     doc.text(vendorHeader, signRightCenterX, finalY, { align: 'center' });
 
-    // GAMBAR TANDA TANGAN CV ARSA (ditempatkan di antara nama & garis titik-titik, posisi center)
     const sigWidth = 110;
     const sigHeight = 40.07;
     doc.addImage(SIGNATURE_CV_ARSA_BASE64, 'PNG', signLeftCenterX - (sigWidth / 2), finalY + 4, sigWidth, sigHeight);
@@ -1635,8 +1540,6 @@ function generatePoPdf(noPoValue, rawSelectedDate, vendorHeader, items) {
     doc.save(`CV_Arsa_Surat_PO_${noPoValue || new Date().toISOString().slice(0,10)}.pdf`);
 }
 
-// 🔒 SEKARANG PO HARUS DI-APPROVE DULU SEBELUM BISA DICETAK.
-// Tombol ini submit PO ke database (status Pending), bukan cetak PDF langsung.
 const PO_API_BASE = '/api/po';
 const PEMBELIAN_API_BASE = '/api/pembelian';
 
@@ -1646,8 +1549,6 @@ if (btnExportPo) {
         const noPoValue = procNoPo ? procNoPo.value.trim() : '';
         const rawSelectedDate = procTanggalPo ? procTanggalPo.value : '';
         if (!noPoValue) { updateStatusMessage("(!) Nomor PO wajib diisi sebelum submit."); return; }
-        // Jaga-jaga (defensive check) -- 1 PO cuma boleh 1 vendor. Ini seharusnya udah
-        // ke-block pas nambah item, tapi dicek ulang di sini sebelum submit biar aman.
         const vendorTakSama = currentPoBasket.some(item => item.vendor !== currentPoBasket[0].vendor);
         if (vendorTakSama) {
             alert(`Gagal Submit!\n\nList ini kecampur lebih dari 1 vendor.\n1 PO cuma boleh 1 vendor -- Reset dulu, lalu bikin ulang per vendor.`);
@@ -1676,8 +1577,6 @@ if (btnExportPo) {
     });
 }
 
-// 🔧 Format tanggal mentah dari Google Sheets (bisa berupa objek Date, ISO string,
-// atau teks biasa "yyyy-mm-dd") jadi tampilan rapi "DD/MM/YYYY" untuk ditampilkan di tabel.
 function formatTanggalDisplay(raw) {
     if (!raw) return '-';
     let dateStr = '';
@@ -1694,19 +1593,33 @@ const poDetailTitle = document.getElementById('po-detail-title');
 const tbodyPoDetailItems = document.getElementById('tbody-po-detail-items');
 const btnPoDetailClose = document.getElementById('btn-po-detail-close');
 
+// ==========================================
+// MENGATASI BUG DETAIL PO TIDAK MUNCUL (JSON PARSE)
+// ==========================================
 function openPoDetailModal(id) {
-    const po = (globalPoListCache || []).find(p => p.id === id);
+    const po = (globalPoListCache || []).find(p => String(p.id) === String(id));
     if (!po) { updateStatusMessage("(!) Data PO tidak ditemukan."); return; }
 
-    let items = [];
-    try { items = typeof po.items === 'string' ? JSON.parse(po.items || '[]') : (po.items || []); } catch (err) { items = []; }
+    let itemsToDisplay = [];
+    
+    // PENYELAMAT JSON: Terjemahkan string dari database kembali menjadi daftar item (Array)
+    try {
+        if (typeof po.items === 'string') {
+            itemsToDisplay = JSON.parse(po.items || '[]');
+        } else if (Array.isArray(po.items)) {
+            itemsToDisplay = po.items;
+        }
+    } catch (err) {
+        console.error("Format data item PO rusak:", err);
+        itemsToDisplay = [];
+    }
 
     if (poDetailTitle) poDetailTitle.innerText = `#${po.noPo || '-'}`;
     if (tbodyPoDetailItems) {
-        if (!items.length) {
+        if (itemsToDisplay.length === 0) {
             tbodyPoDetailItems.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Data item kosong.</td></tr>`;
         } else {
-            tbodyPoDetailItems.innerHTML = items.map(item => `<tr>
+            tbodyPoDetailItems.innerHTML = itemsToDisplay.map(item => `<tr>
                 <td>${item.jenisBarang !== undefined && item.jenisBarang !== null ? String(item.jenisBarang) : '-'}</td>
                 <td>${item.warnaLatela !== undefined && item.warnaLatela !== null ? String(item.warnaLatela) : '-'}</td>
                 <td>${item.kodeWarnaVendor !== undefined && item.kodeWarnaVendor !== null ? String(item.kodeWarnaVendor) : '-'}</td>
@@ -1719,22 +1632,22 @@ function openPoDetailModal(id) {
 }
 if (btnPoDetailClose) btnPoDetailClose.addEventListener('click', () => { if (poDetailModal) poDetailModal.classList.remove('show'); });
 
-// Hitung total harga & rangkum termin dari semua item di 1 PO (item-nya
-// sendiri disimpen sebagai JSON string di kolom po_list.items). Kalau termin
-// tiap item beda-beda, ditampilin semua (dipisah "/") -- kalau sama semua
-// (kasus paling umum, 1 PO = 1 kesepakatan termin), cukup tampil 1x.
 function summarizePoItems(itemsJson) {
     let items = [];
-    try { items = JSON.parse(itemsJson || '[]'); } catch (err) { items = []; }
+    try {
+        if (typeof itemsJson === 'string') {
+           items = JSON.parse(itemsJson || '[]');
+        } else if (Array.isArray(itemsJson)){
+           items = itemsJson;
+        }
+    } catch (err) { items = []; }
+    
     const totalHarga = items.reduce((sum, it) => sum + (Number(it.harga) || 0), 0);
     const terminUnik = Array.from(new Set(items.map(it => (it.termin || '').toString().trim()).filter(Boolean)));
     const terminLabel = terminUnik.length ? terminUnik.join(' / ') : '-';
     return { totalHarga, terminLabel };
 }
 
-// Versi read-only dari tabel List PO -- dipakai di halaman Procurement biar
-// akun yang cuma bikin PO (gak dikasih akses "List PO & Approval") tetap bisa
-// mantau status approval-nya, TANPA tombol approve/reject/hapus/cetak apapun.
 function renderPoStatusReadOnly(list) {
     const tbody = document.getElementById('tbody-po-status-readonly');
     if (!tbody) return;
@@ -1753,12 +1666,8 @@ function renderPoStatusReadOnly(list) {
         const { totalHarga, terminLabel } = summarizePoItems(po.items);
         const totalHargaFmt = totalHarga ? `Rp ${totalHarga.toLocaleString('id-ID')}` : '-';
 
-        // Cetak PDF -> siapapun yang bisa liat tabel ini (berarti punya akses menu Procurement),
-        // sama kayak di List PO & Approval: cuma aktif kalau PO-nya udah Approved.
         let aksiCell = `<button class="btn-action btn-blue-solid btn-cetak-po" data-id="${po.id}" ${statusApproved ? '' : 'disabled title="PO harus di-approve Admin Keuangan dulu sebelum bisa dicetak"'}>Cetak PDF</button>`;
-        // Copy Text -> buat kirim manual ke WhatsApp, gak butuh approval dulu (beda alur dari Cetak PDF).
         aksiCell += ` <button class="btn-action btn-pink-outline btn-copy-po-text" data-id="${po.id}" title="Copy teks ringkasan PO buat dikirim ke WhatsApp">Copy Text</button>`;
-        // Hapus PO -> tetap cuma admin akses penuh, sama kayak di halaman List PO & Approval.
         if (isFullAccess) {
             aksiCell += ` <button class="btn-action btn-gray-outline btn-hapus-po" data-id="${po.id}" data-nopo="${po.noPo || ''}" title="Hapus PO dari List (data di Histori Pembelian yang sudah terlanjur masuk TIDAK ikut terhapus)">Hapus</button>`;
         }
@@ -1786,8 +1695,6 @@ function fetchPoListFromCloud() {
 
         const sessionUser = getSession();
         const isFullAccess = sessionUser && sessionUser.role === 'full';
-        // Admin Keuangan: akun (biasanya Terbatas) yang dikasih izin approve/reject PO
-        // secara khusus lewat Kelola Akun, terpisah dari role Admin penuh.
         const canApprovePo = isFullAccess || (sessionUser && sessionUser.canApprovePo === true);
 
         tbody.innerHTML = '';
@@ -1809,10 +1716,7 @@ function fetchPoListFromCloud() {
                 </select>`;
             }
             aksiHtml += `<button class="btn-action btn-blue-solid btn-cetak-po" data-id="${po.id}" ${statusApproved ? '' : 'disabled title="PO harus di-approve Admin Keuangan dulu sebelum bisa dicetak"'}>Cetak PDF</button>`;
-            // Copy Text -> buat kirim manual ke WhatsApp, gak butuh approval dulu (beda alur dari Cetak PDF).
             aksiHtml += ` <button class="btn-action btn-pink-outline btn-copy-po-text" data-id="${po.id}" title="Copy teks ringkasan PO buat dikirim ke WhatsApp">Copy Text</button>`;
-            // Hapus PO dari List -> khusus Admin (akses penuh), gak dikasih ke Admin Keuangan/akun terbatas lain
-            // biar gak ada kesalahan/penyalahgunaan hapus data approval.
             if (isFullAccess) {
                 aksiHtml += ` <button class="btn-action btn-gray-outline btn-hapus-po" data-id="${po.id}" data-nopo="${po.noPo || ''}" title="Hapus PO dari List (data di Histori Pembelian yang sudah terlanjur masuk TIDAK ikut terhapus)">Hapus</button>`;
             }
@@ -1822,9 +1726,6 @@ function fetchPoListFromCloud() {
             tbody.appendChild(tr);
         });
 
-        // Tabel read-only di halaman Procurement (buat akun yang cuma bisa liat
-        // status approval-nya doang, gak ada tombol approve/reject/hapus/cetak
-        // sama sekali -- itu tetap eksklusif punya "List PO & Approval").
         renderPoStatusReadOnly(globalPoListCache);
 
         tbody.querySelectorAll('.po-no-clickable').forEach(el => el.addEventListener('click', () => openPoDetailModal(el.getAttribute('data-id'))));
@@ -1880,15 +1781,6 @@ function updatePoStatus(id, status) {
         .catch(() => updateStatusMessage("(!) Gagal memproses PO."));
 }
 
-// Dipanggil begitu PO di-approve Admin Keuangan -> tiap item di PO itu otomatis
-// dibikinin 1 baris di Histori Pembelian (purchase_history), biar gak perlu
-// input ulang manual. Expense/Status Bayar dikosongin dulu -> diisi manual
-// belakangan pas harga & pembayarannya udah jelas.
-// Hitung Tenggat Bayar dari Termin. Sekarang Termin udah terstruktur (angka +
-// satuan Hari/Minggu/Bulan dari form Procurement), jadi tinggal pakai
-// item.terminHariTotal (udah dikonversi ke hari) langsung -- gak perlu
-// nebak-nebak dari teks lagi. Tetap ada fallback parsing teks buat PO LAMA
-// yang udah kelanjur disubmit sebelum perubahan ini (masih format teks bebas).
 function hitungTenggatDariTermin(tanggalPengajuan, item) {
     if (!tanggalPengajuan) return '';
     const d = new Date(tanggalPengajuan);
@@ -1899,7 +1791,6 @@ function hitungTenggatDariTermin(tanggalPengajuan, item) {
         return d.toISOString().slice(0, 10);
     }
 
-    // Fallback buat PO lama (Termin masih teks bebas, mis. "NET 30", "COD")
     const terminText = item && item.termin;
     if (!terminText) return '';
     const t = terminText.toString().toLowerCase();
@@ -1914,7 +1805,7 @@ function pushApprovedPoToHistoriPembelian(id) {
     const po = globalPoListCache.find(p => String(p.id) === String(id));
     if (!po) return Promise.resolve();
     let items = [];
-    try { items = JSON.parse(po.items || '[]'); } catch (err) { items = []; }
+    try { items = typeof po.items === 'string' ? JSON.parse(po.items || '[]') : (po.items || []); } catch (err) { items = []; }
     if (!items.length) return Promise.resolve();
 
     const requests = items.map(item => {
@@ -1937,10 +1828,6 @@ function pushApprovedPoToHistoriPembelian(id) {
     return Promise.all(requests);
 }
 
-// Bikin teks ringkasan PO buat dikirim manual ke WhatsApp (gak semua pemesanan
-// butuh surat PO PDF formal). Item-nya dikelompokkan per Nama Kain -- tiap
-// grup jadi 1 blok: judul *Nama Kain* (bold ala WhatsApp, pake tanda bintang),
-// terus daftar "Kode {kode warna vendor} = {qty} {satuan}" di bawahnya.
 function generatePoWhatsAppText(items) {
     const groups = {};
     const order = [];
@@ -1962,7 +1849,7 @@ function generatePoWhatsAppText(items) {
 }
 
 function copyPoTextToClipboard(id) {
-    const po = (globalPoListCache || []).find(p => p.id === id);
+    const po = (globalPoListCache || []).find(p => String(p.id) === String(id));
     if (!po) { updateStatusMessage("(!) Data PO tidak ditemukan."); return; }
 
     let items = [];
@@ -1978,7 +1865,7 @@ function copyPoTextToClipboard(id) {
 }
 
 function cetakPoFromList(id) {
-    const po = (globalPoListCache || []).find(p => p.id === id);
+    const po = (globalPoListCache || []).find(p => String(p.id) === String(id));
     if (!po) { updateStatusMessage("(!) Data PO tidak ditemukan."); return; }
     if ((po.status || '').toLowerCase() !== 'approved') { updateStatusMessage("(!) PO ini belum di-approve, belum bisa dicetak."); return; }
 
@@ -2014,9 +1901,6 @@ menuItems.forEach(item => {
         if (targetView) targetView.classList.add('active');
         if (target === 'listpo' || target === 'procurement') fetchPoListFromCloud();
         if (target === 'kelolaakun') fetchUsers();
-        // Data Barang sekarang cuma di-fetch sekali pas bootstrap (lihat bootstrapAfterLogin),
-        // BUKAN tiap kali menu ini diklik lagi -- pakai tombol Refresh di halamannya kalau
-        // mau narik ulang datanya.
         if (target === 'pembelian') fetchPembelianList();
         if (target === 'qrlabel') initQrLabelPage();
         if (target === 'barangkeluar' && Object.keys(globalBarangKeluarKategori.utama).length === 0 && Object.keys(globalBarangKeluarKategori.aksesoris).length === 0 && Object.keys(globalBarangKeluarKategori.gradeb).length === 0 && Object.keys(globalBarangKeluarKategori.random).length === 0) fetchBarangKeluarFromCloud();
@@ -2061,8 +1945,6 @@ function resetKalkulatorDataState() {
 if (btnAddFile) btnAddFile.addEventListener('click', () => { if (fileInput) fileInput.click(); });
 if (fileInput) fileInput.addEventListener('change', (e) => processMultipleFiles(e.target.files));
 
-// Proses banyak file sekaligus (dipilih bersamaan lewat dialog Open),
-// dibaca satu-satu secara berurutan lalu tabel & dashboard di-refresh SEKALI di akhir.
 function processMultipleFiles(fileList) {
     const files = Array.from(fileList || []);
     if (files.length === 0) return;
@@ -2077,13 +1959,13 @@ function processMultipleFiles(fileList) {
             refreshAllTables();
             updateDashboardMetrics();
             updateStatusMessage(`Selesai: ${successCount} dari ${files.length} file berhasil diproses.`);
-            if (fileInput) fileInput.value = ""; // reset agar file sama bisa dipilih lagi kalau perlu
+            if (fileInput) fileInput.value = ""; 
             return;
         }
         const file = files[index];
         readSingleExcelFile(file,
             (jsonData) => {
-                ekstrakDanHitungPenjualan(jsonData, false); // false = jangan refresh per-file, biar efisien
+                ekstrakDanHitungPenjualan(jsonData, false); 
                 successCount++;
                 processedCount++;
                 processNext(index + 1);
@@ -2104,10 +1986,6 @@ function readSingleExcelFile(file, onSuccess, onError) {
         try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
-            // defval: "" -> paksa semua baris punya key yang sama persis dengan header,
-            // walau sel-nya kosong. Tanpa ini, baris dengan sel kosong (misal No. Resi
-            // yang belum diisi) bisa jadi gak punya key itu sama sekali di baris tersebut,
-            // yang bikin deteksi kolom & pengecekan "kosong/tidak" jadi gak reliable.
             const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
             onSuccess(jsonData);
         } catch (err) {
@@ -2120,9 +1998,6 @@ function readSingleExcelFile(file, onSuccess, onError) {
 }
 
 function ekstrakDanHitungPenjualan(data, doRefresh = true) {
-    // Deteksi apakah file ini punya kolom "No. Resi" (khas template Shopee).
-    // Cek ke semua baris (bukan cuma baris pertama) untuk jaga-jaga kalau ada
-    // baris yang key-nya tidak lengkap.
     let hasResiColumn = false;
     for (let i = 0; i < data.length && !hasResiColumn; i++) {
         for (let key in data[i]) {
@@ -2132,8 +2007,6 @@ function ekstrakDanHitungPenjualan(data, doRefresh = true) {
     }
 
     data.forEach(row => {
-        // Kalau file ini punya kolom No. Resi, baris yang No. Resi-nya masih kosong
-        // (berarti pengiriman belum diatur) dilewati, tidak ikut dihitung.
         if (hasResiColumn) {
             let resiValue = "";
             for (let key in row) {
@@ -2143,7 +2016,7 @@ function ekstrakDanHitungPenjualan(data, doRefresh = true) {
                     break;
                 }
             }
-            if (!resiValue) return; // No. Resi kosong -> skip baris ini
+            if (!resiValue) return; 
         }
 
         let foundSku = "";
@@ -2189,18 +2062,12 @@ function refreshAllTables() {
 }
 
 // =========================================================================
-// BARANG KELUAR — hasil scan barcode dari webapp HP terpisah. Beda Apps
-// Script/spreadsheet dari Master SKU utama. Formatnya 1 baris = 1 kali scan
-// (SKU + timestamp, belum ada qty), jadi qty keluar per SKU = jumlah baris
-// scan-nya. SKU-nya dicocokin ke Master SKU (masterSkus) buat ambil
-// Nama/Type/Warna/Kategori. Kalau ada SKU hasil scan yang belum ada di
-// Master SKU, tetep ditampilin (kategori "utama") tapi ditandain jelas biar
-// gampang ketauan dan bisa nyusul ditambahin ke Master SKU.
+// BARANG KELUAR 
 // =========================================================================
 const GOOGLE_SCRIPT_URL_BARANG_KELUAR = "https://script.google.com/macros/s/AKfycbwMTENQ2pHpnlsmb1SNLHZTJ5a7XV-o20ZI5hb2uzY-oUciOgKCmkntHVHw9FWgft4/exec";
 
-let globalBarangKeluarRaw = []; // [{ sku, waktu }] — data mentah hasil scan, apa adanya dari sheet (belum di-filter tanggal)
-let globalBarangKeluarKategori = { utama: {}, aksesoris: {}, gradeb: {}, random: {} }; // hasil agregasi SETELAH kena filter tanggal (ini yang dirender ke tabel)
+let globalBarangKeluarRaw = []; 
+let globalBarangKeluarKategori = { utama: {}, aksesoris: {}, gradeb: {}, random: {} }; 
 
 const btnSyncBarangKeluar = document.getElementById('btn-sync-barangkeluar');
 const bkSubTabs = document.querySelectorAll('.bk-sub-tab');
@@ -2252,7 +2119,6 @@ function fetchBarangKeluarFromCloud() {
         .then(rows => {
             const list = Array.isArray(rows) ? rows : [];
 
-            // Simpan mentah dulu -> nanti di-filter tanggal pas render (biar bisa ganti-ganti filter tanpa fetch ulang)
             globalBarangKeluarRaw = list.map(row => {
                 const skuRaw = row['SKU'] || row['sku'] || row['Code'] || row['code'];
                 const waktuRaw = (row['Timestamp'] || row['timestamp'] || row['Waktu'] || row['waktu'] || '').toString();
@@ -2271,9 +2137,6 @@ function fetchBarangKeluarFromCloud() {
         });
 }
 
-// Susun ulang globalBarangKeluarKategori dari globalBarangKeluarRaw, dibatasi sama
-// rentang tanggal yang dipilih di filter (kalau "Dari"/"Sampai" dikosongin, dianggap
-// gak dibatasi ke arah itu). Filter-nya baca dari kolom Waktu Scan hasil scan.
 function applyBarangKeluarFilter() {
     const dariVal = (bkFilterDari && bkFilterDari.value) ? new Date(bkFilterDari.value + 'T00:00:00') : null;
     const sampaiVal = (bkFilterSampai && bkFilterSampai.value) ? new Date(bkFilterSampai.value + 'T23:59:59') : null;
@@ -2284,8 +2147,7 @@ function applyBarangKeluarFilter() {
     globalBarangKeluarRaw.forEach(r => {
         const waktuDate = new Date(r.waktu);
         const waktuValid = !isNaN(waktuDate.getTime());
-        // Kalau ada filter tanggal tapi timestamp-nya gak valid/gak kebaca, baris itu dilewatin
-        // (biar gak nyasar ikut ke-hitung di rentang tanggal yang salah).
+        
         if ((dariVal || sampaiVal) && !waktuValid) return;
         if (dariVal && waktuDate < dariVal) return;
         if (sampaiVal && waktuDate > sampaiVal) return;
@@ -2328,13 +2190,10 @@ function renderBarangKeluarSingleTable(dataKategori, tbodyElement) {
     });
 }
 
-// Format timestamp hasil scan (dd/mm/yyyy HH:MM). Ditulis fleksibel karena
-// format persis timestamp dari webapp scanner-nya bisa beda-beda (ISO string,
-// "yyyy-mm-dd HH:MM:SS", atau serial Date dari Google Sheets).
 function formatWaktuScan(raw) {
     if (!raw) return '-';
     const d = new Date(raw);
-    if (isNaN(d.getTime())) return raw.toString(); // gagal di-parse -> tampilin apa adanya, biar ketauan formatnya kayak apa
+    if (isNaN(d.getTime())) return raw.toString(); 
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const yyyy = d.getFullYear();
@@ -2357,7 +2216,7 @@ function refreshBarangKeluarTables() {
     const elTotalSku = document.getElementById('bk-total-sku'); if (elTotalSku) elTotalSku.innerText = totalSku;
 }
 
-// --- Export Barang Keluar ke Excel/CSV (sama polanya kayak export Kalkulator Terjual) ---
+// --- Export Barang Keluar ke Excel/CSV ---
 const btnExportToggleBk = document.getElementById('btn-export-toggle-bk');
 const exportMenuItemsBk = document.getElementById('export-menu-items-bk');
 const btnExportXlsxBk = document.getElementById('btn-export-xlsx-bk');
@@ -2503,8 +2362,6 @@ function fetchHistoryFromCloud() {
         container.innerHTML = '<div class="table-responsive"><table><thead><tr><th>Waktu Simpan</th><th>Files</th><th>Total Qty</th><th>Aksi</th></tr></thead><tbody id="tbody-history"></tbody></table></div>';
         const tbody = document.getElementById('tbody-history');
 
-        // 🔧 NORMALISASI: header di Google Sheets bisa berbeda nama
-        // ("waktu" vs "Waktu Simpan", dst), jadi dicoba beberapa kemungkinan key
         const pick = (obj, keys) => {
             for (const k of keys) {
                 if (obj[k] !== undefined && obj[k] !== '') return obj[k];
@@ -2514,7 +2371,6 @@ function fetchHistoryFromCloud() {
         const pickDetail = (obj) => {
             const knownKeys = ['detail', 'Detail'];
             for (const k of knownKeys) { if (obj[k]) return obj[k]; }
-            // fallback: ambil value dari key kosong/tak dikenal yang isinya JSON object string
             for (const k in obj) {
                 if (!['waktu','Waktu Simpan','files','Files Terproses','total','Total Qty Item'].includes(k)) {
                     if (typeof obj[k] === 'string' && obj[k].trim().startsWith('{')) return obj[k];
@@ -2529,7 +2385,6 @@ function fetchHistoryFromCloud() {
             let total = pick(log, ['total', 'Total Qty Item']);
             const detail = pickDetail(log);
 
-            // Bersihkan angka dari embel-embel teks pada data lama (mis. "1 Berkas", "87 pcs")
             files = parseInt(String(files).replace(/[^0-9]/g, ''), 10) || 0;
             total = parseInt(String(total).replace(/[^0-9]/g, ''), 10) || 0;
 
@@ -2555,10 +2410,7 @@ function fetchHistoryFromCloud() {
 
 
 // =========================================================================
-// CETAK LABEL QR CODE — isi QR = kode SKU dari Master SKU. Karena setiap
-// SKU sudah merepresentasikan 1 kombinasi produk+warna yang unik, otomatis
-// "per warna" (warna yang sama dalam produk yang sama = SKU yang sama =
-// QR yang sama).
+// CETAK LABEL QR CODE 
 // =========================================================================
 const btnSyncQrLabel = document.getElementById('btn-sync-qrlabel');
 const qrLabelJenisBarang = document.getElementById('qrlabel-jenis-barang');
@@ -2567,17 +2419,16 @@ const qrLabelQtyInput = document.getElementById('qrlabel-qty-input');
 const btnAddQrLabelItem = document.getElementById('btn-add-qrlabel-item');
 const btnCetakQrLabel = document.getElementById('btn-cetak-qrlabel');
 
-let qrLabelBasket = []; // [{ sku, nama, warna, qty }] — daftar SKU yang mau dicetak labelnya
+let qrLabelBasket = []; 
 
 function initQrLabelPage() {
     if (Object.keys(masterSkus).length > 0) populateQrLabelJenisDropdown();
-    else fetchMasterSkusFromCloud(); // data Master SKU belum kebaca (mungkin sync awal belum kelar) -> tarik ulang sekarang
+    else fetchMasterSkusFromCloud(); 
     renderQrLabelBasketTable();
 }
 
 if (btnSyncQrLabel) btnSyncQrLabel.addEventListener('click', fetchMasterSkusFromCloud);
 
-// Isi dropdown "Jenis Barang" dari daftar nama produk unik di Master SKU
 function populateQrLabelJenisDropdown() {
     if (!qrLabelJenisBarang) return;
     const selectedBefore = qrLabelJenisBarang.value;
@@ -2588,7 +2439,6 @@ function populateQrLabelJenisDropdown() {
         const opt = document.createElement('option'); opt.value = nama; opt.innerText = nama;
         qrLabelJenisBarang.appendChild(opt);
     });
-    // Coba pertahankan pilihan sebelumnya kalau masih ada di data baru (misal abis Sync ulang)
     if (selectedBefore && uniqueNama.has(selectedBefore)) qrLabelJenisBarang.value = selectedBefore;
     resetQrLabelWarnaDropdown();
 }
@@ -2605,8 +2455,6 @@ if (qrLabelJenisBarang) {
         const selectedNama = qrLabelJenisBarang.value;
         if (!selectedNama || !qrLabelWarna) return;
 
-        // Setiap opsi Warna langsung nyimpen kode SKU-nya sebagai value, jadi begitu dipilih
-        // langsung ketemu SKU yang presis (gak perlu nebak-nebak walau ada beda Type juga).
         const matches = Object.entries(masterSkus)
             .filter(([, item]) => item.nama === selectedNama)
             .sort((a, b) => (a[1].warna || '').localeCompare(b[1].warna || ''));
@@ -2636,7 +2484,6 @@ if (btnAddQrLabelItem) {
 
         renderQrLabelBasketTable();
 
-        // Reset Warna & Qty aja (Jenis Barang dibiarin biar gampang nambah warna lain dari jenis yang sama)
         resetQrLabelWarnaDropdown();
         if (qrLabelJenisBarang) qrLabelJenisBarang.value = '';
         if (qrLabelQtyInput) qrLabelQtyInput.value = '1';
@@ -2676,7 +2523,7 @@ function renderQrLabelBasketTable() {
     updateQrLabelSummary();
 }
 
-const LABEL_PER_LEMBAR = 81; // grid 9 kolom x 9 baris, ukuran lembar asli (custom, bukan A4), di-print landscape
+const LABEL_PER_LEMBAR = 81; 
 
 function updateQrLabelSummary() {
     const totalLembar = qrLabelBasket.reduce((sum, row) => sum + (row.qty || 0), 0);
@@ -2686,35 +2533,23 @@ function updateQrLabelSummary() {
 }
 
 // =========================================================================
-// DOWNLOAD PDF LABEL — alternatif dari tombol Cetak (window.print). Bikin file
-// PDF langsung dengan ukuran lembar CUSTOM (165.04x216mm, di-print landscape
-// 216x165.04mm) yang udah ke-embed presisi di dalam file-nya sendiri, jadi
-// gak tergantung dialog print browser (yang di sebagian device/browser gak
-// nyediain opsi "Custom paper size").
-//
-// Caranya: tiap SKU di-compose jadi 1 gambar canvas yang UDAH diputar 90
-// derajat (posisi final, bukan pas taro ke PDF-nya baru diputar -- karena
-// fitur rotasi bawaan jsPDF pernah ada bug/gak konsisten di beberapa versi).
-// Rumus posisi grid-nya hasil transformasi presisi dari layout aslinya
-// (portrait 165.04x216mm, grid 9x9) ke ruang landscape (216x165.04mm).
+// DOWNLOAD PDF LABEL 
 // =========================================================================
 const btnDownloadPdfQrLabel = document.getElementById('btn-download-pdf-qrlabel');
 
 function composeRotatedLabelCanvas(qrImgEl, warnaText) {
-    const DPI = 10; // px per mm, buat kualitas cetak yang layak
-    const labelW = 16, labelH = 22; // ukuran label ASLI (sebelum rotate), dalam mm
+    const DPI = 10; 
+    const labelW = 16, labelH = 22; 
     const canvas = document.createElement('canvas');
-    canvas.width = Math.round(labelH * DPI);  // 22mm -> jadi lebar akhir (abis diputar)
-    canvas.height = Math.round(labelW * DPI); // 16mm -> jadi tinggi akhir (abis diputar)
+    canvas.width = Math.round(labelH * DPI);  
+    canvas.height = Math.round(labelW * DPI); 
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
     ctx.translate(canvas.width / 2, canvas.height / 2);
-    ctx.rotate(90 * Math.PI / 180); // muter 90 derajat (searah jarum jam, sama kayak CSS rotate(90deg))
-    // Dari titik ini, gambar kontennya kayak versi ASLI (16mm lebar x 22mm tinggi),
-    // origin-nya di tengah -> abis di-rotate bakal otomatis kepasang bener.
+    ctx.rotate(90 * Math.PI / 180); 
     const qrSizePx = 11 * DPI;
     const halfH = (labelH / 2) * DPI;
     ctx.drawImage(qrImgEl, -qrSizePx / 2, -halfH + 1 * DPI, qrSizePx, qrSizePx);
@@ -2772,7 +2607,6 @@ if (btnDownloadPdfQrLabel) {
                     const posInSheet = itemsOnPage;
                     const col = posInSheet % 9;
                     const rowIdx = Math.floor(posInSheet / 9);
-                    // Posisi hasil transformasi presisi dari grid portrait (165.04x216mm) ke landscape (216x165.04mm)
                     const xLand = 193 - rowIdx * 24;
                     const yLand = 5 + col * 17.38;
                     doc.addImage(labelDataUrl, 'PNG', xLand, yLand, 22, 16);
@@ -2815,8 +2649,7 @@ if (btnCetakQrLabel) {
 
         for (const row of qrLabelBasket) {
             const sku = row.sku;
-            const jumlahLembar = row.qty || 1; // qty = jumlah LEMBAR, bukan jumlah label satuan
-            // Generate 1 gambar QR per SKU, dipakai ulang buat semua copy-nya (efisien, gak generate berkali-kali)
+            const jumlahLembar = row.qty || 1; 
             let qrDataUrl;
             try { qrDataUrl = await QRCode.toDataURL(sku, { width: 200, margin: 1 }); }
             catch (err) { continue; }
