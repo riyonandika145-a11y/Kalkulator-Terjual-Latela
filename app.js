@@ -161,8 +161,8 @@ const btnRefreshAkun = document.getElementById('btn-refresh-akun');
 const akunMenuAksesRow = document.getElementById('akun-menu-akses-row');
 const akunCanApprovePo = document.getElementById('akun-can-approve-po');
 
-const SEMUA_MENU_TERSEDIA = ['dashboard', 'kalkulator', 'barangkeluar', 'mastersku', 'qrlabel', 'history', 'procurement', 'listpo', 'barang', 'pembelian'];
-const LABEL_MENU = { dashboard: 'Dashboard', kalkulator: 'Kalkulator Terjual', barangkeluar: 'Barang Keluar', mastersku: 'Master SKU', qrlabel: 'Cetak Label QR', history: 'History', procurement: 'Procurement', listpo: 'List PO & Approval', barang: 'Data Barang', pembelian: 'Histori Pembelian' };
+const SEMUA_MENU_TERSEDIA = ['dashboard', 'kalkulator', 'barangkeluar', 'mastersku', 'qrlabel', 'history', 'retur', 'procurement', 'listpo', 'barang', 'pembelian'];
+const LABEL_MENU = { dashboard: 'Dashboard', kalkulator: 'Kalkulator Terjual', barangkeluar: 'Barang Keluar', mastersku: 'Master SKU', qrlabel: 'Cetak Label QR', history: 'History', retur: 'Retur', procurement: 'Procurement', listpo: 'List PO & Approval', barang: 'Data Barang', pembelian: 'Histori Pembelian' };
 
 function toggleAkunMenuAksesRow() {
     if (!akunMenuAksesRow || !akunRole) return;
@@ -1914,6 +1914,7 @@ menuItems.forEach(item => {
         if (target === 'pembelian') fetchPembelianList();
         if (target === 'qrlabel') initQrLabelPage();
         if (target === 'barangkeluar' && Object.keys(globalBarangKeluarKategori.utama).length === 0 && Object.keys(globalBarangKeluarKategori.aksesoris).length === 0 && Object.keys(globalBarangKeluarKategori.gradeb).length === 0 && Object.keys(globalBarangKeluarKategori.random).length === 0) fetchBarangKeluarFromCloud();
+        if (target === 'retur') fetchReturFromCloud();
     });
 });
 
@@ -2743,3 +2744,167 @@ if (btnAddManual) {
     });
 }
 function updateStatusMessage(msg) { if (statusBar) statusBar.innerText = msg; }
+
+// =========================================================================
+// MENU RETUR
+// =========================================================================
+const RETUR_API_BASE = '/api/retur';
+let globalReturCache = []; // cache semua data retur
+
+// Kategori mapping — sama persis dengan konvensi Master SKU
+const RETUR_KATEGORI_MAP = {
+    utama: 'tbody-retur-utama',
+    aksesoris: 'tbody-retur-aksesoris',
+    gradeb: 'tbody-retur-gradeb',
+    random: 'tbody-retur-random'
+};
+
+function formatTimestampRetur(raw) {
+    if (!raw) return '-';
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return raw;
+    const pad = n => String(n).padStart(2, '0');
+    return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function renderReturTables(data) {
+    // Reset semua tbody
+    Object.values(RETUR_KATEGORI_MAP).forEach(tbodyId => {
+        const el = document.getElementById(tbodyId);
+        if (el) el.innerHTML = '';
+    });
+
+    // Kelompokkan per kategori
+    const grouped = { utama: [], aksesoris: [], gradeb: [], random: [] };
+    data.forEach(r => {
+        const kat = (r.kategori || 'utama').toLowerCase().replace(/\s/g, '');
+        if (grouped[kat]) grouped[kat].push(r);
+        else grouped['utama'].push(r); // fallback
+    });
+
+    // Isi tiap tabel
+    Object.entries(grouped).forEach(([kat, rows]) => {
+        const tbodyId = RETUR_KATEGORI_MAP[kat];
+        const tbody = document.getElementById(tbodyId);
+        if (!tbody) return;
+
+        if (!rows.length) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Tidak ada data retur.</td></tr>`;
+            return;
+        }
+
+        // Sort by SKU
+        rows.sort((a, b) => (a.sku || '').localeCompare(b.sku || ''));
+        rows.forEach(r => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${r.sku || '-'}</strong></td>
+                <td>${r.nama || '-'}</td>
+                <td>${r.type || '-'}</td>
+                <td>${r.warna || '-'}</td>
+                <td style="text-align:right; font-weight:700; color:var(--accent-main);">${r.qty || 0}</td>
+                <td style="font-size:11px; color:var(--text-muted);">${formatTimestampRetur(r.updated_at)}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    });
+
+    // Update ringkasan
+    const totalQty = data.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+    const elQty = document.getElementById('retur-total-qty');
+    const elSku = document.getElementById('retur-total-sku');
+    if (elQty) elQty.innerText = totalQty;
+    if (elSku) elSku.innerText = data.length;
+}
+
+function fetchReturFromCloud() {
+    updateStatusMessage('Memuat data retur dari cloud...');
+    fetch(`${RETUR_API_BASE}/list`)
+        .then(res => res.json())
+        .then(list => {
+            globalReturCache = Array.isArray(list) ? list : [];
+            renderReturTables(globalReturCache);
+            updateStatusMessage(`Data retur berhasil dimuat. ${globalReturCache.length} SKU tercatat.`);
+        })
+        .catch(() => {
+            updateStatusMessage('(!) Gagal memuat data retur. Cek koneksi.');
+            Object.values(RETUR_KATEGORI_MAP).forEach(tbodyId => {
+                const el = document.getElementById(tbodyId);
+                if (el) el.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data.</td></tr>`;
+            });
+        });
+}
+
+// Tombol Sync
+const btnSyncRetur = document.getElementById('btn-sync-retur');
+if (btnSyncRetur) btnSyncRetur.addEventListener('click', fetchReturFromCloud);
+
+// Tombol Reset — hapus semua data retur setelah dikonfirmasi
+const btnResetRetur = document.getElementById('btn-reset-retur');
+if (btnResetRetur) {
+    btnResetRetur.addEventListener('click', () => {
+        if (!confirm('Yakin mau reset semua data retur? Aksi ini tidak bisa dibatalkan.\n\nPastikan data sudah dicopy ke spreadsheet dulu!')) return;
+        updateStatusMessage('Mereset data retur...');
+        fetch(`${RETUR_API_BASE}/reset`, { method: 'POST' })
+            .then(res => res.json())
+            .then(result => {
+                if (result && result.success) {
+                    globalReturCache = [];
+                    renderReturTables([]);
+                    updateStatusMessage('Data retur berhasil direset.');
+                } else {
+                    updateStatusMessage('(!) Gagal mereset data retur.');
+                }
+            })
+            .catch(() => updateStatusMessage('(!) Gagal menghubungi server.'));
+    });
+}
+
+// Tombol Copy Qty — salin qty dari tab yang sedang aktif
+const btnCopyQtyRetur = document.getElementById('btn-copy-qty-retur');
+if (btnCopyQtyRetur) {
+    btnCopyQtyRetur.addEventListener('click', () => {
+        // Cari panel aktif
+        const activePanel = document.querySelector('.retur-sub-table-panel.active');
+        if (!activePanel) { updateStatusMessage('(!) Tidak ada panel aktif.'); return; }
+
+        const rows = activePanel.querySelectorAll('tbody tr');
+        const qtyValues = [];
+        rows.forEach(tr => {
+            // Kolom ke-5 (index 4) = Qty Retur
+            const cells = tr.querySelectorAll('td');
+            if (cells.length >= 5) {
+                const qty = cells[4].innerText.trim();
+                if (qty && qty !== '-') qtyValues.push(qty);
+            }
+        });
+
+        if (!qtyValues.length) { updateStatusMessage('(!) Tidak ada data qty untuk dicopy.'); return; }
+
+        const text = qtyValues.join('\n');
+        navigator.clipboard.writeText(text)
+            .then(() => updateStatusMessage(`Berhasil copy ${qtyValues.length} baris qty retur ke clipboard!`))
+            .catch(() => {
+                // Fallback kalau clipboard API tidak tersedia
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                updateStatusMessage(`Berhasil copy ${qtyValues.length} baris qty retur ke clipboard!`);
+            });
+    });
+}
+
+// Sub-tab switching untuk Retur
+document.querySelectorAll('.retur-sub-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.retur-sub-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.retur-sub-table-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        const cat = tab.getAttribute('data-category');
+        const panel = document.getElementById(`retur-panel-${cat}`);
+        if (panel) panel.classList.add('active');
+    });
+});
