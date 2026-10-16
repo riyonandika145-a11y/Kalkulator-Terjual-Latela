@@ -314,16 +314,22 @@ body[data-theme="light"] .export-dropdown-menu button:hover {
 }
 
 /* Sub tabs */
-body[data-theme="light"] .sub-tab {
+body[data-theme="light"] .sub-tab,
+body[data-theme="light"] .bk-sub-tab,
+body[data-theme="light"] .retur-sub-tab {
     background: rgba(255,255,255,0.60);
     border: 1px solid rgba(0,0,0,0.10);
     color: rgba(60,80,110,0.65);
 }
-body[data-theme="light"] .sub-tab:hover {
+body[data-theme="light"] .sub-tab:hover,
+body[data-theme="light"] .bk-sub-tab:hover,
+body[data-theme="light"] .retur-sub-tab:hover {
     background: rgba(255,255,255,0.85);
     color: rgba(15,30,50,0.85);
 }
-body[data-theme="light"] .sub-tab.active {
+body[data-theme="light"] .sub-tab.active,
+body[data-theme="light"] .bk-sub-tab.active,
+body[data-theme="light"] .retur-sub-tab.active {
     background: rgba(255,255,255,0.90);
     color: rgba(15,30,50,0.90);
     border-color: rgba(0,0,0,0.12);
