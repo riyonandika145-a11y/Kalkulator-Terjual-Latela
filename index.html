@@ -87,6 +87,10 @@
                     <span class="menu-text">History</span>
                 </button>
 
+                <button class="menu-item" data-target="retur" id="menu-retur" style="display:none;">
+                    <span class="menu-text">Retur</span>
+                </button>
+
                 <button class="menu-item" data-target="procurement">
                     <span class="menu-text">Procurement</span>
                 </button>
@@ -293,6 +297,52 @@
                     <div id="history-list-container" class="empty-state-card"><p>Tidak ada riwayat.</p></div>
                 </section>
 
+                <section id="view-retur" class="content-view">
+                    <div class="top-controls-bar">
+                        <div class="control-group">
+                            <span class="group-label">Ringkasan:</span>
+                            <div class="group-inputs">
+                                <span class="badge-file-status">Total Retur: <strong id="retur-total-qty">0</strong></span>
+                                <span class="badge-file-status">SKU: <strong id="retur-total-sku">0</strong></span>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <span class="group-label">Data:</span>
+                            <div class="group-inputs">
+                                <button id="btn-sync-retur" class="btn-action btn-pink-solid">Sync Data Retur</button>
+                                <button id="btn-copy-qty-retur" class="btn-action btn-green-solid">Copy Qty</button>
+                                <button id="btn-reset-retur" class="btn-action btn-pink-outline">Reset</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="workspace-panel">
+                        <div class="sub-tabs-container">
+                            <button class="retur-sub-tab active" data-category="utama">PRODUK UTAMA</button>
+                            <button class="retur-sub-tab" data-category="aksesoris">AKSESORIS</button>
+                            <button class="retur-sub-tab" data-category="gradeb">GRADE B</button>
+                            <button class="retur-sub-tab" data-category="random">RANDOM</button>
+                        </div>
+                        <div class="table-frame-box">
+                            <div id="retur-panel-utama" class="retur-sub-table-panel active">
+                                <table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align:right;">Qty Retur</th><th>Terakhir Update</th></tr></thead>
+                                <tbody id="tbody-retur-utama"><tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Klik "Sync Data Retur" untuk memuat data.</td></tr></tbody></table>
+                            </div>
+                            <div id="retur-panel-aksesoris" class="retur-sub-table-panel">
+                                <table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align:right;">Qty Retur</th><th>Terakhir Update</th></tr></thead>
+                                <tbody id="tbody-retur-aksesoris"></tbody></table>
+                            </div>
+                            <div id="retur-panel-gradeb" class="retur-sub-table-panel">
+                                <table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align:right;">Qty Retur</th><th>Terakhir Update</th></tr></thead>
+                                <tbody id="tbody-retur-gradeb"></tbody></table>
+                            </div>
+                            <div id="retur-panel-random" class="retur-sub-table-panel">
+                                <table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align:right;">Qty Retur</th><th>Terakhir Update</th></tr></thead>
+                                <tbody id="tbody-retur-random"></tbody></table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <section id="view-procurement" class="content-view">
                     <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
                         <h2 class="page-title" style="margin-bottom:0;">Procurement & PO Generator</h2>
@@ -351,6 +401,7 @@
                                     <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="mastersku"><span>Master SKU</span></label>
                                     <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="qrlabel"><span>Cetak Label QR</span></label>
                                     <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="history"><span>History</span></label>
+                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="retur"><span>Retur</span></label>
                                     <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="procurement"><span>Procurement</span></label>
                                     <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="listpo"><span>List PO & Approval</span></label>
                                     <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="barang"><span>Data Barang</span></label>
