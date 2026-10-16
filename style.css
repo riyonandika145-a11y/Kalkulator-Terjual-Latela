@@ -936,7 +936,7 @@ body[data-theme="light"] .btn-help-dot {
 }
 
 .content-view { display: none; height: 100%; }
-#view-kalkulator.active, #view-barangkeluar.active, #view-mastersku.active, #view-barang.active {
+#view-kalkulator.active, #view-barangkeluar.active, #view-mastersku.active, #view-barang.active, #view-retur.active {
     display: flex; flex-direction: column;
 }
 #view-dashboard.active, #view-history.active, #view-procurement.active, #view-listpo.active, #view-kelolaakun.active, #view-pembelian.active, #view-qrlabel.active {
