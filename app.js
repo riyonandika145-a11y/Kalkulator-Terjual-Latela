@@ -2075,7 +2075,7 @@ function refreshAllTables() {
 // =========================================================================
 // BARANG KELUAR 
 // =========================================================================
-const GOOGLE_SCRIPT_URL_BARANG_KELUAR = "https://script.google.com/macros/s/AKfycbwMTENQ2pHpnlsmb1SNLHZTJ5a7XV-o20ZI5hb2uzY-oUciOgKCmkntHVHw9FWgft4/exec";
+const GOOGLE_SCRIPT_URL_BARANG_KELUAR = "https://script.google.com/macros/s/AKfycbw9ZVSAObK0DbfXadHO9LIQGEaLlmFruZ4AR7HFpsYC2ONmKLGQCQ_93TuS_DpOwog/exec";
 
 let globalBarangKeluarRaw = []; 
 let globalBarangKeluarKategori = { utama: {}, aksesoris: {}, gradeb: {}, random: {} }; 
@@ -2132,7 +2132,7 @@ function fetchBarangKeluarFromCloud() {
 
             globalBarangKeluarRaw = list.map(row => {
                 const skuRaw = row['SKU'] || row['sku'] || row['Code'] || row['code'];
-                const waktuRaw = (row['Timestamp'] || row['timestamp'] || row['Waktu'] || row['waktu'] || '').toString();
+                const waktuRaw = (row['Waktu_Scan'] || row['Timestamp'] || row['timestamp'] || row['Waktu'] || row['waktu'] || '').toString();
                 return { sku: skuRaw ? skuRaw.toString().trim() : '', waktu: waktuRaw };
             }).filter(r => r.sku);
 
