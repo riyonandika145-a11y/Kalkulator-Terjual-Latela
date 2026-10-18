@@ -2078,7 +2078,8 @@ function refreshAllTables() {
 const GOOGLE_SCRIPT_URL_BARANG_KELUAR = "https://script.google.com/macros/s/AKfycbw9ZVSAObK0DbfXadHO9LIQGEaLlmFruZ4AR7HFpsYC2ONmKLGQCQ_93TuS_DpOwog/exec";
 
 let globalBarangKeluarRaw = []; 
-let globalBarangKeluarKategori = { utama: {}, aksesoris: {}, gradeb: {}, random: {} }; 
+let globalBarangKeluarKategori = { utama: {}, aksesoris: {}, gradeb: {}, random: {} };
+let globalBarangKeluarTidakDikenal = {}; // SKU tidak ada di master / teks aneh
 
 const btnSyncBarangKeluar = document.getElementById('btn-sync-barangkeluar');
 const bkSubTabs = document.querySelectorAll('.bk-sub-tab');
@@ -2092,6 +2093,7 @@ const tbodyBkUtama = document.getElementById('tbody-bk-utama');
 const tbodyBkAksesoris = document.getElementById('tbody-bk-aksesoris');
 const tbodyBkGradeb = document.getElementById('tbody-bk-gradeb');
 const tbodyBkRandom = document.getElementById('tbody-bk-random');
+const tbodyBkTidakDikenal = document.getElementById('tbody-bk-tidakdikenal');
 
 if (btnSyncBarangKeluar) btnSyncBarangKeluar.addEventListener('click', fetchBarangKeluarFromCloud);
 
@@ -2124,6 +2126,7 @@ function fetchBarangKeluarFromCloud() {
     [tbodyBkUtama, tbodyBkAksesoris, tbodyBkGradeb, tbodyBkRandom].forEach(tb => {
         if (tb) tb.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Sinkronisasi data scan...</td></tr>`;
     });
+    if (tbodyBkTidakDikenal) tbodyBkTidakDikenal.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8; font-style:italic;">Sinkronisasi data scan...</td></tr>`;
 
     fetch(`${GOOGLE_SCRIPT_URL_BARANG_KELUAR}?action=fetch_barang_keluar&limit=500`)
         .then(response => { if (!response.ok) throw new Error("Gagal terhubung ke Apps Script Barang Keluar."); return response.json(); })
@@ -2155,30 +2158,65 @@ function applyBarangKeluarFilter() {
     const sampaiVal = (bkFilterSampai && bkFilterSampai.value) ? new Date(bkFilterSampai.value + 'T23:59:59') : null;
 
     globalBarangKeluarKategori = { utama: {}, aksesoris: {}, gradeb: {}, random: {} };
+    globalBarangKeluarTidakDikenal = {};
     let unknownCount = 0;
+
+    // Cek apakah teks terlihat seperti link/URL atau karakter aneh (bukan SKU valid)
+    function isSuspectSku(sku) {
+        if (!sku) return true;
+        if (/^https?:\/\//i.test(sku)) return true; // link http/https
+        if (/^www\./i.test(sku)) return true;        // link www
+        if (sku.length > 60) return true;            // terlalu panjang
+        if (/[\s\n\r]/.test(sku)) return true;       // ada spasi/newline
+        return false;
+    }
 
     globalBarangKeluarRaw.forEach(r => {
         const waktuDate = new Date(r.waktu);
         const waktuValid = !isNaN(waktuDate.getTime());
-        
+
         if ((dariVal || sampaiVal) && !waktuValid) return;
         if (dariVal && waktuDate < dariVal) return;
         if (sampaiVal && waktuDate > sampaiVal) return;
 
         const sku = r.sku;
+
+        // Pisahkan SKU mencurigakan (link/aneh) ke tab Tidak Dikenal
+        if (isSuspectSku(sku)) {
+            const key = sku || '(kosong)';
+            if (!globalBarangKeluarTidakDikenal[key]) {
+                globalBarangKeluarTidakDikenal[key] = { keterangan: 'Format tidak valid / bukan SKU', qty: 0, lastScan: '' };
+                unknownCount++;
+            }
+            globalBarangKeluarTidakDikenal[key].qty += 1;
+            if (r.waktu && r.waktu > globalBarangKeluarTidakDikenal[key].lastScan) globalBarangKeluarTidakDikenal[key].lastScan = r.waktu;
+            return;
+        }
+
         const master = masterSkus[sku];
-        const kat = master ? master.kategori : 'utama';
+
+        // SKU tidak ada di Master SKU → masuk Tidak Dikenal
+        if (!master) {
+            if (!globalBarangKeluarTidakDikenal[sku]) {
+                globalBarangKeluarTidakDikenal[sku] = { keterangan: 'SKU belum ada di Master SKU', qty: 0, lastScan: '' };
+                unknownCount++;
+            }
+            globalBarangKeluarTidakDikenal[sku].qty += 1;
+            if (r.waktu && r.waktu > globalBarangKeluarTidakDikenal[sku].lastScan) globalBarangKeluarTidakDikenal[sku].lastScan = r.waktu;
+            return;
+        }
+
+        const kat = master.kategori;
         if (!globalBarangKeluarKategori[kat]) globalBarangKeluarKategori[kat] = {};
 
         if (!globalBarangKeluarKategori[kat][sku]) {
             globalBarangKeluarKategori[kat][sku] = {
-                nama: master ? master.nama : '(!) SKU BELUM ADA DI MASTER SKU',
-                type: master ? master.type : '-',
-                warna: master ? master.warna : '-',
+                nama: master.nama,
+                type: master.type,
+                warna: master.warna,
                 qty: 0,
                 lastScan: ''
             };
-            if (!master) unknownCount++;
         }
         globalBarangKeluarKategori[kat][sku].qty += 1;
         if (r.waktu && r.waktu > globalBarangKeluarKategori[kat][sku].lastScan) {
@@ -2220,6 +2258,7 @@ function refreshBarangKeluarTables() {
     renderBarangKeluarSingleTable(globalBarangKeluarKategori.aksesoris, tbodyBkAksesoris);
     renderBarangKeluarSingleTable(globalBarangKeluarKategori.gradeb, tbodyBkGradeb);
     renderBarangKeluarSingleTable(globalBarangKeluarKategori.random, tbodyBkRandom);
+    renderBarangKeluarTidakDikenal();
 
     let totalQty = 0, totalSku = 0;
     Object.values(globalBarangKeluarKategori).forEach(kat => {
@@ -2227,6 +2266,31 @@ function refreshBarangKeluarTables() {
     });
     const elTotalQty = document.getElementById('bk-total-qty'); if (elTotalQty) elTotalQty.innerText = totalQty.toLocaleString('id-ID');
     const elTotalSku = document.getElementById('bk-total-sku'); if (elTotalSku) elTotalSku.innerText = totalSku;
+
+    // Update badge jumlah di tab Tidak Dikenal
+    const unknownKeys = Object.keys(globalBarangKeluarTidakDikenal).length;
+    const tabTidakDikenal = document.querySelector('.bk-sub-tab[data-category="tidakdikenal"]');
+    if (tabTidakDikenal) {
+        tabTidakDikenal.textContent = unknownKeys > 0 ? `TIDAK DIKENAL (${unknownKeys})` : 'TIDAK DIKENAL';
+        tabTidakDikenal.style.color = unknownKeys > 0 ? '#ef4444' : '';
+    }
+}
+
+function renderBarangKeluarTidakDikenal() {
+    if (!tbodyBkTidakDikenal) return;
+    const keys = Object.keys(globalBarangKeluarTidakDikenal);
+    if (!keys.length) {
+        tbodyBkTidakDikenal.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8; font-style:italic;">Tidak ada data scan yang tidak dikenal.</td></tr>`;
+        return;
+    }
+    tbodyBkTidakDikenal.innerHTML = '';
+    keys.sort((a, b) => globalBarangKeluarTidakDikenal[b].qty - globalBarangKeluarTidakDikenal[a].qty).forEach(key => {
+        const item = globalBarangKeluarTidakDikenal[key];
+        const tr = document.createElement('tr');
+        const skuDisplay = key.length > 50 ? key.slice(0, 50) + '…' : key;
+        tr.innerHTML = `<td style="color:#f87171; font-size:0.85em; word-break:break-all;">${skuDisplay}</td><td style="color:#94a3b8; font-size:0.85em;">${item.keterangan}</td><td style="text-align:right;">${item.qty}</td><td>${formatWaktuScan(item.lastScan)}</td>`;
+        tbodyBkTidakDikenal.appendChild(tr);
+    });
 }
 
 // --- Export Barang Keluar ke Excel/CSV ---
@@ -2247,6 +2311,7 @@ function generateBarangKeluarArrayFormat() {
     let m = [["Kategori", "SKU", "Nama", "Type", "Warna", "Qty Keluar", "Terakhir Discan"]];
     const ins = (n, o) => Object.keys(o).sort((a, b) => o[b].qty - o[a].qty).forEach(k => m.push([n, k, o[k].nama, o[k].type, o[k].warna, o[k].qty, formatWaktuScan(o[k].lastScan)]));
     ins("PRODUK UTAMA", globalBarangKeluarKategori.utama); ins("AKSESORIS", globalBarangKeluarKategori.aksesoris); ins("GRADE B", globalBarangKeluarKategori.gradeb); ins("RANDOM", globalBarangKeluarKategori.random);
+    Object.keys(globalBarangKeluarTidakDikenal).sort((a,b) => globalBarangKeluarTidakDikenal[b].qty - globalBarangKeluarTidakDikenal[a].qty).forEach(k => m.push(["TIDAK DIKENAL", k, globalBarangKeluarTidakDikenal[k].keterangan, '-', '-', globalBarangKeluarTidakDikenal[k].qty, formatWaktuScan(globalBarangKeluarTidakDikenal[k].lastScan)]));
     return m;
 }
 
@@ -2262,6 +2327,13 @@ if (btnExportXlsxBk) {
         XLSX.utils.book_append_sheet(wb, fmt(globalBarangKeluarKategori.aksesoris), "Aksesoris");
         XLSX.utils.book_append_sheet(wb, fmt(globalBarangKeluarKategori.gradeb), "Grade B");
         XLSX.utils.book_append_sheet(wb, fmt(globalBarangKeluarKategori.random), "Random");
+        // Sheet Tidak Dikenal
+        const fmtTD = (d) => {
+            let m = [["SKU / Teks Scan", "Keterangan", "Qty Scan", "Terakhir Discan"]];
+            Object.keys(d).sort((a, b) => d[b].qty - d[a].qty).forEach(k => m.push([k, d[k].keterangan, d[k].qty, formatWaktuScan(d[k].lastScan)]));
+            return XLSX.utils.aoa_to_sheet(m);
+        };
+        XLSX.utils.book_append_sheet(wb, fmtTD(globalBarangKeluarTidakDikenal), "Tidak Dikenal");
         XLSX.writeFile(wb, `Barang_Keluar_${new Date().toISOString().slice(0,10)}.xlsx`);
     });
 }
