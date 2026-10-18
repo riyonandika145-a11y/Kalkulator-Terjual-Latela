@@ -2125,14 +2125,16 @@ function fetchBarangKeluarFromCloud() {
         if (tb) tb.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Sinkronisasi data scan...</td></tr>`;
     });
 
-    fetch(`${GOOGLE_SCRIPT_URL_BARANG_KELUAR}?action=fetch_scans`)
+    fetch(`${GOOGLE_SCRIPT_URL_BARANG_KELUAR}?action=fetch_barang_keluar&limit=500`)
         .then(response => { if (!response.ok) throw new Error("Gagal terhubung ke Apps Script Barang Keluar."); return response.json(); })
-        .then(rows => {
-            const list = Array.isArray(rows) ? rows : [];
+        .then(data => {
+            // Apps Script return { ok: true, items: [...] }
+            const list = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
 
             globalBarangKeluarRaw = list.map(row => {
-                const skuRaw = row['SKU'] || row['sku'] || row['Code'] || row['code'];
-                const waktuRaw = (row['Waktu_Scan'] || row['Timestamp'] || row['timestamp'] || row['Waktu'] || row['waktu'] || '').toString();
+                // Apps Script return { waktu (ISO), sku, nama }
+                const skuRaw = row['sku'] || row['SKU'] || row['Code'] || row['code'];
+                const waktuRaw = (row['waktu'] || row['Waktu_Scan'] || row['Timestamp'] || row['timestamp'] || row['Waktu'] || '').toString();
                 return { sku: skuRaw ? skuRaw.toString().trim() : '', waktu: waktuRaw };
             }).filter(r => r.sku);
 
