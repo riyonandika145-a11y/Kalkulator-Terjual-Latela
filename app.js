@@ -2841,7 +2841,31 @@ function formatTimestampRetur(raw) {
     return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function getReturFilterRange() {
+    const elDari = document.getElementById('retur-filter-dari');
+    const elSampai = document.getElementById('retur-filter-sampai');
+    const dariVal = elDari && elDari.value ? new Date(elDari.value + 'T00:00:00') : null;
+    const sampaiVal = elSampai && elSampai.value ? new Date(elSampai.value + 'T23:59:59') : null;
+    return { dariVal, sampaiVal };
+}
+
+function applyReturFilter() {
+    renderReturTables(globalReturCache);
+}
+
 function renderReturTables(data) {
+    const { dariVal, sampaiVal } = getReturFilterRange();
+
+    // Filter berdasarkan tanggal updated_at
+    const filtered = data.filter(r => {
+        if (!dariVal && !sampaiVal) return true;
+        const d = new Date(r.updated_at);
+        if (isNaN(d.getTime())) return !dariVal && !sampaiVal; // data tanpa waktu: tampil hanya jika tidak ada filter
+        if (dariVal && d < dariVal) return false;
+        if (sampaiVal && d > sampaiVal) return false;
+        return true;
+    });
+
     // Reset semua tbody
     Object.values(RETUR_KATEGORI_MAP).forEach(tbodyId => {
         const el = document.getElementById(tbodyId);
@@ -2850,7 +2874,7 @@ function renderReturTables(data) {
 
     // Kelompokkan per kategori
     const grouped = { utama: [], aksesoris: [], gradeb: [], random: [] };
-    data.forEach(r => {
+    filtered.forEach(r => {
         const kat = (r.kategori || 'utama').toLowerCase().replace(/\s/g, '');
         if (grouped[kat]) grouped[kat].push(r);
         else grouped['utama'].push(r); // fallback
@@ -2883,12 +2907,12 @@ function renderReturTables(data) {
         });
     });
 
-    // Update ringkasan
-    const totalQty = data.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+    // Update ringkasan (pakai data terfilter)
+    const totalQty = filtered.reduce((s, r) => s + (Number(r.qty) || 0), 0);
     const elQty = document.getElementById('retur-total-qty');
     const elSku = document.getElementById('retur-total-sku');
     if (elQty) elQty.innerText = totalQty;
-    if (elSku) elSku.innerText = data.length;
+    if (elSku) elSku.innerText = filtered.length;
 }
 
 function fetchReturFromCloud() {
@@ -2942,6 +2966,21 @@ function fetchReturFromCloud() {
 // Tombol Sync
 const btnSyncRetur = document.getElementById('btn-sync-retur');
 if (btnSyncRetur) btnSyncRetur.addEventListener('click', fetchReturFromCloud);
+
+// Filter tanggal Retur
+const returFilterDari = document.getElementById('retur-filter-dari');
+const returFilterSampai = document.getElementById('retur-filter-sampai');
+const btnReturFilterReset = document.getElementById('btn-retur-filter-reset');
+
+if (returFilterDari) returFilterDari.addEventListener('change', applyReturFilter);
+if (returFilterSampai) returFilterSampai.addEventListener('change', applyReturFilter);
+if (btnReturFilterReset) {
+    btnReturFilterReset.addEventListener('click', () => {
+        if (returFilterDari) returFilterDari.value = '';
+        if (returFilterSampai) returFilterSampai.value = '';
+        applyReturFilter();
+    });
+}
 
 // Tombol Reset — hapus semua data retur setelah dikonfirmasi
 const btnResetRetur = document.getElementById('btn-reset-retur');
