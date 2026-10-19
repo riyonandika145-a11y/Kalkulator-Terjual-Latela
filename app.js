@@ -2892,19 +2892,49 @@ function renderReturTables(data) {
 }
 
 function fetchReturFromCloud() {
-    updateStatusMessage('Memuat data retur dari cloud...');
-    fetch(`${RETUR_API_BASE}/list`)
-        .then(res => res.json())
-        .then(list => {
-            globalReturCache = Array.isArray(list) ? list : [];
+    updateStatusMessage('Memuat data retur dari spreadsheet...');
+    Object.values(RETUR_KATEGORI_MAP).forEach(tbodyId => {
+        const el = document.getElementById(tbodyId);
+        if (el) el.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Sinkronisasi data retur...</td></tr>`;
+    });
+
+    fetch(`${GOOGLE_SCRIPT_URL}?action=fetch_barang_retur&limit=1000`)
+        .then(res => { if (!res.ok) throw new Error('Gagal koneksi ke Apps Script'); return res.json(); })
+        .then(data => {
+            const rawItems = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
+
+            // Aggregate per SKU (jumlahkan qty jika SKU sama, ambil waktu terbaru)
+            const skuMap = {};
+            rawItems.forEach(r => {
+                const sku = (r.sku || '').toString().trim();
+                if (!sku) return;
+                const master = masterSkus[sku];
+                const kategori = master ? (master.kategori || 'utama') : 'utama';
+                const qty = parseInt(r.qty, 10) || 1;
+                if (!skuMap[sku]) {
+                    skuMap[sku] = {
+                        sku,
+                        nama: r.nama || (master ? master.nama : '-') || '-',
+                        type: r.type || (master ? master.type : '-') || '-',
+                        warna: r.warna || (master ? master.warna : '-') || '-',
+                        kategori,
+                        qty: 0,
+                        updated_at: r.waktu || ''
+                    };
+                }
+                skuMap[sku].qty += qty;
+                if (r.waktu && r.waktu > skuMap[sku].updated_at) skuMap[sku].updated_at = r.waktu;
+            });
+
+            globalReturCache = Object.values(skuMap);
             renderReturTables(globalReturCache);
-            updateStatusMessage(`Data retur berhasil dimuat. ${globalReturCache.length} SKU tercatat.`);
+            updateStatusMessage(`Data retur berhasil dimuat. ${globalReturCache.length} SKU tercatat dari ${rawItems.length} baris scan.`);
         })
-        .catch(() => {
-            updateStatusMessage('(!) Gagal memuat data retur. Cek koneksi.');
+        .catch(err => {
+            updateStatusMessage('(!) Gagal memuat data retur: ' + err.message);
             Object.values(RETUR_KATEGORI_MAP).forEach(tbodyId => {
                 const el = document.getElementById(tbodyId);
-                if (el) el.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data.</td></tr>`;
+                if (el) el.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#dc2626; font-weight:bold; padding:20px;">(!) Gagal memuat data: ${err.message}</td></tr>`;
             });
         });
 }
@@ -2917,20 +2947,10 @@ if (btnSyncRetur) btnSyncRetur.addEventListener('click', fetchReturFromCloud);
 const btnResetRetur = document.getElementById('btn-reset-retur');
 if (btnResetRetur) {
     btnResetRetur.addEventListener('click', () => {
-        if (!confirm('Yakin mau reset semua data retur? Aksi ini tidak bisa dibatalkan.\n\nPastikan data sudah dicopy ke spreadsheet dulu!')) return;
-        updateStatusMessage('Mereset data retur...');
-        fetch(`${RETUR_API_BASE}/reset`, { method: 'POST' })
-            .then(res => res.json())
-            .then(result => {
-                if (result && result.success) {
-                    globalReturCache = [];
-                    renderReturTables([]);
-                    updateStatusMessage('Data retur berhasil direset.');
-                } else {
-                    updateStatusMessage('(!) Gagal mereset data retur.');
-                }
-            })
-            .catch(() => updateStatusMessage('(!) Gagal menghubungi server.'));
+        if (!confirm('Yakin mau reset tampilan retur?\n\nIni hanya membersihkan tampilan — data di spreadsheet tetap aman.')) return;
+        globalReturCache = [];
+        renderReturTables([]);
+        updateStatusMessage('Tampilan retur berhasil direset. Klik "Sync Data Retur" untuk muat ulang.');
     });
 }
 
