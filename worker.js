@@ -8,7 +8,7 @@ export default {
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS, PUT, DELETE",
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Headers": "Content-Type, X-Mobile-Token",
     };
 
     if (method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -27,6 +27,16 @@ export default {
         return obj;
       });
     };
+
+    // Helper: generate random token 32 karakter
+    function generateToken() {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let token = '';
+      const arr = new Uint8Array(32);
+      crypto.getRandomValues(arr);
+      for (let i = 0; i < 32; i++) token += chars[arr[i] % chars.length];
+      return token;
+    }
 
     try {
       // ==========================================
@@ -131,14 +141,15 @@ export default {
 
       if (method === "GET" && path === "/api/users/list") {
         const { results } = await env.DB.prepare("SELECT * FROM users").all();
-        const mapped = fixCasing(results, ["username", "nama", "password", "role", "menus", "canApprovePo"]);
+        const mapped = fixCasing(results, ["username", "nama", "password", "role", "menus", "canApprovePo", "mobile_access"]);
         return jsonResp(mapped);
       }
 
       if (method === "POST" && path === "/api/users/save") {
         const b = await request.json();
-        await env.DB.prepare("INSERT INTO users (username, nama, password, role, menus, canApprovePo) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(username) DO UPDATE SET nama=excluded.nama, password=excluded.password, role=excluded.role, menus=excluded.menus, canApprovePo=excluded.canApprovePo")
-          .bind(b.username, b.nama, b.password, b.role, b.menus, b.canApprovePo).run();
+        const mobileAccess = b.mobile_access === true || b.mobile_access === 1 ? 1 : 0;
+        await env.DB.prepare("INSERT INTO users (username, nama, password, role, menus, canApprovePo, mobile_access) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(username) DO UPDATE SET nama=excluded.nama, password=excluded.password, role=excluded.role, menus=excluded.menus, canApprovePo=excluded.canApprovePo, mobile_access=excluded.mobile_access")
+          .bind(b.username, b.nama, b.password, b.role, b.menus, b.canApprovePo, mobileAccess).run();
         return jsonResp({ success: true });
       }
 
@@ -149,19 +160,80 @@ export default {
       }
 
       // ==========================================
+      // [6] API AUTH MOBILE (BARU)
+      // ==========================================
+
+      // POST /api/mobile/login
+      // Body: { username, password }
+      // Cek user di tabel users, cek mobile_access = 1, generate token, simpan ke mobile_sessions
+      if (method === "POST" && path === "/api/mobile/login") {
+        const b = await request.json();
+        if (!b.username || !b.password) {
+          return jsonResp({ success: false, message: "Username dan password wajib diisi." }, 400);
+        }
+
+        // Cek user + password + mobile_access
+        const user = await env.DB.prepare(
+          "SELECT username, nama, mobile_access FROM users WHERE username = ? AND password = ?"
+        ).bind(b.username, b.password).first();
+
+        if (!user) {
+          return jsonResp({ success: false, message: "Username atau password salah." });
+        }
+
+        if (!user.mobile_access) {
+          return jsonResp({ success: false, message: "Akun ini tidak memiliki akses ke Latela OMS Mobile. Hubungi admin." });
+        }
+
+        // Hapus token lama user ini (opsional, biar tidak numpuk)
+        await env.DB.prepare("DELETE FROM mobile_sessions WHERE username = ?").bind(user.username).run();
+
+        // Generate token baru
+        const token = generateToken();
+        const now = new Date().toISOString();
+
+        await env.DB.prepare(
+          "INSERT INTO mobile_sessions (username, token, created_at) VALUES (?, ?, ?)"
+        ).bind(user.username, token, now).run();
+
+        return jsonResp({
+          success: true,
+          token,
+          nama: user.nama,
+          username: user.username
+        });
+      }
+
+      // POST /api/mobile/verify
+      // Header: X-Mobile-Token: <token>
+      // Dipakai mobile app untuk validasi token masih aktif
+      if (method === "POST" && path === "/api/mobile/verify") {
+        const token = request.headers.get("X-Mobile-Token") || "";
+        if (!token) return jsonResp({ success: false, message: "Token tidak ditemukan." }, 401);
+
+        const session = await env.DB.prepare(
+          "SELECT s.username, u.nama FROM mobile_sessions s JOIN users u ON s.username = u.username WHERE s.token = ? AND u.mobile_access = 1"
+        ).bind(token).first();
+
+        if (!session) {
+          return jsonResp({ success: false, message: "Token tidak valid atau akses dicabut." }, 401);
+        }
+
+        return jsonResp({ success: true, username: session.username, nama: session.nama });
+      }
+
+      // POST /api/mobile/logout
+      // Header: X-Mobile-Token: <token>
+      if (method === "POST" && path === "/api/mobile/logout") {
+        const token = request.headers.get("X-Mobile-Token") || "";
+        if (token) {
+          await env.DB.prepare("DELETE FROM mobile_sessions WHERE token = ?").bind(token).run();
+        }
+        return jsonResp({ success: true });
+      }
+
+      // ==========================================
       // [5] API RETUR
-      // Tabel D1: retur_items (sku, nama, type, warna, kategori, qty, updated_at)
-      // SQL buat bikin tabel (jalanin sekali di Cloudflare Dashboard):
-      // CREATE TABLE IF NOT EXISTS retur_items (
-      //   id INTEGER PRIMARY KEY AUTOINCREMENT,
-      //   sku TEXT NOT NULL UNIQUE,
-      //   nama TEXT DEFAULT '-',
-      //   type TEXT DEFAULT '-',
-      //   warna TEXT DEFAULT '-',
-      //   kategori TEXT DEFAULT 'utama',
-      //   qty INTEGER DEFAULT 0,
-      //   updated_at TEXT
-      // );
       // ==========================================
 
       // GET /api/retur/list — ambil semua data retur aktif
@@ -171,8 +243,6 @@ export default {
       }
 
       // POST /api/retur/submit — tambah/update item retur dari app mobile
-      // Body: { sku, nama, type, warna, kategori, qty }
-      // Kalau SKU sudah ada di tabel → qty ditambahkan (upsert/accumulate)
       if (method === "POST" && path === "/api/retur/submit") {
         const b = await request.json();
         if (!b.sku) return jsonResp({ success: false, message: "SKU wajib diisi." }, 400);
@@ -206,7 +276,7 @@ export default {
         return jsonResp({ success: true });
       }
 
-      // POST /api/retur/reset — hapus semua data retur (setelah di-copy ke spreadsheet)
+      // POST /api/retur/reset — hapus semua data retur
       if (method === "POST" && path === "/api/retur/reset") {
         await env.DB.prepare("DELETE FROM retur_items").run();
         return jsonResp({ success: true });
