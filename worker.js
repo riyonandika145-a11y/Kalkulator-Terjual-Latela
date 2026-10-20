@@ -148,7 +148,7 @@ export default {
       if (method === "POST" && path === "/api/users/save") {
         const b = await request.json();
         const mobileAccess = b.mobile_access === true || b.mobile_access === 1 ? 1 : 0;
-        await env.DB.prepare("INSERT INTO users (username, nama, password, role, menus, canApprovePo, mobile_access) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(username) DO UPDATE SET nama=excluded.nama, password=excluded.password, role=excluded.role, menus=excluded.menus, canApprovePo=excluded.canApprovePo, mobile_access=excluded.mobile_access")
+        await env.DB.prepare("INSERT INTO users (username, nama, password, role, menus, can_approve_po, mobile_access) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(username) DO UPDATE SET nama=excluded.nama, password=excluded.password, role=excluded.role, menus=excluded.menus, can_approve_po=excluded.can_approve_po, mobile_access=excluded.mobile_access")
           .bind(b.username, b.nama, b.password, b.role, b.menus, b.canApprovePo, mobileAccess).run();
         return jsonResp({ success: true });
       }
