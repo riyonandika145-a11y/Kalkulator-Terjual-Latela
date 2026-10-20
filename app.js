@@ -304,9 +304,13 @@ if (btnSimpanAkun) {
     btnSimpanAkun.addEventListener('click', () => {
         const u = akunUsername ? akunUsername.value.trim() : '';
         const n = akunNama ? akunNama.value.trim() : '';
-        const p = akunPassword ? akunPassword.value : '';
+        const p = akunPassword ? akunPassword.value.trim() : '';
         const r = akunRole ? akunRole.value : 'terbatas';
-        if (!u || !n || !p) { updateStatusMessage('(!) Username, Nama, dan Password wajib diisi.'); return; }
+        if (!u || !n) { updateStatusMessage('(!) Username dan Nama wajib diisi.'); return; }
+        // Kalau password kosong saat edit, pakai password lama dari cache
+        const existingUser = globalUserListCache.find(x => x.username === u);
+        const finalPassword = p || (existingUser ? existingUser.password : '');
+        if (!finalPassword) { updateStatusMessage('(!) Password wajib diisi untuk akun baru.'); return; }
 
         const menus = r === 'full' ? [] : getCheckedAkunMenus();
         if (r !== 'full' && !menus.length) { updateStatusMessage('(!) Centang minimal 1 menu buat akun Akses Terbatas.'); return; }
@@ -316,7 +320,7 @@ if (btnSimpanAkun) {
         updateStatusMessage('Menyimpan akun...');
         fetch(`${USERS_API_BASE}/save`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: u, nama: n, password: p, role: r, menus: menus.join(','), canApprovePo: canApprovePo ? 'yes' : '', mobile_access: mobileAccess })
+            body: JSON.stringify({ username: u, nama: n, password: finalPassword, role: r, menus: menus.join(','), canApprovePo: canApprovePo ? 'yes' : '', mobile_access: mobileAccess })
         })
             .then(res => res.json())
             .then(() => {
