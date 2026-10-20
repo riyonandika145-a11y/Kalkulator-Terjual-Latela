@@ -121,7 +121,8 @@ const btnResetPo = document.getElementById('btn-reset-po');
 const tbodyProcurementList = document.getElementById('tbody-procurement-list');
 
 // --- STATE MANAGEMENT ---
-let masterSkus = {}; 
+let masterSkus = {};
+let masterSkuOrder = []; // urutan asli dari spreadsheet 
 let globalDataKategori = { utama: {}, aksesoris: {}, gradeb: {}, random: {} };
 let totalMasterFiles = 0;
 let activeFilterText = "all";
@@ -1180,14 +1181,17 @@ function fetchMasterSkusFromCloud() {
         .then(response => { if (!response.ok) throw new Error("Gagal terhubung ke Database."); return response.json(); })
         .then(rows => {
             masterSkus = {};
+            masterSkuOrder = [];
             (Array.isArray(rows) ? rows : []).forEach(row => {
                 if (!row.sku) return;
-                masterSkus[row.sku.toString().trim()] = {
+                const skuKey = row.sku.toString().trim();
+                masterSkus[skuKey] = {
                     nama: row.nama || "TANPA NAMA",
                     type: row.type || '-',
                     warna: row.warna || '-',
                     kategori: row.kategori || 'utama'
                 };
+                masterSkuOrder.push(skuKey);
             });
             updateStatusMessage(`Master SKU berhasil disinkronisasi (${Object.keys(masterSkus).length} SKU).`);
             renderMasterSkuDatabaseView();
@@ -1930,10 +1934,11 @@ subTabs.forEach(tab => {
 
 function renderMasterSkuDatabaseView() {
     if (tbodyMasterList) tbodyMasterList.innerHTML = ''; 
-    const sortedKeys = Object.keys(masterSkus).sort(); 
+    const sortedKeys = masterSkuOrder.length > 0 ? masterSkuOrder : Object.keys(masterSkus);
     if (masterSkuCount) masterSkuCount.innerText = sortedKeys.length;
     if (sortedKeys.length === 0) return;
     sortedKeys.forEach(sku => {
+        if (!masterSkus[sku]) return;
         const tr = document.createElement('tr');
         tr.innerHTML = `<td><code>${sku}</code></td><td><strong>${masterSkus[sku].nama}</strong></td><td>${masterSkus[sku].type}</td><td>${masterSkus[sku].warna}</td><td style="text-transform: uppercase;">${masterSkus[sku].kategori}</td>`;
         if (tbodyMasterList) tbodyMasterList.appendChild(tr);
@@ -1943,7 +1948,8 @@ function renderMasterSkuDatabaseView() {
 
 function resetKalkulatorDataState() {
     globalDataKategori = { utama: {}, aksesoris: {}, gradeb: {}, random: {} };
-    Object.keys(masterSkus).forEach(sku => {
+    (masterSkuOrder.length > 0 ? masterSkuOrder : Object.keys(masterSkus)).forEach(sku => {
+        if (!masterSkus[sku]) return;
         const kat = masterSkus[sku].kategori;
         if (globalDataKategori[kat]) {
             globalDataKategori[kat][sku] = { nama: masterSkus[sku].nama, type: masterSkus[sku].type, warna: masterSkus[sku].warna, qty: 0 };
@@ -2057,7 +2063,7 @@ function ekstrakDanHitungPenjualan(data, doRefresh = true) {
 function renderSingleTable(dataKategori, tbodyElement) {
     if (!tbodyElement) return;
     tbodyElement.innerHTML = '';
-    Object.keys(dataKategori).sort().forEach(sku => {
+    Object.keys(dataKategori).forEach(sku => {
         if (activeFilterText !== "all" && dataKategori[sku].nama !== activeFilterText) return;
         const tr = document.createElement('tr');
         tr.innerHTML = `<td>${sku}</td><td>${dataKategori[sku].nama}</td><td>${dataKategori[sku].type}</td><td>${dataKategori[sku].warna}</td><td>${dataKategori[sku].qty}</td>`;
@@ -2485,7 +2491,7 @@ function fetchHistoryFromCloud() {
                 let snap;
                 try { snap = JSON.parse(cached); } catch (err) { updateStatusMessage('(!) Gagal membaca detail data.'); return; }
                 const wb = XLSX.utils.book_new();
-                const fmt = (d) => { let m = [["SKU", "Nama", "Type", "Warna", "Qty"]]; Object.keys(d || {}).sort().forEach(k => m.push([k, d[k].nama, d[k].type, d[k].warna, d[k].qty])); return XLSX.utils.aoa_to_sheet(m); };
+                const fmt = (d) => { let m = [["SKU", "Nama", "Type", "Warna", "Qty"]]; Object.keys(d || {}).forEach(k => m.push([k, d[k].nama, d[k].type, d[k].warna, d[k].qty])); return XLSX.utils.aoa_to_sheet(m); };
                 XLSX.utils.book_append_sheet(wb, fmt(snap.utama), "Produk Utama"); XLSX.utils.book_append_sheet(wb, fmt(snap.aksesoris), "Aksesoris"); XLSX.utils.book_append_sheet(wb, fmt(snap.gradeb), "Grade B"); XLSX.utils.book_append_sheet(wb, fmt(snap.random), "Random");
                 XLSX.writeFile(wb, `Laporan_Cloud_${e.target.getAttribute('data-waktu').replace(/[^a-zA-Z0-9]/g, "_")}.xlsx`);
             });
@@ -2758,7 +2764,7 @@ if (btnCetakQrLabel) {
 
 function generateMasterArrayFormat() {
     let m = [["Kategori", "SKU", "Nama", "Type", "Warna", "Qty"]];
-    const ins = (n, o) => Object.keys(o).sort().forEach(k => m.push([n, k, o[k].nama, o[k].type, o[k].warna, o[k].qty]));
+    const ins = (n, o) => Object.keys(o).forEach(k => m.push([n, k, o[k].nama, o[k].type, o[k].warna, o[k].qty]));
     ins("PRODUK UTAMA", globalDataKategori.utama); ins("AKSESORIS", globalDataKategori.aksesoris); ins("GRADE B", globalDataKategori.gradeb); ins("RANDOM", globalDataKategori.random); return m;
 }
 
