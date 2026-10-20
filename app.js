@@ -161,6 +161,7 @@ const btnSimpanAkun = document.getElementById('btn-simpan-akun');
 const btnRefreshAkun = document.getElementById('btn-refresh-akun');
 const akunMenuAksesRow = document.getElementById('akun-menu-akses-row');
 const akunCanApprovePo = document.getElementById('akun-can-approve-po');
+const akunMobileAccess = document.getElementById('akun-mobile-access');
 
 const SEMUA_MENU_TERSEDIA = ['dashboard', 'kalkulator', 'barangkeluar', 'mastersku', 'qrlabel', 'history', 'retur', 'procurement', 'listpo', 'barang', 'pembelian'];
 const LABEL_MENU = { dashboard: 'Dashboard', kalkulator: 'Kalkulator Terjual', barangkeluar: 'Barang Keluar', mastersku: 'Master SKU', qrlabel: 'Cetak Label QR', history: 'History', retur: 'Retur', procurement: 'Procurement', listpo: 'List PO & Approval', barang: 'Data Barang', pembelian: 'Histori Pembelian' };
@@ -262,14 +263,18 @@ function fetchUsers() {
     if (!tbody) return;
     fetch(`${USERS_API_BASE}/list`).then(res => res.json()).then(list => {
         globalUserListCache = Array.isArray(list) ? list : [];
-        if (!globalUserListCache.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada akun.</td></tr>`; return; }
+        if (!globalUserListCache.length) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada akun.</td></tr>`; return; }
         tbody.innerHTML = '';
         globalUserListCache.forEach(u => {
             const roleLabel = u.role === 'full' ? 'Akses Penuh' : 'Akses Terbatas';
             const menuList = parseMenuString(u.menus);
             const menuLabel = u.role === 'full' ? 'Semua Menu' : (menuList.length ? menuList.map(m => LABEL_MENU[m] || m).join(', ') : '(!) Belum ada menu dipilih');
+            const hasMobile = u.mobile_access == 1 || u.mobile_access === true;
+            const mobileIcon = hasMobile
+                ? `<span title="Punya akses mobile" style="color:#22c55e; font-size:18px;">✓</span>`
+                : `<span title="Tidak punya akses mobile" style="color:#94a3b8; font-size:18px;">✗</span>`;
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td><strong>${u.username}</strong></td><td><span class="akun-password-cell" data-password="${u.password || ''}" style="cursor:pointer; font-family:monospace;" title="Klik buat lihat/sembunyiin password">••••••••</span></td><td>${u.nama || '-'}</td><td>${roleLabel}</td><td style="font-size:12px; max-width:280px;">${menuLabel}</td><td style="white-space:nowrap;"><button class="btn-action btn-gray-outline btn-edit-akun" data-username="${u.username}">Edit</button> <button class="btn-action btn-gray-outline btn-hapus-akun" data-username="${u.username}">Hapus</button></td>`;
+            tr.innerHTML = `<td><strong>${u.username}</strong></td><td><span class="akun-password-cell" data-password="${u.password || ''}" style="cursor:pointer; font-family:monospace;" title="Klik buat lihat/sembunyiin password">••••••••</span></td><td>${u.nama || '-'}</td><td>${roleLabel}</td><td style="font-size:12px; max-width:280px;">${menuLabel}</td><td style="text-align:center;">${mobileIcon}</td><td style="white-space:nowrap;"><button class="btn-action btn-gray-outline btn-edit-akun" data-username="${u.username}">Edit</button> <button class="btn-action btn-gray-outline btn-hapus-akun" data-username="${u.username}">Hapus</button></td>`;
             tbody.appendChild(tr);
         });
         tbody.querySelectorAll('.akun-password-cell').forEach(el => el.addEventListener('click', () => {
@@ -278,7 +283,7 @@ function fetchUsers() {
         }));
         tbody.querySelectorAll('.btn-hapus-akun').forEach(btn => btn.addEventListener('click', () => deleteUser(btn.getAttribute('data-username'))));
         tbody.querySelectorAll('.btn-edit-akun').forEach(btn => btn.addEventListener('click', () => editAkunPrefill(btn.getAttribute('data-username'))));
-    }).catch(() => { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data akun.</td></tr>`; });
+    }).catch(() => { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8; font-style:italic;">Gagal memuat data akun.</td></tr>`; });
 }
 
 function editAkunPrefill(username) {
@@ -290,6 +295,7 @@ function editAkunPrefill(username) {
     if (akunRole) { akunRole.value = u.role === 'full' ? 'full' : 'terbatas'; toggleAkunMenuAksesRow(); }
     setCheckedAkunMenus(parseMenuString(u.menus));
     if (akunCanApprovePo) akunCanApprovePo.checked = String(u.canApprovePo).trim().toLowerCase() === 'yes';
+    if (akunMobileAccess) akunMobileAccess.checked = u.mobile_access == 1 || u.mobile_access === true;
     updateStatusMessage(`Mode edit akun "${username}" — isi ulang Password lalu klik Simpan Akun buat nyimpen perubahan.`);
     if (akunUsername) akunUsername.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
@@ -305,17 +311,18 @@ if (btnSimpanAkun) {
         const menus = r === 'full' ? [] : getCheckedAkunMenus();
         if (r !== 'full' && !menus.length) { updateStatusMessage('(!) Centang minimal 1 menu buat akun Akses Terbatas.'); return; }
         const canApprovePo = akunCanApprovePo ? akunCanApprovePo.checked : false;
+        const mobileAccess = akunMobileAccess ? akunMobileAccess.checked : false;
 
         updateStatusMessage('Menyimpan akun...');
         fetch(`${USERS_API_BASE}/save`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: u, nama: n, password: p, role: r, menus: menus.join(','), canApprovePo: canApprovePo ? 'yes' : '' })
+            body: JSON.stringify({ username: u, nama: n, password: p, role: r, menus: menus.join(','), canApprovePo: canApprovePo ? 'yes' : '', mobile_access: mobileAccess })
         })
             .then(res => res.json())
             .then(() => {
                 updateStatusMessage(`Akun "${u}" berhasil disimpan.`);
                 if (akunUsername) akunUsername.value = ''; if (akunNama) akunNama.value = ''; if (akunPassword) akunPassword.value = ''; if (akunRole) { akunRole.value = 'terbatas'; toggleAkunMenuAksesRow(); }
-                setCheckedAkunMenus([]); if (akunCanApprovePo) akunCanApprovePo.checked = false;
+                setCheckedAkunMenus([]); if (akunCanApprovePo) akunCanApprovePo.checked = false; if (akunMobileAccess) akunMobileAccess.checked = false;
                 fetchUsers();
             })
             .catch(() => updateStatusMessage('(!) Gagal menyimpan akun.'));
