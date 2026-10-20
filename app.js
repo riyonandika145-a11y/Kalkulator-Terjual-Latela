@@ -1917,7 +1917,7 @@ menuItems.forEach(item => {
         if (target === 'kelolaakun') fetchUsers();
         if (target === 'pembelian') fetchPembelianList();
         if (target === 'qrlabel') initQrLabelPage();
-        if (target === 'barangkeluar' && Object.keys(globalBarangKeluarKategori.utama).length === 0 && Object.keys(globalBarangKeluarKategori.aksesoris).length === 0 && Object.keys(globalBarangKeluarKategori.gradeb).length === 0 && Object.keys(globalBarangKeluarKategori.random).length === 0) fetchBarangKeluarFromCloud();
+        if (target === 'barangkeluar' && globalBarangKeluarRaw.length === 0) fetchBarangKeluarFromCloud();
         if (target === 'retur') fetchReturFromCloud();
     });
 });
@@ -1956,6 +1956,9 @@ function resetKalkulatorDataState() {
         }
     });
     refreshAllTables();
+
+    // Init Barang Keluar & Retur dari master (semua SKU qty=0, urutan spreadsheet)
+    applyBarangKeluarFilter();
 }
 
 // 4. PARSER LOGIKA EXCEL MANIFEST MARKETPLACE
@@ -2163,7 +2166,20 @@ function applyBarangKeluarFilter() {
     const dariVal = (bkFilterDari && bkFilterDari.value) ? new Date(bkFilterDari.value + 'T00:00:00') : null;
     const sampaiVal = (bkFilterSampai && bkFilterSampai.value) ? new Date(bkFilterSampai.value + 'T23:59:59') : null;
 
+    // Inisialisasi dengan semua SKU dari master (qty 0) — urutan ikut spreadsheet
     globalBarangKeluarKategori = { utama: {}, aksesoris: {}, gradeb: {}, random: {} };
+    (masterSkuOrder.length > 0 ? masterSkuOrder : Object.keys(masterSkus)).forEach(sku => {
+        if (!masterSkus[sku]) return;
+        const kat = masterSkus[sku].kategori;
+        if (!globalBarangKeluarKategori[kat]) globalBarangKeluarKategori[kat] = {};
+        globalBarangKeluarKategori[kat][sku] = {
+            nama: masterSkus[sku].nama,
+            type: masterSkus[sku].type,
+            warna: masterSkus[sku].warna,
+            qty: 0,
+            lastScan: ''
+        };
+    });
     globalBarangKeluarTidakDikenal = {};
     let unknownCount = 0;
 
@@ -2237,12 +2253,14 @@ function applyBarangKeluarFilter() {
 function renderBarangKeluarSingleTable(dataKategori, tbodyElement) {
     if (!tbodyElement) return;
     const skuKeys = Object.keys(dataKategori);
-    if (!skuKeys.length) { tbodyElement.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada data scan di kategori ini.</td></tr>`; return; }
+    if (!skuKeys.length) { tbodyElement.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada data di kategori ini.</td></tr>`; return; }
     tbodyElement.innerHTML = '';
-    skuKeys.sort((a, b) => dataKategori[b].qty - dataKategori[a].qty).forEach(sku => {
+    // Urutan ikut master (sudah tersimpan di object), tidak di-sort by qty
+    skuKeys.forEach(sku => {
         const item = dataKategori[sku];
+        const qtyColor = item.qty > 0 ? 'color:var(--accent-main); font-weight:700;' : 'color:var(--text-muted);';
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${sku}</td><td>${item.nama}</td><td>${item.type}</td><td>${item.warna}</td><td style="text-align:right;">${item.qty}</td><td>${formatWaktuScan(item.lastScan)}</td>`;
+        tr.innerHTML = `<td>${sku}</td><td>${item.nama}</td><td>${item.type}</td><td>${item.warna}</td><td style="text-align:right; ${qtyColor}">${item.qty}</td><td>${item.lastScan ? formatWaktuScan(item.lastScan) : '-'}</td>`;
         tbodyElement.appendChild(tr);
     });
 }
@@ -2878,12 +2896,29 @@ function renderReturTables(data) {
         if (el) el.innerHTML = '';
     });
 
-    // Kelompokkan per kategori
-    const grouped = { utama: [], aksesoris: [], gradeb: [], random: [] };
+    // Buat lookup dari data retur yang terfilter (key: sku)
+    const returLookup = {};
     filtered.forEach(r => {
-        const kat = (r.kategori || 'utama').toLowerCase().replace(/\s/g, '');
-        if (grouped[kat]) grouped[kat].push(r);
-        else grouped['utama'].push(r); // fallback
+        if (r.sku) returLookup[r.sku] = r;
+    });
+
+    // Kelompokkan per kategori berdasarkan masterSkuOrder (urutan spreadsheet)
+    // Semua SKU master ditampilkan, qty=0 jika belum ada retur
+    const grouped = { utama: [], aksesoris: [], gradeb: [], random: [] };
+    (masterSkuOrder.length > 0 ? masterSkuOrder : Object.keys(masterSkus)).forEach(sku => {
+        if (!masterSkus[sku]) return;
+        const kat = (masterSkus[sku].kategori || 'utama').toLowerCase().replace(/\s/g, '');
+        const returData = returLookup[sku];
+        const entry = {
+            sku,
+            nama: masterSkus[sku].nama,
+            type: masterSkus[sku].type,
+            warna: masterSkus[sku].warna,
+            qty: returData ? (returData.qty || 0) : 0,
+            updated_at: returData ? (returData.updated_at || '') : ''
+        };
+        if (grouped[kat]) grouped[kat].push(entry);
+        else grouped['utama'].push(entry);
     });
 
     // Isi tiap tabel
@@ -2897,28 +2932,28 @@ function renderReturTables(data) {
             return;
         }
 
-        // Sort by SKU
-        rows.sort((a, b) => (a.sku || '').localeCompare(b.sku || ''));
         rows.forEach(r => {
+            const qtyColor = r.qty > 0 ? 'font-weight:700; color:var(--accent-main);' : 'color:var(--text-muted);';
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><strong>${r.sku || '-'}</strong></td>
                 <td>${r.nama || '-'}</td>
                 <td>${r.type || '-'}</td>
                 <td>${r.warna || '-'}</td>
-                <td style="text-align:right; font-weight:700; color:var(--accent-main);">${r.qty || 0}</td>
-                <td style="font-size:11px; color:var(--text-muted);">${formatTimestampRetur(r.updated_at)}</td>
+                <td style="text-align:right; ${qtyColor}">${r.qty || 0}</td>
+                <td style="font-size:11px; color:var(--text-muted);">${r.updated_at ? formatTimestampRetur(r.updated_at) : '-'}</td>
             `;
             tbody.appendChild(tr);
         });
     });
 
-    // Update ringkasan (pakai data terfilter)
+    // Update ringkasan — total qty dan jumlah SKU yang punya retur (qty > 0)
     const totalQty = filtered.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+    const totalSkuRetur = filtered.filter(r => (Number(r.qty) || 0) > 0).length;
     const elQty = document.getElementById('retur-total-qty');
     const elSku = document.getElementById('retur-total-sku');
     if (elQty) elQty.innerText = totalQty;
-    if (elSku) elSku.innerText = filtered.length;
+    if (elSku) elSku.innerText = totalSkuRetur;
 }
 
 function fetchReturFromCloud() {
