@@ -1928,8 +1928,14 @@ menuItems.forEach(item => {
         if (target === 'kelolaakun') fetchUsers();
         if (target === 'pembelian') fetchPembelianList();
         if (target === 'qrlabel') initQrLabelPage();
-        if (target === 'barangkeluar' && globalBarangKeluarRaw.length === 0) fetchBarangKeluarFromCloud();
-        if (target === 'retur') fetchReturFromCloud();
+        if (target === 'barangkeluar') {
+            if (globalBarangKeluarRaw.length === 0) fetchBarangKeluarFromCloud();
+            else applyBarangKeluarFilter();
+        }
+        if (target === 'retur') {
+            if (globalReturCache.length === 0) fetchReturFromCloud();
+            else renderReturTables(globalReturCache);
+        }
     });
 });
 
