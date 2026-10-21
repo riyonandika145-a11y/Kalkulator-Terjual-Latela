@@ -1,487 +1,269 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ORDER MANAGEMENT SYSTEM - Latela System</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>LATELA OMS Mobile</title>
+<meta name="theme-color" content="#F472B6" />
+<link rel="manifest" href="/manifest.json" />
+<link rel="icon" href="/icons/icon-192.png" />
+<link rel="apple-touch-icon" href="/icons/icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="stylesheet" href="/css/style.css" />
+<style>
+.retur-form { padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
+.retur-field { display: flex; flex-direction: column; gap: .4rem; }
+.retur-label { font-size: .8rem; font-weight: 600; color: var(--text-secondary, #888); text-transform: uppercase; letter-spacing: .05em; }
+.retur-select, .retur-input {
+  width: 100%; padding: .75rem 1rem; border-radius: .75rem;
+  border: 1.5px solid var(--border, #e5e7eb);
+  background: var(--card-bg, #fff); color: var(--text, #111);
+  font-size: 1rem; appearance: none; -webkit-appearance: none;
+}
+.retur-select:focus, .retur-input:focus { outline: none; border-color: #F472B6; }
+.retur-submit { margin-top: .5rem; }
+.retur-selected-info {
+  background: #fdf2f8; border: 1.5px solid #F472B6; border-radius: .75rem;
+  padding: .6rem 1rem; font-size: .9rem; color: #be185d; font-weight: 500;
+}
 
-    <!-- 📱 PWA: manifest, ikon, dan theme color -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <meta name="theme-color" content="#f472b6">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="LATELA OMS">
+/* ===== LOGIN SCREEN ===== */
+#loginScreen {
+  position: fixed; inset: 0; z-index: 999;
+  background: var(--bg, #f9fafb);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1.5rem;
+}
+#loginScreen.hidden { display: none; }
+.login-card {
+  width: 100%; max-width: 360px;
+  background: var(--card-bg, #fff);
+  border-radius: 1.25rem;
+  padding: 2rem 1.5rem;
+  box-shadow: 0 4px 24px rgba(0,0,0,.08);
+  display: flex; flex-direction: column; gap: 1.25rem;
+}
+.login-logo {
+  display: flex; align-items: center; gap: .75rem;
+  justify-content: center; margin-bottom: .25rem;
+}
+.login-logo img { width: 40px; height: 40px; border-radius: .5rem; }
+.login-logo h1 { font-size: 1.15rem; font-weight: 700; margin: 0; }
+.login-logo h1 span { color: #F472B6; }
+.login-title { text-align: center; font-size: .85rem; color: var(--text-secondary, #888); margin-top: -.5rem; }
+.login-field { display: flex; flex-direction: column; gap: .4rem; }
+.login-field label { font-size: .78rem; font-weight: 600; color: var(--text-secondary, #888); text-transform: uppercase; letter-spacing: .05em; }
+.login-field input {
+  width: 100%; padding: .75rem 1rem; border-radius: .75rem;
+  border: 1.5px solid var(--border, #e5e7eb);
+  background: var(--bg, #f9fafb); color: var(--text, #111);
+  font-size: 1rem; box-sizing: border-box;
+}
+.login-field input:focus { outline: none; border-color: #F472B6; }
+.login-error {
+  background: #fef2f2; border: 1.5px solid #fca5a5; border-radius: .75rem;
+  padding: .6rem 1rem; font-size: .88rem; color: #dc2626; text-align: center;
+}
+.login-error.hidden { display: none; }
+.btn-login {
+  width: 100%; padding: .85rem; border-radius: .75rem; border: none;
+  background: #F472B6; color: #fff; font-size: 1rem; font-weight: 700;
+  cursor: pointer; transition: background .15s;
+}
+.btn-login:hover { background: #ec4899; }
+.btn-login:disabled { background: #f9a8d4; cursor: not-allowed; }
 
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
-    <script src="qrcode.min.js"></script>
+/* user info di topbar */
+.topbar-user {
+  margin-left: auto; font-size: .78rem; color: var(--text-secondary, #888);
+  display: flex; align-items: center; gap: .5rem;
+}
+.topbar-user button {
+  background: none; border: none; cursor: pointer;
+  font-size: .75rem; color: #F472B6; padding: 0;
+}
+</style>
 </head>
 <body>
 
-    <div id="loading-overlay" class="loading-overlay">
-        <div class="loading-content">
-            <img src="logo-loading.png" class="loading-logo-spinner" alt="Loading Latela">
-            <p class="loading-text">Loading...</p>
-        </div>
+  <!-- ===== LOGIN SCREEN ===== -->
+  <div id="loginScreen">
+    <div class="login-card">
+      <div class="login-logo">
+        <img src="/icons/icon-192.png" alt="" />
+        <h1>LATELA <span>OMS Mobile</span></h1>
+      </div>
+      <p class="login-title">Masuk untuk melanjutkan</p>
+
+      <div class="login-field">
+        <label for="loginUsername">Username</label>
+        <input id="loginUsername" type="text" autocomplete="username" placeholder="Username" />
+      </div>
+      <div class="login-field">
+        <label for="loginPassword">Password</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Password" />
+      </div>
+
+      <div id="loginError" class="login-error hidden"></div>
+
+      <button id="loginBtn" class="btn-login" type="button">Masuk</button>
+    </div>
+  </div>
+
+  <header class="topbar">
+    <img src="/icons/icon-192.png" class="brand-icon" alt="" />
+    <h1>LATELA <span>OMS Mobile</span></h1>
+    <div class="topbar-user">
+      <span id="topbarNama"></span>
+      <button id="logoutBtn" title="Keluar">Keluar</button>
+    </div>
+  </header>
+
+  <!-- ===== SCAN VIEW ===== -->
+  <main id="view-scan" class="view active">
+    <div class="mode-toggle">
+      <label class="switch">
+        <input type="checkbox" id="oneShotToggle" />
+        <span class="switch-slider"></span>
+      </label>
+      <div class="mode-toggle-text">
+        <span class="mode-toggle-title">Mode Sekali Tembak</span>
+        <span class="mode-toggle-sub">Kamera berhenti otomatis tiap 1 kali scan</span>
+      </div>
     </div>
 
-    <div id="login-overlay" class="login-overlay">
-        <div class="login-card">
-            <img src="logo-flower.png" alt="Latela" class="login-logo">
-            <h2 class="login-title">LATELA</h2>
-            <p class="login-subtitle">Order Management System</p>
-            <input type="text" id="login-username" placeholder="Username" autocomplete="username">
-            <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
-            <span id="login-error-msg"></span>
-            <button id="btn-login-submit" class="btn-action btn-pink-solid" style="width:100%;">Masuk</button>
-        </div>
+    <div class="scanner-wrap">
+      <video id="video" playsinline muted></video>
+      <div class="scan-frame"></div>
+      <canvas id="canvas" class="hidden"></canvas>
+
+      <div class="zoom-control">
+        <span class="zoom-icon">−</span>
+        <input type="range" id="zoomRange" min="1" max="3" step="0.1" value="1" />
+        <span class="zoom-icon">+</span>
+      </div>
+
+      <button id="startGate" class="start-gate" type="button">
+        <svg viewBox="0 0 24 24" class="start-gate-icon"><path d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4z"/></svg>
+        <span class="start-gate-title">Ketuk untuk mulai scan</span>
+        <span class="start-gate-sub">Kamera &amp; getar akan aktif setelah ini</span>
+      </button>
+
+      <button id="shotGate" class="start-gate hidden" type="button">
+        <svg viewBox="0 0 24 24" class="start-gate-icon"><path d="M9 3l-1.83 2H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.17L15 3H9zm3 15a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg>
+        <span class="start-gate-title">Ketuk untuk scan berikutnya</span>
+        <span class="start-gate-sub">Mode Sekali Tembak aktif</span>
+      </button>
     </div>
 
-    <div class="app-container" id="app-container">
-        <aside class="sidebar">
-            <button id="btn-toggle-sidebar" class="btn-toggle"><img src="logo-flower.png" alt="Menu" id="btn-toggle-icon"></button>
+    <div id="status" class="status">Arahkan kamera ke QR Code SKU</div>
 
-            <div class="brand-section">
-                <div class="widget-stack">
-                    <div class="weather-widget" id="weather-widget">
-                        <div class="weather-icon-box" id="weather-icon-box">⛅</div>
-                        <div class="weather-info">
-                            <span class="weather-temp" id="weather-temp">--°C</span>
-                            <span class="weather-desc" id="weather-desc">Memuat...</span>
-                            <span class="weather-loc">📍 Bandung, ID</span>
-                        </div>
-                    </div>
-                    <div class="clock-widget">
-                        <span class="clock-time" id="clock-time">--:--</span>
-                        <span class="clock-ampm" id="clock-ampm">--</span>
-                    </div>
-                </div>
-                <h1 class="brand-title">LATELA</h1>
-                <h2 class="app-subtitle">ORDER MANAGEMENT SYSTEM</h2>
-            </div>
+    <div id="lastScan" class="last-scan hidden">
+      <div class="last-scan-label">Terakhir discan</div>
+      <div id="lastScanName" class="last-scan-name">-</div>
+      <div id="lastScanSku" class="last-scan-sku">-</div>
+      <div id="lastScanState" class="last-scan-state"></div>
+    </div>
+  </main>
 
-            <nav class="menu-container">
-                <span class="menu-label">MAIN MENU</span>
-                <button class="menu-item" data-target="dashboard">
-                    <span class="menu-text">Dashboard</span>
-                </button>
-                <button class="menu-item active" data-target="kalkulator">
-                    <span class="menu-text">Kalkulator Terjual</span>
-                </button>
-                <button class="menu-item" data-target="barangkeluar">
-                    <span class="menu-text">Barang Keluar</span>
-                </button>
-                <button class="menu-item" data-target="mastersku">
-                    <span class="menu-text">Master SKU</span>
-                </button>
-                <button class="menu-item" data-target="qrlabel">
-                    <span class="menu-text">Cetak Label QR</span>
-                </button>
-                <button class="menu-item" data-target="history">
-                    <span class="menu-text">History</span>
-                </button>
+  <!-- ===== HISTORY VIEW ===== -->
+  <main id="view-history" class="view">
+    <div class="history-header">
+      <h2>Riwayat Scan</h2>
+      <button id="clearHistory" class="btn-text">Hapus semua</button>
+    </div>
+    <ul id="historyList" class="history-list"></ul>
+    <div id="historyEmpty" class="empty-state hidden">Belum ada riwayat scan</div>
+  </main>
 
-                <button class="menu-item" data-target="retur" id="menu-retur" style="display:none;">
-                    <span class="menu-text">Retur</span>
-                </button>
-
-                <button class="menu-item" data-target="procurement">
-                    <span class="menu-text">Procurement</span>
-                </button>
-                <button class="menu-item" data-target="listpo">
-                    <span class="menu-text">List PO & Approval</span>
-                </button>
-
-                <button class="menu-item" data-target="kelolaakun" id="menu-kelola-akun" style="display:none;">
-                    <span class="menu-text">Kelola Akun</span>
-                </button>
-
-                <button class="menu-item" data-target="barang" id="menu-barang" style="display:none;">
-                    <span class="menu-text">Barang</span>
-                </button>
-
-                <button class="menu-item" data-target="pembelian" id="menu-pembelian" style="display:none;">
-                    <span class="menu-text">Histori Pembelian</span>
-                </button>
-                
-                <a href="https://docs.google.com/spreadsheets/d/1b67HBw0kqhxMR8gaFTvLcuhOuFrTCdD-6md0N1PiXkU/edit?gid=0#gid=0" target="_blank" class="menu-item-external" id="menu-extension">
-                    <span class="menu-text">Extension</span>
-                </a>
-            </nav>
-
-            <div class="user-session-box">
-                <div class="user-session-info">
-                    <span class="user-session-name" id="user-session-name">-</span>
-                </div>
-                <button id="btn-logout" class="btn-action btn-gray-outline" style="width:100%; margin-top:8px;">Logout</button>
-            </div>
-
-            <div class="sidebar-footer-row">
-                <div class="theme-picker-anchor">
-                    <button id="btn-theme-picker" class="btn-theme-dot" title="Ubah tema warna" aria-label="Ubah tema warna"></button>
-                    <div id="theme-picker-popup" class="theme-picker-popup">
-                        <span class="theme-picker-title">Pilih Tema</span>
-                        <div class="theme-swatch-grid">
-                            <button class="theme-swatch" data-theme="default" title="Latela Teal">
-                                <span class="swatch-preview swatch-default"></span>
-                            </button>
-                            <button class="theme-swatch" data-theme="midnight" title="Midnight Purple">
-                                <span class="swatch-preview swatch-midnight"></span>
-                            </button>
-                            <button class="theme-swatch" data-theme="rose" title="Rose Night">
-                                <span class="swatch-preview swatch-rose"></span>
-                            </button>
-                            <button class="theme-swatch" data-theme="ocean" title="Ocean Blue">
-                                <span class="swatch-preview swatch-ocean"></span>
-                            </button>
-                            <button class="theme-swatch" data-theme="emerald" title="Emerald Dark">
-                                <span class="swatch-preview swatch-emerald"></span>
-                            </button>
-                            <button class="theme-swatch" data-theme="amber" title="Amber Dusk">
-                                <span class="swatch-preview swatch-amber"></span>
-                            </button>
-                            <button class="theme-swatch" data-theme="light" title="Clean White">
-                                <span class="swatch-preview swatch-light"></span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="help-picker-anchor">
-                    <button id="btn-help-picker" class="btn-help-dot" title="Bantuan" aria-label="Bantuan">?</button>
-                    <div id="help-picker-popup" class="help-picker-popup">
-                        <button id="btn-download-guide" class="help-popup-item">Download Guide</button>
-                        <div class="help-popup-credit">
-                            <img src="foto-creator.jpg" alt="Riyo Nandika" class="help-popup-credit-photo">
-                            <span>Created by: <strong>Riyo Nandika</strong></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-        <main class="main-content-wrapper">
-            <div class="main-content">
-                
-                <section id="view-dashboard" class="content-view">
-                    <h2 class="page-title">Dashboard Overview</h2>
-                    <div class="control-group dashboard-filter-group">
-                        <span class="group-label">Filter Produk Dashboard:</span>
-                        <div class="group-inputs">
-                            <select id="dash-filter-dropdown" class="dash-filter-select">
-                                <option value="all">-- Semua Produk --</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="cards-grid">
-                        <div class="card card-pink"><span class="card-label">Total Terjual</span><span class="card-value" id="dash-total-terjual">0</span></div>
-                        <div class="card card-blue"><span class="card-label">SKU Aktif</span><span class="card-value" id="dash-sku-aktif">0</span></div>
-                        <div class="card card-green"><span class="card-label">File</span><span class="card-value" id="dash-file-count">0</span></div>
-                    </div>
-
-                    <div class="chart-container-card" style="margin-bottom: 20px;">
-                        <h3 class="chart-card-title">Proporsi Penjualan per Kategori</h3>
-                        <div class="chart-canvas-wrapper"><canvas id="salesChart"></canvas></div>
-                    </div>
-
-                    <div class="dashboard-double-row">
-                        <div class="chart-container-card"><h3 class="chart-card-title">Tren Volume Penjualan Historis Cloud</h3><div class="chart-canvas-wrapper"><canvas id="trendChart"></canvas></div></div>
-                        <div class="chart-container-card"><h3 class="chart-card-title">Peringkat 5 Produk Teratas Terlaris</h3><div class="chart-canvas-wrapper"><canvas id="topProductsChart"></canvas></div></div>
-                    </div>
-                </section>
-
-                <section id="view-kalkulator" class="content-view active">
-                    <div class="top-controls-bar">
-                        <div class="control-group"><span class="group-label">Filter Produk:</span><div class="group-inputs"><select id="filter-dropdown"><option value="all">-- Tampilkan Semua Produk --</option></select><button id="btn-filter-reset" class="btn-action btn-gray-outline">Reset</button></div></div>
-                        <div class="control-group"><span class="group-label">File Management:</span><div class="group-inputs"><span id="file-badge" class="badge-file-status">0 File Terupload</span><button id="btn-add-file" class="btn-action btn-pink-solid">+ File</button><button id="btn-file-reset" class="btn-action btn-pink-outline">Reset</button><input type="file" id="file-input" accept=".xlsx, .xls" multiple style="display: none;"></div></div>
-                        <div class="control-group"><span class="group-label">Input Manual:</span><div class="group-inputs"><select id="manual-nama-dropdown"><option value="">-- Pilih Produk --</option></select><select id="manual-type-dropdown" disabled><option value="">-- Type --</option></select><select id="manual-warna-dropdown" disabled><option value="">-- Warna --</option></select><input type="number" id="manual-qty-input" class="manual-qty-field" placeholder="Qty" min="1"><button id="btn-add-manual" class="btn-action btn-pink-solid">+ Manual</button></div></div>
-                        <div class="control-group"><span class="group-label">Data Actions:</span><div class="group-inputs"><button id="btn-save-history" class="btn-action btn-purple-solid">Save History</button><div class="export-dropdown-wrapper"><button id="btn-export-toggle" class="btn-action btn-blue-solid">Export ▾</button><div id="export-menu-items" class="export-dropdown-menu"><button id="btn-export-xlsx">Export .XLSX</button><button id="btn-export-csv">Export .CSV</button></div></div><button id="btn-copy-qty" class="btn-action btn-green-solid">Copy Qty</button></div></div>
-                    </div>
-                    <div class="workspace-panel">
-                        <div class="sub-tabs-container"><button class="sub-tab active" data-category="utama">PRODUK UTAMA</button><button class="sub-tab" data-category="aksesoris">AKSESORIS</button><button class="sub-tab" data-category="gradeb">GRADE B</button><button class="sub-tab" data-category="random">RANDOM</button></div>
-                        <div class="table-frame-box">
-                            <div id="panel-utama" class="sub-table-panel active"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align: right;">Qty</th></tr></thead><tbody id="tbody-utama"></tbody></table></div>
-                            <div id="panel-aksesoris" class="sub-table-panel"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align: right;">Qty</th></tr></thead><tbody id="tbody-aksesoris"></tbody></table></div>
-                            <div id="panel-gradeb" class="sub-table-panel"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align: right;">Qty</th></tr></thead><tbody id="tbody-gradeb"></tbody></table></div>
-                            <div id="panel-random" class="sub-table-panel"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align: right;">Qty</th></tr></thead><tbody id="tbody-random"></tbody></table></div>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="view-barangkeluar" class="content-view">
-                    <div class="top-controls-bar">
-                        <div class="control-group"><span class="group-label">Ringkasan:</span><div class="group-inputs"><span class="badge-file-status">Total Keluar: <strong id="bk-total-qty">0</strong></span><span class="badge-file-status">SKU Ter-scan: <strong id="bk-total-sku">0</strong></span></div></div>
-                        <div class="control-group"><span class="group-label">Filter Tanggal:</span><div class="group-inputs">
-                            <input type="date" id="bk-filter-dari" style="height:36px; padding:0 10px; border-radius:10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16); color:var(--text-main); font-size:12px;">
-                            <span style="color:var(--text-muted); font-size:12px;">s/d</span>
-                            <input type="date" id="bk-filter-sampai" style="height:36px; padding:0 10px; border-radius:10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16); color:var(--text-main); font-size:12px;">
-                            <button id="btn-bk-filter-terapkan" class="btn-action btn-blue-solid">Terapkan</button>
-                            <button id="btn-bk-filter-semua" class="btn-action btn-pink-outline">Semua</button>
-                        </div></div>
-                        <div class="control-group"><span class="group-label">Data:</span><div class="group-inputs"><button id="btn-sync-barangkeluar" class="btn-action btn-pink-solid">Sync Data Scan</button><div class="export-dropdown-wrapper"><button id="btn-export-toggle-bk" class="btn-action btn-blue-solid">Export ▾</button><div id="export-menu-items-bk" class="export-dropdown-menu"><button id="btn-export-xlsx-bk">Export .XLSX</button><button id="btn-export-csv-bk">Export .CSV</button></div></div></div></div>
-                    </div>
-                    <div class="workspace-panel">
-                        <div class="sub-tabs-container">
-                            <button class="bk-sub-tab active" data-category="utama">PRODUK UTAMA</button>
-                            <button class="bk-sub-tab" data-category="aksesoris">AKSESORIS</button>
-                            <button class="bk-sub-tab" data-category="gradeb">GRADE B</button>
-                            <button class="bk-sub-tab" data-category="random">RANDOM</button>
-                            <button class="bk-sub-tab" data-category="tidakdikenal">TIDAK DIKENAL</button>
-                        </div>
-                        <div class="table-frame-box">
-                            <div id="bk-panel-utama" class="bk-sub-table-panel active"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align: right;">Qty Keluar</th><th>Terakhir Discan</th></tr></thead><tbody id="tbody-bk-utama"><tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Klik "Sync Data Scan" buat memuat data.</td></tr></tbody></table></div>
-                            <div id="bk-panel-aksesoris" class="bk-sub-table-panel"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align: right;">Qty Keluar</th><th>Terakhir Discan</th></tr></thead><tbody id="tbody-bk-aksesoris"></tbody></table></div>
-                            <div id="bk-panel-gradeb" class="bk-sub-table-panel"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align: right;">Qty Keluar</th><th>Terakhir Discan</th></tr></thead><tbody id="tbody-bk-gradeb"></tbody></table></div>
-                            <div id="bk-panel-random" class="bk-sub-table-panel"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align: right;">Qty Keluar</th><th>Terakhir Discan</th></tr></thead><tbody id="tbody-bk-random"></tbody></table></div>
-                            <div id="bk-panel-tidakdikenal" class="bk-sub-table-panel"><table><thead><tr><th>SKU / Teks Scan</th><th>Keterangan</th><th style="text-align: right;">Qty Scan</th><th>Terakhir Discan</th></tr></thead><tbody id="tbody-bk-tidakdikenal"><tr><td colspan="4" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada data.</td></tr></tbody></table></div>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="view-mastersku" class="content-view">
-                    <h2 class="page-title">Master Data SKU Cloud Database</h2>
-                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Total: <span id="master-sku-count">0</span> SKU</h3><div><button id="btn-import-mastersku" class="btn-action btn-blue-solid" title="Tarik data terbaru dari Google Sheets & replace ke Database" style="margin-right:8px;">Import dari Spreadsheet</button><button id="btn-sync-cloud" class="btn-action btn-pink-outline" title="Tarik ulang data dari Database (cepat)">Sync</button></div></div>
-                    <div class="table-responsive"><table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th>Kategori</th></tr></thead><tbody id="tbody-master-list"></tbody></table></div></div>
-                </section>
-
-                <section id="view-qrlabel" class="content-view">
-                    <h2 class="page-title">Cetak Label QR Code</h2>
-                    <div class="info-note-box" style="margin-bottom:15px; font-size:12px; color:var(--text-muted); background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.10); border-radius:12px; padding:10px 14px;">
-                        Isi QR Code = kode SKU dari Master SKU. Template pakai ukuran lembar stiker asli <strong>165x216mm</strong> (bukan A4), label 16x22mm, grid 9x9 = 81 label/lembar. Kalau di dialog print browser gak ada opsi "Custom" paper size, pakai tombol <strong>Download PDF</strong> — ukurannya udah presisi ke-embed di file-nya, tinggal print dari PDF viewer. Pilih Jenis Barang & Warna, isi <strong>Qty Lembar</strong> (misal isi 2 = cetak 2 lembar penuh = 162 label), klik Tambah. Ulangi buat SKU lain, lalu klik Cetak Label / Download PDF.
-                    </div>
-
-                    <div class="sku-list-card" style="width: 100%; margin-bottom:20px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
-                            <h3 style="margin:0;">Tambah SKU</h3>
-                            <button id="btn-sync-qrlabel" class="btn-action btn-pink-outline">Sync Master SKU</button>
-                        </div>
-                        <div class="proc-vendor-grid-2" style="margin-bottom:10px;">
-                            <select id="qrlabel-jenis-barang"><option value="">-- Pilih Jenis Barang --</option></select>
-                            <select id="qrlabel-warna" disabled><option value="">-- Pilih Warna --</option></select>
-                        </div>
-                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                            <input type="number" id="qrlabel-qty-input" placeholder="Qty Lembar" min="1" value="1" style="width:110px; height:36px; text-align:center; font-weight:700; border-radius:10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16); color:var(--text-main);">
-                            <button id="btn-add-qrlabel-item" class="btn-action btn-pink-solid">+ Tambah</button>
-                        </div>
-                    </div>
-
-                    <div class="sku-list-card" style="width: 100%; margin-bottom:20px;">
-                        <h3 style="margin:0 0 15px 0;">Daftar SKU Akan Dicetak</h3>
-                        <div class="table-responsive" style="max-height:400px;"><table><thead><tr><th>SKU</th><th>Nama</th><th>Warna</th><th style="width:110px;">Qty Lembar</th><th style="width:50px;"></th></tr></thead><tbody id="tbody-qrlabel-basket"><tr><td colspan="5" style="text-align:center; color:#94a3b8; font-style:italic;">Belum ada SKU ditambahkan.</td></tr></tbody></table></div>
-                    </div>
-
-                    <div class="sku-list-card" style="width: 100%;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
-                            <div>
-                                <span style="font-size:12px; color:var(--text-muted); display:block;">SKU Terpilih: <strong id="qrlabel-selected-count">0</strong></span>
-                                <span style="font-size:12px; color:var(--text-muted); display:block;">Total Label (Fisik): <strong id="qrlabel-total-label">0</strong></span>
-                            </div>
-                            <div style="display:flex; gap:8px;">
-                                <button id="btn-download-pdf-qrlabel" class="btn-action btn-blue-solid">Download PDF</button>
-                                <button id="btn-cetak-qrlabel" class="btn-action btn-pink-solid">Cetak Label</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Area label buat di-print, disembunyiin di layar normal, cuma muncul pas print -->
-                    <div id="qrlabel-print-area"></div>
-                </section>
-
-                <section id="view-history" class="content-view">
-                    <h2 class="page-title">History Penjualan</h2>
-                    <div id="history-list-container" class="empty-state-card"><p>Tidak ada riwayat.</p></div>
-                </section>
-
-                <section id="view-retur" class="content-view">
-                    <div class="top-controls-bar">
-                        <div class="control-group">
-                            <span class="group-label">Ringkasan:</span>
-                            <div class="group-inputs">
-                                <span class="badge-file-status">Total Retur: <strong id="retur-total-qty">0</strong></span>
-                                <span class="badge-file-status">SKU: <strong id="retur-total-sku">0</strong></span>
-                            </div>
-                        </div>
-                        <div class="control-group">
-                            <span class="group-label">Filter:</span>
-                            <div class="group-inputs">
-                                <input type="date" id="retur-filter-dari" style="height:36px; padding:0 10px; border-radius:10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16); color:var(--text-main); font-size:12px;" title="Dari tanggal">
-                                <span style="color:var(--text-muted); font-size:13px;">s/d</span>
-                                <input type="date" id="retur-filter-sampai" style="height:36px; padding:0 10px; border-radius:10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16); color:var(--text-main); font-size:12px;" title="Sampai tanggal">
-                                <button id="btn-retur-filter-reset" class="btn-action btn-pink-outline" title="Reset filter tanggal">Semua</button>
-                            </div>
-                        </div>
-                        <div class="control-group">
-                            <span class="group-label">Data:</span>
-                            <div class="group-inputs">
-                                <button id="btn-sync-retur" class="btn-action btn-pink-solid">Sync Data Retur</button>
-                                <button id="btn-copy-qty-retur" class="btn-action btn-green-solid">Copy Qty</button>
-                                <button id="btn-reset-retur" class="btn-action btn-pink-outline">Reset</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="workspace-panel">
-                        <div class="sub-tabs-container">
-                            <button class="retur-sub-tab active" data-category="utama">PRODUK UTAMA</button>
-                            <button class="retur-sub-tab" data-category="aksesoris">AKSESORIS</button>
-                            <button class="retur-sub-tab" data-category="gradeb">GRADE B</button>
-                            <button class="retur-sub-tab" data-category="random">RANDOM</button>
-                        </div>
-                        <div class="table-frame-box">
-                            <div id="retur-panel-utama" class="retur-sub-table-panel active">
-                                <table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align:right;">Qty Retur</th><th>Terakhir Update</th></tr></thead>
-                                <tbody id="tbody-retur-utama"><tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Klik "Sync Data Retur" untuk memuat data.</td></tr></tbody></table>
-                            </div>
-                            <div id="retur-panel-aksesoris" class="retur-sub-table-panel">
-                                <table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align:right;">Qty Retur</th><th>Terakhir Update</th></tr></thead>
-                                <tbody id="tbody-retur-aksesoris"></tbody></table>
-                            </div>
-                            <div id="retur-panel-gradeb" class="retur-sub-table-panel">
-                                <table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align:right;">Qty Retur</th><th>Terakhir Update</th></tr></thead>
-                                <tbody id="tbody-retur-gradeb"></tbody></table>
-                            </div>
-                            <div id="retur-panel-random" class="retur-sub-table-panel">
-                                <table><thead><tr><th>SKU</th><th>Nama</th><th>Type</th><th>Warna</th><th style="text-align:right;">Qty Retur</th><th>Terakhir Update</th></tr></thead>
-                                <tbody id="tbody-retur-random"></tbody></table>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="view-procurement" class="content-view">
-                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
-                        <h2 class="page-title" style="margin-bottom:0;">Procurement & PO Generator</h2>
-                        <button id="btn-refresh-procurement-data" class="btn-action btn-pink-outline" title="Tarik ulang data Jenis Barang & Vendor (Master SKU tetap sama)">Refresh Data</button>
-                    </div>
-                    <div class="procurement-form-container">
-                        <div class="proc-row-top">
-                            <div class="proc-field-col"><span class="proc-field-label">Nomor PO:</span><input type="text" id="proc-no-po" placeholder="Ketik nomor PO..."></div>
-                            <div class="proc-field-col"><span class="proc-field-label">Tanggal PO:</span><input type="date" id="proc-tanggal-po"></div>
-                        </div>
-                        <div class="proc-row-mid">
-                            <div class="proc-vendor-col"><span class="proc-field-label">Detail Komponen Vendor:</span>
-                                <div class="proc-vendor-grid-2"><select id="proc-jenis-barang"><option value="">-- Jenis Barang --</option></select><select id="proc-warna-latela" disabled><option value="">-- Warna Latela --</option></select></div>
-                                <div class="proc-vendor-grid-4"><input type="text" id="proc-kode-warna-vendor" class="proc-readonly-field" placeholder="Kd Warna" readonly><input type="text" id="proc-vendor" class="proc-readonly-field" placeholder="Vendor" readonly><select id="proc-vendor-select" class="proc-readonly-field" style="display:none;"><option value="">-- Pilih Vendor --</option></select><input type="text" id="proc-kode-vendor" class="proc-readonly-field" placeholder="Kd Vendor" readonly><input type="text" id="proc-nama-kain" class="proc-readonly-field" placeholder="Nama Kain" readonly></div>
-                            </div>
-                            <div class="proc-qty-col"><span class="proc-field-label">Qty & Satuan:</span>
-                                <div class="proc-qty-row"><input type="text" inputmode="decimal" id="proc-qty" placeholder="Qty (bisa koma)" class="proc-qty-input"><select id="proc-satuan" class="proc-satuan-select"><option value="Pcs">Pcs</option><option value="Roll">Roll</option><option value="Yards">Yards</option><option value="Kg">Kg</option></select></div>
-                            </div>
-                            <div class="proc-qty-col"><span class="proc-field-label">Harga Total:</span>
-                                <div class="proc-qty-row"><input type="text" inputmode="decimal" id="proc-harga" placeholder="Harga total (Rp)" class="proc-qty-input" style="width:100%;"></div>
-                            </div>
-                            <div class="proc-qty-col"><span class="proc-field-label">Termin:</span>
-                                <div class="proc-qty-row"><input type="number" min="0" id="proc-termin-angka" placeholder="Angka" class="proc-qty-input"><select id="proc-termin-satuan" class="proc-satuan-select"><option value="Hari">Hari</option><option value="Minggu">Minggu</option><option value="Bulan">Bulan</option></select></div>
-                            </div>
-                        </div>
-                        <div class="proc-row-actions"><button id="btn-reset-po">Reset</button><button id="btn-export-po">Submit ke List PO</button><button id="btn-add-proc">+ Tambah Item</button></div>
-                    </div>
-                    <div class="sku-list-card" style="width: 100%; margin-bottom:20px;"><h3>Daftar Item Surat Pesanan (PO)</h3><div class="table-responsive"><table><thead><tr><th>Jenis Barang</th><th>Kode Warna Latela</th><th>Kode Warna Vendor</th><th>Vendor</th><th>Kode Vendor</th><th>Nama Kain</th><th style="text-align: right; padding-right:25px;">Jumlah Order</th><th style="text-align: right; padding-right:25px;">Harga Total</th><th>Termin</th></tr></thead><tbody id="tbody-procurement-list"></tbody></table></div></div>
-
-                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Status PO yang Sudah Disubmit</h3><button id="btn-refresh-po-status" class="btn-action btn-pink-outline">Refresh</button></div><p style="font-size:12px; color:var(--text-muted); margin:-8px 0 12px 0;">Cuma buat pantau status approval-nya aja — untuk approve/reject, hubungi Admin Keuangan.</p><div class="table-responsive"><table><thead><tr><th>No PO</th><th>Tanggal</th><th>Vendor</th><th>Dibuat Oleh</th><th style="text-align:right;">Total Bayar</th><th>Termin</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tbody-po-status-readonly"><tr><td colspan="8" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data PO...</td></tr></tbody></table></div></div>
-                </section>
-
-                <section id="view-listpo" class="content-view">
-                    <h2 class="page-title">List PO & Approval</h2>
-                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Daftar PO & Status Approval</h3><button id="btn-refresh-po-list" class="btn-action btn-pink-outline">Refresh</button></div><div class="table-responsive"><table><thead><tr><th>No PO</th><th>Tanggal</th><th>Vendor</th><th>Dibuat Oleh</th><th style="text-align:right;">Total Bayar</th><th>Termin</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tbody-po-list"><tr><td colspan="8" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data PO...</td></tr></tbody></table></div></div>
-                </section>
-
-                <section id="view-kelolaakun" class="content-view">
-                    <h2 class="page-title">Kelola Akun Pengguna</h2>
-                    <div class="procurement-form-container">
-                        <div class="proc-row-top">
-                            <div class="proc-field-col"><span class="proc-field-label">Username:</span><input type="text" id="akun-username" placeholder="Username..."></div>
-                            <div class="proc-field-col"><span class="proc-field-label">Nama:</span><input type="text" id="akun-nama" placeholder="Nama lengkap..."></div>
-                        </div>
-                        <div class="proc-row-top">
-                            <div class="proc-field-col"><span class="proc-field-label">Password:</span><input type="password" id="akun-password" placeholder="Password..."></div>
-                            <div class="proc-field-col"><span class="proc-field-label">Role:</span><select id="akun-role"><option value="terbatas">Akses Terbatas</option><option value="full">Admin (Akses Penuh)</option></select></div>
-                        </div>
-                        <div class="proc-row-top" id="akun-menu-akses-row">
-                            <div class="proc-field-col" style="flex:1 1 100%;">
-                                <span class="proc-field-label">Menu yang Bisa Diakses:</span>
-                                <div id="akun-menu-checklist" class="akun-menu-checklist-grid">
-                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="dashboard"><span>Dashboard</span></label>
-                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="kalkulator"><span>Kalkulator Terjual</span></label>
-                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="barangkeluar"><span>Barang Keluar</span></label>
-                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="mastersku"><span>Master SKU</span></label>
-                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="qrlabel"><span>Cetak Label QR</span></label>
-                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="history"><span>History</span></label>
-                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="retur"><span>Retur</span></label>
-                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="procurement"><span>Procurement</span></label>
-                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="listpo"><span>List PO & Approval</span></label>
-                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="barang"><span>Data Barang</span></label>
-                                    <label class="akun-menu-check-label"><input type="checkbox" class="akun-menu-check" value="pembelian"><span>Histori Pembelian</span></label>
-                                </div>
-                                <span style="font-size:11px; color:var(--text-muted); display:block; margin-top:6px;">Menu "Kelola Akun" selalu khusus Admin, gak bisa dikasih ke akun Terbatas.</span>
-                                <label class="akun-menu-check-label akun-approve-po-label"><input type="checkbox" id="akun-can-approve-po"><span><strong>Bisa Approve/Reject PO (Admin Keuangan)</strong> — terpisah dari Role & menu "Procurement". Centang ini otomatis kasih akses ke halaman "List PO & Approval" (walau menu itu gak dicentang), tapi TETAP GAK BISA bikin PO baru kecuali "Procurement" juga dicentang.</span></label>
-                            </div>
-                        </div>
-                        <label class="akun-menu-check-label akun-approve-po-label" style="margin: 0 0 4px; padding: 14px 0 0;"><input type="checkbox" id="akun-mobile-access"><span><strong>Akses Mobile (Latela OMS Mobile)</strong> — centang supaya akun ini bisa login ke aplikasi mobile. Akun yang tidak dicentang tidak bisa masuk ke app.</span></label>
-                        <div class="proc-row-actions"><button id="btn-simpan-akun" class="btn-action btn-pink-solid">Simpan Akun</button></div>
-                    </div>
-                    <div class="sku-list-card" style="width: 100%;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;"><h3 style="margin: 0;">Daftar Akun</h3><button id="btn-refresh-akun" class="btn-action btn-pink-outline">Refresh</button></div><div class="table-responsive"><table><thead><tr><th>Username</th><th>Password</th><th>Nama</th><th>Role</th><th>Menu Akses</th><th style="text-align:center;">Mobile</th><th>Aksi</th></tr></thead><tbody id="tbody-akun-list"><tr><td colspan="7" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data akun...</td></tr></tbody></table></div></div>
-                </section>
-
-                <section id="view-barang" class="content-view">
-                    <h2 class="page-title">Data Barang</h2>
-                    <div class="sku-list-card" style="width: 100%;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px; gap:10px; flex-wrap:wrap;">
-                            <h3 style="margin: 0;">Daftar Barang</h3>
-                            <input type="text" id="search-barang" placeholder="Cari nama produk, vendor, toko..." style="flex:1; min-width:200px; max-width:320px; height:36px; padding:0 14px; border-radius:10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16); color:var(--text-main); font-size:13px;">
-                            <div><button id="btn-tambah-barang" class="btn-action btn-pink-solid" style="margin-right:8px;">+ Tambah Barang</button><button id="btn-refresh-barang" class="btn-action btn-pink-outline">Refresh</button></div>
-                        </div>
-                        <div class="table-responsive"><table><thead><tr><th>Nama Produk</th><th>Variasi</th><th>Toko</th><th>Vendor</th><th>Kode Vendor</th><th style="text-align:right;">Harga (Rp)</th><th>Satuan</th><th style="text-align:right;">LeadTime (Days)</th><th style="text-align:center;">Aksi</th></tr></thead><tbody id="tbody-barang-list"><tr><td colspan="9" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data barang...</td></tr></tbody></table></div>
-                    </div>
-                </section>
-
-                <section id="view-pembelian" class="content-view">
-                    <h2 class="page-title">Histori Pembelian</h2>
-
-                    <div class="sku-list-card" style="width: 100%;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px; gap:10px; flex-wrap:wrap;">
-                            <h3 style="margin: 0;">Daftar Histori Pembelian</h3>
-                            <input type="text" id="search-pembelian" placeholder="Cari No. PO, barang, requestor..." style="flex:1; min-width:200px; max-width:320px; height:36px; padding:0 14px; border-radius:10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16); color:var(--text-main); font-size:13px;">
-                            <select id="filter-status-bayar-pembelian" style="height:36px; padding:0 10px; border-radius:10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16); color:var(--text-main); font-size:13px;">
-                                <option value="">Semua Status Bayar</option>
-                                <option value="Belum Bayar">Belum Bayar</option>
-                                <option value="Sudah Bayar">Sudah Bayar</option>
-                                <option value="Hold">Hold</option>
-                                <option value="terlambat">⚠ Terlambat Bayar</option>
-                            </select>
-                            <select id="pembelian-page-size" style="height:36px;"><option value="10">10 baris</option><option value="20">20 baris</option><option value="30">30 baris</option><option value="50" selected>50 baris</option></select>
-                            <button id="btn-tambah-pembelian" class="btn-action btn-pink-solid">+ Tambah Item</button>
-                            <button id="btn-refresh-pembelian" class="btn-action btn-pink-outline">Refresh</button>
-                        </div>
-                        <div class="table-responsive"><table><thead><tr><th>No. PO</th><th>Barang</th><th>Kode</th><th>Variasi</th><th style="text-align:right;">Qty</th><th>Satuan</th><th>Tgl Pengajuan</th><th>Requestor</th><th style="text-align:right;">Total (Rp)</th><th>Tenggat Bayar</th><th>Status Bayar</th><th>Status Purchasing</th><th>Tgl Complete</th><th>Notes</th><th style="text-align:center;">Aksi</th></tr></thead><tbody id="tbody-pembelian-list"><tr><td colspan="15" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data histori pembelian...</td></tr></tbody></table></div>
-                    </div>
-                </section>
-            </div>
-            <footer class="status-footer" id="status-bar">Memuat sistem...</footer>
-        </main>
+  <!-- ===== RETUR VIEW ===== -->
+  <main id="view-retur" class="view">
+    <div class="history-header">
+      <h2>Input Retur</h2>
     </div>
 
-    <div id="password-modal" class="modal-overlay"><div class="modal-card"><div class="modal-header"><h3>Security Authentication</h3></div><div class="modal-body"><p>Masukkan password otorisasi:</p><input type="password" id="input-ext-password" placeholder="Password..."><span id="modal-error-msg"></span></div><div class="modal-footer"><button id="btn-modal-cancel">Batal</button><button id="btn-modal-submit">Masuk</button></div></div></div>
+    <form id="returForm" class="retur-form">
 
-    <div id="po-detail-modal" class="modal-overlay"><div class="modal-card" style="max-width:640px;"><div class="modal-header"><h3>Detail Item PO <span id="po-detail-title"></span></h3></div><div class="modal-body"><div class="table-responsive"><table><thead><tr><th>Jenis Barang</th><th>Warna Latela</th><th>Kode Warna Vendor</th><th>Nama Kain</th><th style="text-align:right;">Qty</th></tr></thead><tbody id="tbody-po-detail-items"></tbody></table></div></div><div class="modal-footer"><button id="btn-po-detail-close">Tutup</button></div></div></div>
+      <div class="retur-field">
+        <label class="retur-label">Nama Barang</label>
+        <select id="returProduct" class="retur-select" required>
+          <option value="">— Pilih Nama Barang —</option>
+        </select>
+      </div>
 
-    <div id="barang-edit-modal" class="modal-overlay"><div class="modal-card" style="max-width:480px;"><div class="modal-header"><h3 id="barang-edit-modal-title">Edit Barang</h3></div><div class="modal-body">
-        <input type="hidden" id="barang-edit-rowindex">
-        <p style="margin-bottom:6px;">Nama Produk:</p><input type="text" id="barang-edit-nama" placeholder="Nama Produk...">
-        <p style="margin-bottom:6px; margin-top:10px;">Variasi:</p><input type="text" id="barang-edit-variasi" placeholder="Variasi...">
-        <p style="margin-bottom:6px; margin-top:10px;">Toko:</p><select id="barang-edit-toko"><option value="Shopee">Shopee</option><option value="On Site">On Site</option></select>
-        <p style="margin-bottom:6px; margin-top:10px;">Vendor:</p><input type="text" id="barang-edit-vendor" placeholder="Vendor...">
-        <p style="margin-bottom:6px; margin-top:10px;">Kode Vendor:</p><input type="text" id="barang-edit-kodevendor" placeholder="Kode Vendor...">
-        <p style="margin-bottom:6px; margin-top:10px;">Harga (Rp):</p><input type="number" id="barang-edit-harga" placeholder="Harga...">
-        <p style="margin-bottom:6px; margin-top:10px;">Satuan:</p><select id="barang-edit-satuan"><option value="Pcs">Pcs</option><option value="Kg">Kg</option><option value="Roll">Roll</option><option value="Yards">Yards</option><option value="Pack">Pack</option><option value="Lusin">Lusin</option></select>
-        <p style="margin-bottom:6px; margin-top:10px;">LeadTime (Days):</p><input type="number" id="barang-edit-leadtime" placeholder="LeadTime (Days)...">
-        <span id="barang-edit-error-msg"></span>
-    </div><div class="modal-footer"><button id="btn-barang-edit-cancel">Batal</button><button id="btn-barang-edit-save">Simpan</button></div></div></div>
-    <script src="app.js"></script>
+      <div class="retur-field" id="returTypeWrap" style="display:none">
+        <label class="retur-label">Type</label>
+        <select id="returType" class="retur-select">
+          <option value="">— Pilih Type —</option>
+        </select>
+      </div>
+
+      <div class="retur-field" id="returWarnaWrap" style="display:none">
+        <label class="retur-label">Warna</label>
+        <select id="returWarna" class="retur-select" required>
+          <option value="">— Pilih Warna —</option>
+        </select>
+      </div>
+
+      <div class="retur-field" id="returQtyWrap" style="display:none">
+        <label class="retur-label">Qty</label>
+        <input id="returQty" type="number" class="retur-input" min="1" placeholder="Masukkan jumlah" required />
+      </div>
+
+      <div id="returSelectedInfo" class="retur-selected-info hidden"></div>
+
+      <button type="submit" id="returSubmitBtn" class="btn-primary retur-submit hidden">Simpan Retur</button>
+    </form>
+
+    <div id="returStatus" class="sku-status hidden"></div>
+
+    <div class="history-header" style="margin-top:1.5rem">
+      <h2>Riwayat Retur</h2>
+      <button id="clearRetur" class="btn-text">Hapus semua</button>
+    </div>
+    <ul id="returList" class="history-list"></ul>
+    <div id="returEmpty" class="empty-state hidden">Belum ada riwayat retur</div>
+  </main>
+
+  <!-- ===== DATA SKU VIEW ===== -->
+  <main id="view-sku" class="view">
+    <div class="history-header">
+      <h2>Data SKU</h2>
+      <button id="skuRefreshBtn" class="btn-text">Refresh</button>
+    </div>
+
+    <div style="padding: 0 1rem .75rem">
+      <input id="skuSearch" type="search" placeholder="Cari SKU, nama, type, warna…"
+        style="width:100%;padding:.65rem 1rem;border-radius:.75rem;border:1.5px solid var(--border,#e5e7eb);background:var(--card-bg,#fff);color:var(--text,#111);font-size:.95rem;box-sizing:border-box" />
+    </div>
+
+    <div id="skuStatus" class="sku-status hidden"></div>
+
+    <ul id="skuList" class="history-list"></ul>
+    <div id="skuEmpty" class="empty-state hidden">Belum ada data SKU tersimpan</div>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-view="scan">
+      <svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4z"/></svg>
+      <span>Scan</span>
+    </button>
+    <button class="nav-btn" data-view="history">
+      <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 1 0 8.94 10H19.9A7 7 0 1 1 13 5v4l5-4.5L13 0v3zM11 8h2v5.4l4 2.4-1 1.6-5-3V8z"/></svg>
+      <span>History</span>
+    </button>
+    <button class="nav-btn" data-view="retur">
+      <svg viewBox="0 0 24 24"><path d="M20 8H4V6h16v2zm-2 6H6v-2h12v2zm-4 4H8v-2h6v2z"/></svg>
+      <span>Retur</span>
+    </button>
+    <button class="nav-btn" data-view="sku">
+      <svg viewBox="0 0 24 24"><path d="M12 2l1.5 4.5H18l-3.75 2.7 1.4 4.5L12 11.1l-3.65 2.6 1.4-4.5L6 6.5h4.5L12 2zM4 20h16v2H4z"/></svg>
+      <span>Data SKU</span>
+    </button>
+  </nav>
+
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script src="/js/app.js"></script>
 </body>
 </html>
