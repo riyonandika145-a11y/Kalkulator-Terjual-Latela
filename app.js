@@ -1543,9 +1543,9 @@ function generatePoPdf(noPoValue, rawSelectedDate, vendorHeader, items) {
     doc.text(vendorHeader, signRightCenterX, finalY, { align: 'center' });
 
     // Area tanda tangan (gambar TTD CV ARSA)
-    const sigWidth = 55;
-    const sigHeight = 20;
-    doc.addImage(SIGNATURE_CV_ARSA_BASE64, 'PNG', signLeftCenterX - (sigWidth / 2), finalY + 5, sigWidth, sigHeight);
+    const sigWidth = 100;
+    const sigHeight = 36;
+    doc.addImage(SIGNATURE_CV_ARSA_BASE64, 'PNG', signLeftCenterX - (sigWidth / 2), finalY + 8, sigWidth, sigHeight);
     // Garis tanda tangan kiri
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.5);
