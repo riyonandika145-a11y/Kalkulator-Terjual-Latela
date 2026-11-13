@@ -236,49 +236,80 @@ export default {
       // [5] API RETUR
       // ==========================================
 
-      // GET /api/retur/list — ambil semua data retur aktif
+      // GET /api/retur/list — aggregate per SKU dari retur_transactions, support filter tanggal
+      // Query params: dari=YYYY-MM-DD&sampai=YYYY-MM-DD (opsional)
       if (method === "GET" && path === "/api/retur/list") {
-        const { results } = await env.DB.prepare("SELECT * FROM retur_items ORDER BY updated_at DESC").all();
+        const dari = url.searchParams.get("dari") || null;
+        const sampai = url.searchParams.get("sampai") || null;
+
+        let query, params;
+        if (dari && sampai) {
+          query = `SELECT sku, nama, type, warna, kategori, SUM(qty) as qty, MAX(scanned_at) as updated_at
+                   FROM retur_transactions
+                   WHERE DATE(scanned_at) >= ? AND DATE(scanned_at) <= ?
+                   GROUP BY sku ORDER BY updated_at DESC`;
+          params = [dari, sampai];
+        } else if (dari) {
+          query = `SELECT sku, nama, type, warna, kategori, SUM(qty) as qty, MAX(scanned_at) as updated_at
+                   FROM retur_transactions
+                   WHERE DATE(scanned_at) >= ?
+                   GROUP BY sku ORDER BY updated_at DESC`;
+          params = [dari];
+        } else if (sampai) {
+          query = `SELECT sku, nama, type, warna, kategori, SUM(qty) as qty, MAX(scanned_at) as updated_at
+                   FROM retur_transactions
+                   WHERE DATE(scanned_at) <= ?
+                   GROUP BY sku ORDER BY updated_at DESC`;
+          params = [sampai];
+        } else {
+          query = `SELECT sku, nama, type, warna, kategori, SUM(qty) as qty, MAX(scanned_at) as updated_at
+                   FROM retur_transactions
+                   GROUP BY sku ORDER BY updated_at DESC`;
+          params = [];
+        }
+
+        const stmt = env.DB.prepare(query);
+        const { results } = await stmt.bind(...params).all();
         return jsonResp(results);
       }
 
-      // POST /api/retur/submit — tambah/update item retur dari app mobile
+      // POST /api/retur/submit — insert 1 baris transaksi retur (dari app mobile)
       if (method === "POST" && path === "/api/retur/submit") {
         const b = await request.json();
         if (!b.sku) return jsonResp({ success: false, message: "SKU wajib diisi." }, 400);
         const qty = b.qty ? Number(b.qty) : 1;
         const now = new Date().toISOString();
-        const existing = await env.DB.prepare("SELECT id, qty FROM retur_items WHERE sku = ?").bind(b.sku).first();
-        if (existing) {
-          await env.DB.prepare("UPDATE retur_items SET qty = qty + ?, updated_at = ? WHERE sku = ?")
-            .bind(qty, now, b.sku).run();
-        } else {
-          await env.DB.prepare("INSERT INTO retur_items (sku, nama, type, warna, kategori, qty, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)")
-            .bind(b.sku, b.nama || "-", b.type || "-", b.warna || "-", b.kategori || "utama", qty, now).run();
+        await env.DB.prepare(
+          "INSERT INTO retur_transactions (sku, nama, type, warna, kategori, qty, scanned_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
+        ).bind(b.sku, b.nama || "-", b.type || "-", b.warna || "-", b.kategori || "utama", qty, now).run();
+        return jsonResp({ success: true });
+      }
+
+      // POST /api/retur/update-qty — edit manual qty: hapus semua transaksi SKU itu lalu insert 1 baris baru
+      if (method === "POST" && path === "/api/retur/update-qty") {
+        const b = await request.json();
+        if (!b.sku) return jsonResp({ success: false, message: "SKU wajib diisi." }, 400);
+        const qty = Number(b.qty) || 0;
+        const now = new Date().toISOString();
+        await env.DB.prepare("DELETE FROM retur_transactions WHERE sku = ?").bind(b.sku).run();
+        if (qty > 0) {
+          await env.DB.prepare(
+            "INSERT INTO retur_transactions (sku, nama, type, warna, kategori, qty, scanned_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
+          ).bind(b.sku, b.nama || "-", b.type || "-", b.warna || "-", b.kategori || "utama", qty, now).run();
         }
         return jsonResp({ success: true });
       }
 
-      // POST /api/retur/update-qty — edit manual qty 1 SKU dari web OMS
-      if (method === "POST" && path === "/api/retur/update-qty") {
-        const b = await request.json();
-        if (!b.sku) return jsonResp({ success: false, message: "SKU wajib diisi." }, 400);
-        const now = new Date().toISOString();
-        await env.DB.prepare("UPDATE retur_items SET qty = ?, updated_at = ? WHERE sku = ?")
-          .bind(Number(b.qty) || 0, now, b.sku).run();
-        return jsonResp({ success: true });
-      }
-
-      // POST /api/retur/delete-one — hapus 1 item retur berdasarkan SKU
+      // POST /api/retur/delete-one — hapus semua transaksi 1 SKU
       if (method === "POST" && path === "/api/retur/delete-one") {
         const b = await request.json();
-        await env.DB.prepare("DELETE FROM retur_items WHERE sku = ?").bind(b.sku).run();
+        await env.DB.prepare("DELETE FROM retur_transactions WHERE sku = ?").bind(b.sku).run();
         return jsonResp({ success: true });
       }
 
       // POST /api/retur/reset — hapus semua data retur
       if (method === "POST" && path === "/api/retur/reset") {
-        await env.DB.prepare("DELETE FROM retur_items").run();
+        await env.DB.prepare("DELETE FROM retur_transactions").run();
         return jsonResp({ success: true });
       }
 
