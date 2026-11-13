@@ -2956,27 +2956,33 @@ function renderReturCalendar() {
         btn.onmouseenter = () => { if (!isPick1 && !isPick2) btn.style.background = 'rgba(128,128,128,0.15)'; };
         btn.onmouseleave = () => { if (!isPick1 && !isPick2) btn.style.background = inRange ? 'rgba(232,121,160,0.25)' : 'none'; };
         btn.addEventListener('click', () => {
-            if (!returCalState.pick1) {
+            const ymdClicked = toYMD(dateObj);
+            const hasRange = returCalState.pick1 && returCalState.pick2 && toYMD(returCalState.pick1) !== toYMD(returCalState.pick2);
+            const hasSingle = returCalState.pick1 && (!returCalState.pick2 || toYMD(returCalState.pick1) === toYMD(returCalState.pick2));
+
+            if (!returCalState.pick1 || hasRange) {
+                // Belum ada pilihan / sudah ada rentang → mulai baru: langsung filter hari ini
                 returCalState.pick1 = dateObj;
-            } else if (!returCalState.pick2) {
-                if (toYMD(returCalState.pick1) === ymd) {
-                    // Klik tanggal yang sama → filter hari itu saja
-                    returCalState.pick2 = dateObj;
-                } else {
-                    returCalState.pick2 = dateObj;
-                }
-                // Dua tanggal sudah dipilih → tutup kalender & apply
-                document.getElementById('retur-calendar-popup').style.display = 'none';
+                returCalState.pick2 = dateObj;
                 updateReturFilterLabel();
                 applyReturFilter();
-                return;
-            } else {
-                // Reset, mulai pilih lagi
-                returCalState.pick1 = dateObj;
-                returCalState.pick2 = null;
+                renderReturCalendar();
+            } else if (hasSingle) {
+                if (ymdClicked === toYMD(returCalState.pick1)) {
+                    // Klik tanggal yang sama → reset semua filter
+                    returCalState.pick1 = null;
+                    returCalState.pick2 = null;
+                    updateReturFilterLabel();
+                    applyReturFilter();
+                    renderReturCalendar();
+                } else {
+                    // Klik tanggal berbeda → set rentang & tutup kalender
+                    returCalState.pick2 = dateObj;
+                    document.getElementById('retur-calendar-popup').style.display = 'none';
+                    updateReturFilterLabel();
+                    applyReturFilter();
+                }
             }
-            updateReturFilterLabel();
-            renderReturCalendar();
         });
         grid.appendChild(btn);
     }
