@@ -2887,12 +2887,96 @@ function formatTimestampRetur(raw) {
     return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+// State kalender retur
+let returCalState = { year: new Date().getFullYear(), month: new Date().getMonth(), pick1: null, pick2: null };
+
+function toYMD(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
 function getReturFilterRange() {
-    const elDari = document.getElementById('retur-filter-dari');
-    const elSampai = document.getElementById('retur-filter-sampai');
-    const dariVal = elDari && elDari.value ? new Date(elDari.value + 'T00:00:00') : null;
-    const sampaiVal = elSampai && elSampai.value ? new Date(elSampai.value + 'T23:59:59') : null;
-    return { dariVal, sampaiVal };
+    const p1 = returCalState.pick1, p2 = returCalState.pick2;
+    if (!p1) return { dariVal: null, sampaiVal: null };
+    if (!p2 || toYMD(p1) === toYMD(p2)) {
+        return { dariVal: new Date(toYMD(p1) + 'T00:00:00'), sampaiVal: new Date(toYMD(p1) + 'T23:59:59') };
+    }
+    const a = p1 < p2 ? p1 : p2, b = p1 < p2 ? p2 : p1;
+    return { dariVal: new Date(toYMD(a) + 'T00:00:00'), sampaiVal: new Date(toYMD(b) + 'T23:59:59') };
+}
+
+function updateReturFilterLabel() {
+    const lbl = document.getElementById('retur-filter-label');
+    if (!lbl) return;
+    const p1 = returCalState.pick1, p2 = returCalState.pick2;
+    if (!p1) { lbl.textContent = 'Semua Tanggal'; return; }
+    const fmt = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+    if (!p2 || toYMD(p1) === toYMD(p2)) { lbl.textContent = fmt(p1); return; }
+    const a = p1 < p2 ? p1 : p2, b = p1 < p2 ? p2 : p1;
+    lbl.textContent = `${fmt(a)} – ${fmt(b)}`;
+}
+
+function renderReturCalendar() {
+    const { year, month, pick1, pick2 } = returCalState;
+    const lbl = document.getElementById('cal-month-label');
+    const grid = document.getElementById('cal-grid');
+    if (!lbl || !grid) return;
+    const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    lbl.textContent = `${months[month]} ${year}`;
+    grid.innerHTML = '';
+    // Header hari
+    ['Min','Sen','Sel','Rab','Kam','Jum','Sab'].forEach(h => {
+        const el = document.createElement('div');
+        el.textContent = h;
+        el.style.cssText = 'color:var(--text-muted);font-size:10px;padding:4px 0;font-weight:600;';
+        grid.appendChild(el);
+    });
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    // Padding awal
+    for (let i = 0; i < firstDay; i++) {
+        grid.appendChild(document.createElement('div'));
+    }
+    // Determine range untuk highlight
+    let rangeStart = null, rangeEnd = null;
+    if (pick1 && pick2) {
+        rangeStart = pick1 < pick2 ? pick1 : pick2;
+        rangeEnd = pick1 < pick2 ? pick2 : pick1;
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dateObj = new Date(year, month, d);
+        const ymd = toYMD(dateObj);
+        const btn = document.createElement('button');
+        btn.textContent = d;
+        const isPick1 = pick1 && toYMD(pick1) === ymd;
+        const isPick2 = pick2 && toYMD(pick2) === ymd;
+        const inRange = rangeStart && rangeEnd && dateObj >= rangeStart && dateObj <= rangeEnd;
+        let bg = 'none', color = 'var(--text-main)', fw = 'normal', br = '6px';
+        if (isPick1 || isPick2) { bg = 'var(--accent-main,#e879a0)'; color = '#fff'; fw = '700'; br = '50%'; }
+        else if (inRange) { bg = 'rgba(232,121,160,0.18)'; }
+        btn.style.cssText = `background:${bg};color:${color};font-weight:${fw};border:none;border-radius:${br};padding:5px 2px;cursor:pointer;font-size:12px;width:100%;`;
+        btn.addEventListener('click', () => {
+            if (!returCalState.pick1) {
+                returCalState.pick1 = dateObj;
+            } else if (!returCalState.pick2) {
+                if (toYMD(returCalState.pick1) === ymd) {
+                    // Klik tanggal yang sama → filter hari itu saja
+                    returCalState.pick2 = dateObj;
+                } else {
+                    returCalState.pick2 = dateObj;
+                }
+                // Dua tanggal sudah dipilih → tutup kalender & apply
+                document.getElementById('retur-calendar-popup').style.display = 'none';
+                updateReturFilterLabel();
+                applyReturFilter();
+                return;
+            } else {
+                // Reset, mulai pilih lagi
+                returCalState.pick1 = dateObj;
+                returCalState.pick2 = null;
+            }
+            updateReturFilterLabel();
+            renderReturCalendar();
+        });
+        grid.appendChild(btn);
+    }
 }
 
 function applyReturFilter() {
@@ -3038,17 +3122,34 @@ function fetchReturFromCloud() {
 const btnSyncRetur = document.getElementById('btn-sync-retur');
 if (btnSyncRetur) btnSyncRetur.addEventListener('click', fetchReturFromCloud);
 
-// Filter tanggal Retur
-const returFilterDari = document.getElementById('retur-filter-dari');
-const returFilterSampai = document.getElementById('retur-filter-sampai');
-const btnReturFilterReset = document.getElementById('btn-retur-filter-reset');
+// Kalender popup
+const btnReturCalToggle = document.getElementById('btn-retur-filter-toggle');
+const returCalPopup = document.getElementById('retur-calendar-popup');
+if (btnReturCalToggle && returCalPopup) {
+    btnReturCalToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = returCalPopup.style.display !== 'none';
+        returCalPopup.style.display = isOpen ? 'none' : 'block';
+        if (!isOpen) renderReturCalendar();
+    });
+    document.addEventListener('click', (e) => {
+        if (!returCalPopup.contains(e.target) && e.target !== btnReturCalToggle) {
+            returCalPopup.style.display = 'none';
+        }
+    });
+}
+const calPrev = document.getElementById('cal-prev');
+const calNext = document.getElementById('cal-next');
+if (calPrev) calPrev.addEventListener('click', (e) => { e.stopPropagation(); returCalState.month--; if (returCalState.month < 0) { returCalState.month = 11; returCalState.year--; } renderReturCalendar(); });
+if (calNext) calNext.addEventListener('click', (e) => { e.stopPropagation(); returCalState.month++; if (returCalState.month > 11) { returCalState.month = 0; returCalState.year++; } renderReturCalendar(); });
 
-if (returFilterDari) returFilterDari.addEventListener('change', applyReturFilter);
-if (returFilterSampai) returFilterSampai.addEventListener('change', applyReturFilter);
+// Tombol Reset filter
+const btnReturFilterReset = document.getElementById('btn-retur-filter-reset');
 if (btnReturFilterReset) {
     btnReturFilterReset.addEventListener('click', () => {
-        if (returFilterDari) returFilterDari.value = '';
-        if (returFilterSampai) returFilterSampai.value = '';
+        returCalState.pick1 = null;
+        returCalState.pick2 = null;
+        updateReturFilterLabel();
         applyReturFilter();
     });
 }
