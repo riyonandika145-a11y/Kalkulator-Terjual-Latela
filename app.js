@@ -2920,6 +2920,7 @@ function renderReturCalendar() {
     if (!lbl || !grid) return;
     const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     lbl.textContent = `${months[month]} ${year}`;
+    lbl.style.color = 'var(--text-main)';
     grid.innerHTML = '';
     // Header hari
     ['Min','Sen','Sel','Rab','Kam','Jum','Sab'].forEach(h => {
@@ -2949,9 +2950,11 @@ function renderReturCalendar() {
         const isPick2 = pick2 && toYMD(pick2) === ymd;
         const inRange = rangeStart && rangeEnd && dateObj >= rangeStart && dateObj <= rangeEnd;
         let bg = 'none', color = 'var(--text-main)', fw = 'normal', br = '6px';
-        if (isPick1 || isPick2) { bg = 'var(--accent-main,#e879a0)'; color = '#fff'; fw = '700'; br = '50%'; }
-        else if (inRange) { bg = 'rgba(232,121,160,0.18)'; }
-        btn.style.cssText = `background:${bg};color:${color};font-weight:${fw};border:none;border-radius:${br};padding:5px 2px;cursor:pointer;font-size:12px;width:100%;`;
+        if (isPick1 || isPick2) { bg = 'var(--accent-main,#e879a0)'; color = 'var(--text-main)'; fw = '700'; br = '50%'; }
+        else if (inRange) { bg = 'rgba(232,121,160,0.25)'; }
+        btn.style.cssText = `background:${bg};color:${color};font-weight:${fw};border:none;border-radius:${br};padding:6px 2px;cursor:pointer;font-size:13px;width:100%;transition:background 0.1s;`;
+        btn.onmouseenter = () => { if (!isPick1 && !isPick2) btn.style.background = 'rgba(128,128,128,0.15)'; };
+        btn.onmouseleave = () => { if (!isPick1 && !isPick2) btn.style.background = inRange ? 'rgba(232,121,160,0.25)' : 'none'; };
         btn.addEventListener('click', () => {
             if (!returCalState.pick1) {
                 returCalState.pick1 = dateObj;
