@@ -2896,11 +2896,15 @@ function getReturFilterRange() {
 }
 
 function applyReturFilter() {
-    fetchReturFromCloud();
+    if (globalReturRawCache.length > 0) {
+        globalReturCache = aggregateReturByFilter(globalReturRawCache);
+        renderReturTables(globalReturCache);
+    } else {
+        fetchReturFromCloud();
+    }
 }
 
 function renderReturTables(data) {
-    // data sudah terfilter dari API, langsung pakai
     const filtered = data;
 
     // Reset semua tbody
@@ -2969,29 +2973,57 @@ function renderReturTables(data) {
     if (elSku) elSku.innerText = totalSkuRetur;
 }
 
+// Cache raw per-baris dari spreadsheet
+let globalReturRawCache = [];
+
+function aggregateReturByFilter(rawItems) {
+    const { dariVal, sampaiVal } = getReturFilterRange();
+    const filtered = rawItems.filter(r => {
+        if (!dariVal && !sampaiVal) return true;
+        const d = new Date(r.waktu);
+        if (isNaN(d.getTime())) return false;
+        if (dariVal && d < dariVal) return false;
+        if (sampaiVal && d > sampaiVal) return false;
+        return true;
+    });
+    const skuMap = {};
+    filtered.forEach(r => {
+        const sku = (r.sku || '').toString().trim();
+        if (!sku) return;
+        const master = masterSkus[sku];
+        const kategori = master ? (master.kategori || 'utama') : 'utama';
+        const qty = parseInt(r.qty, 10) || 1;
+        if (!skuMap[sku]) {
+            skuMap[sku] = {
+                sku,
+                nama: r.nama || (master ? master.nama : '-') || '-',
+                type: r.type || (master ? master.type : '-') || '-',
+                warna: r.warna || (master ? master.warna : '-') || '-',
+                kategori,
+                qty: 0,
+                updated_at: r.waktu || ''
+            };
+        }
+        skuMap[sku].qty += qty;
+        if (r.waktu && r.waktu > skuMap[sku].updated_at) skuMap[sku].updated_at = r.waktu;
+    });
+    return Object.values(skuMap);
+}
+
 function fetchReturFromCloud() {
-    const elDari = document.getElementById('retur-filter-dari');
-    const elSampai = document.getElementById('retur-filter-sampai');
-
-    let apiUrl = '/api/retur/list';
-    const params = new URLSearchParams();
-    if (elDari && elDari.value) params.set('dari', elDari.value);
-    if (elSampai && elSampai.value) params.set('sampai', elSampai.value);
-    if ([...params].length > 0) apiUrl += '?' + params.toString();
-
-    updateStatusMessage('Memuat data retur dari database...');
+    updateStatusMessage('Memuat data retur dari spreadsheet...');
     Object.values(RETUR_KATEGORI_MAP).forEach(tbodyId => {
         const el = document.getElementById(tbodyId);
-        if (el) el.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Memuat data retur...</td></tr>`;
+        if (el) el.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; font-style:italic;">Sinkronisasi data retur...</td></tr>`;
     });
 
-    fetch(apiUrl)
-        .then(res => { if (!res.ok) throw new Error('Gagal koneksi ke database'); return res.json(); })
+    fetch(`${GOOGLE_SCRIPT_URL}?action=fetch_barang_retur&limit=1000`)
+        .then(res => { if (!res.ok) throw new Error('Gagal koneksi ke Apps Script'); return res.json(); })
         .then(data => {
-            const rawItems = Array.isArray(data) ? data : [];
-            globalReturCache = rawItems;
+            globalReturRawCache = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
+            globalReturCache = aggregateReturByFilter(globalReturRawCache);
             renderReturTables(globalReturCache);
-            updateStatusMessage(`Data retur berhasil dimuat. ${globalReturCache.length} SKU tercatat.`);
+            updateStatusMessage(`Data retur berhasil dimuat. ${globalReturCache.length} SKU tercatat dari ${globalReturRawCache.length} baris scan.`);
         })
         .catch(err => {
             updateStatusMessage('(!) Gagal memuat data retur: ' + err.message);
