@@ -2920,13 +2920,13 @@ function renderReturCalendar() {
     if (!lbl || !grid) return;
     const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     lbl.textContent = `${months[month]} ${year}`;
-    lbl.style.color = 'var(--text-main)';
+    lbl.style.color = '#1e293b';
     grid.innerHTML = '';
     // Header hari
     ['Min','Sen','Sel','Rab','Kam','Jum','Sab'].forEach(h => {
         const el = document.createElement('div');
         el.textContent = h;
-        el.style.cssText = 'color:var(--text-muted);font-size:10px;padding:4px 0;font-weight:600;';
+        el.style.cssText = 'color:#94a3b8;font-size:10px;padding:4px 0;font-weight:600;';
         grid.appendChild(el);
     });
     const firstDay = new Date(year, month, 1).getDay();
@@ -2949,7 +2949,7 @@ function renderReturCalendar() {
         const isPick1 = pick1 && toYMD(pick1) === ymd;
         const isPick2 = pick2 && toYMD(pick2) === ymd;
         const inRange = rangeStart && rangeEnd && dateObj >= rangeStart && dateObj <= rangeEnd;
-        let bg = 'none', color = 'var(--text-main)', fw = 'normal', br = '6px';
+        let bg = 'none', color = '#1e293b', fw = 'normal', br = '6px';
         if (isPick1 || isPick2) { bg = 'var(--accent-main,#e879a0)'; color = 'var(--text-main)'; fw = '700'; br = '50%'; }
         else if (inRange) { bg = 'rgba(232,121,160,0.25)'; }
         btn.style.cssText = `background:${bg};color:${color};font-weight:${fw};border:none;border-radius:${br};padding:6px 2px;cursor:pointer;font-size:13px;width:100%;transition:background 0.1s;`;
