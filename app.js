@@ -3064,14 +3064,20 @@ function renderReturTables(data) {
 let globalReturRawCache = [];
 
 function aggregateReturByFilter(rawItems) {
-    const { dariVal, sampaiVal } = getReturFilterRange();
+    const p1 = returCalState.pick1, p2 = returCalState.pick2;
     const filtered = rawItems.filter(r => {
-        if (!dariVal && !sampaiVal) return true;
+        if (!p1) return true;
+        // Ambil tanggal dari waktu UTC → konversi ke WIB (UTC+7) lalu ambil YYYY-MM-DD
         const d = new Date(r.waktu);
         if (isNaN(d.getTime())) return false;
-        if (dariVal && d < dariVal) return false;
-        if (sampaiVal && d > sampaiVal) return false;
-        return true;
+        const wibMs = d.getTime() + (7 * 60 * 60 * 1000);
+        const wibDate = new Date(wibMs);
+        const ymd = toYMD(wibDate);
+        const ymdP1 = toYMD(p1);
+        const ymdP2 = p2 ? toYMD(p2) : ymdP1;
+        const dari = ymdP1 < ymdP2 ? ymdP1 : ymdP2;
+        const sampai = ymdP1 < ymdP2 ? ymdP2 : ymdP1;
+        return ymd >= dari && ymd <= sampai;
     });
     const skuMap = {};
     filtered.forEach(r => {
