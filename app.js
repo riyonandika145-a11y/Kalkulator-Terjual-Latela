@@ -119,12 +119,28 @@ const btnExportPo = document.getElementById('btn-export-po');
 const btnResetPo = document.getElementById('btn-reset-po');
 const tbodyProcurementList = document.getElementById('tbody-procurement-list');
 
+// --- ECOMMERCE CHANNEL MAP ---
+const ECOMMERCE_MAP = {
+    'A': 'Tiktok Utama',
+    'B': 'Shopee Utama',
+    'C': 'Latelateam',
+    'D': 'Cozy',
+    'E': 'Latela.ID',
+    'F': 'Lazada',
+    'G': 'Tiktok Premium',
+    'H': 'Tiktok Cozy',
+    'I': 'Tiktok Latelateam'
+};
+
 // --- STATE MANAGEMENT ---
 let masterSkus = {};
-let masterSkuOrder = []; // urutan asli dari spreadsheet 
+let masterSkuOrder = []; // urutan asli dari spreadsheet
 let globalDataKategori = { utama: {}, aksesoris: {}, gradeb: {}, random: {} };
+// globalDataChannelQty[sku][channelCode] = qty — untuk filter per ecommerce
+let globalDataChannelQty = {};
 let totalMasterFiles = 0;
 let activeFilterText = "all";
+let activeChannelFilter = "all"; // filter ecommerce: "all" atau kode huruf (A-I)
 
 let globalVendorRawData = [];
 let currentPoBasket = [];
@@ -1970,12 +1986,14 @@ function renderMasterSkuDatabaseView() {
 
 function resetKalkulatorDataState() {
     globalDataKategori = { utama: {}, aksesoris: {}, gradeb: {}, random: {} };
+    globalDataChannelQty = {};
     (masterSkuOrder.length > 0 ? masterSkuOrder : Object.keys(masterSkus)).forEach(sku => {
         if (!masterSkus[sku]) return;
         const kat = masterSkus[sku].kategori;
         if (globalDataKategori[kat]) {
             globalDataKategori[kat][sku] = { nama: masterSkus[sku].nama, type: masterSkus[sku].type, warna: masterSkus[sku].warna, qty: 0 };
         }
+        globalDataChannelQty[sku] = {};
     });
     refreshAllTables();
 
@@ -2062,10 +2080,18 @@ function ekstrakDanHitungPenjualan(data, doRefresh = true) {
         }
 
         let foundSku = "";
+        let foundChannel = ""; // kode ecommerce (A-I) jika ada prefix
         for (let key in row) {
             if (row[key] !== undefined && row[key] !== null) {
                 let cellValue = row[key].toString().trim();
-                if (masterSkus[cellValue]) { foundSku = cellValue; break; }
+                // Cek langsung (SKU tanpa prefix)
+                if (masterSkus[cellValue]) { foundSku = cellValue; foundChannel = ""; break; }
+                // Cek dengan prefix ecommerce: 1 huruf kapital A-I diikuti angka
+                if (/^[A-I]\d+/.test(cellValue)) {
+                    const prefix = cellValue[0];
+                    const skuBase = cellValue.slice(1);
+                    if (masterSkus[skuBase]) { foundSku = skuBase; foundChannel = prefix; break; }
+                }
             }
         }
         if (foundSku) {
@@ -2077,7 +2103,13 @@ function ekstrakDanHitungPenjualan(data, doRefresh = true) {
                 }
             }
             const kategori = masterSkus[foundSku].kategori;
-            if (globalDataKategori[kategori] && globalDataKategori[kategori][foundSku]) globalDataKategori[kategori][foundSku].qty += rowQty;
+            if (globalDataKategori[kategori] && globalDataKategori[kategori][foundSku]) {
+                globalDataKategori[kategori][foundSku].qty += rowQty;
+            }
+            // Catat qty per channel untuk filter ecommerce
+            if (!globalDataChannelQty[foundSku]) globalDataChannelQty[foundSku] = {};
+            const ch = foundChannel || '_none';
+            globalDataChannelQty[foundSku][ch] = (globalDataChannelQty[foundSku][ch] || 0) + rowQty;
         }
     });
     totalMasterFiles += 1;
@@ -2085,13 +2117,22 @@ function ekstrakDanHitungPenjualan(data, doRefresh = true) {
     if (doRefresh) { refreshAllTables(); updateDashboardMetrics(); }
 }
 
+function getQtyForDisplay(sku, totalQty) {
+    // Jika filter "all" → tampilkan total qty dari semua channel
+    if (activeChannelFilter === "all") return totalQty;
+    // Jika ada filter channel → ambil qty khusus channel itu saja
+    const channelData = globalDataChannelQty[sku] || {};
+    return channelData[activeChannelFilter] || 0;
+}
+
 function renderSingleTable(dataKategori, tbodyElement) {
     if (!tbodyElement) return;
     tbodyElement.innerHTML = '';
     Object.keys(dataKategori).forEach(sku => {
         if (activeFilterText !== "all" && dataKategori[sku].nama !== activeFilterText) return;
+        const displayQty = getQtyForDisplay(sku, dataKategori[sku].qty);
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${sku}</td><td>${dataKategori[sku].nama}</td><td>${dataKategori[sku].type}</td><td>${dataKategori[sku].warna}</td><td>${dataKategori[sku].qty}</td>`;
+        tr.innerHTML = `<td>${sku}</td><td>${dataKategori[sku].nama}</td><td>${dataKategori[sku].type}</td><td>${dataKategori[sku].warna}</td><td>${displayQty}</td>`;
         tbodyElement.appendChild(tr);
     });
 }
@@ -2398,13 +2439,14 @@ function updateDashboardMetrics() {
     let qtyUtama = 0, qtyAksesoris = 0, qtyGradeB = 0, qtyRandom = 0, skuAktifCount = 0; let productSalesGroup = {};
 
     const hitung = (dataKategori, kategoriKey) => {
-        Object.values(dataKategori).forEach(item => {
+        Object.entries(dataKategori).forEach(([sku, item]) => {
             if (targetProduct === "all" || item.nama === targetProduct) {
-                if (item.qty > 0) { skuAktifCount++; let name = item.nama.trim().toUpperCase(); productSalesGroup[name] = (productSalesGroup[name] || 0) + item.qty; }
-                if (kategoriKey === 'utama') qtyUtama += item.qty;
-                else if (kategoriKey === 'aksesoris') qtyAksesoris += item.qty;
-                else if (kategoriKey === 'gradeb') qtyGradeB += item.qty;
-                else if (kategoriKey === 'random') qtyRandom += item.qty;
+                const displayQty = getQtyForDisplay(sku, item.qty);
+                if (displayQty > 0) { skuAktifCount++; let name = item.nama.trim().toUpperCase(); productSalesGroup[name] = (productSalesGroup[name] || 0) + displayQty; }
+                if (kategoriKey === 'utama') qtyUtama += displayQty;
+                else if (kategoriKey === 'aksesoris') qtyAksesoris += displayQty;
+                else if (kategoriKey === 'gradeb') qtyGradeB += displayQty;
+                else if (kategoriKey === 'random') qtyRandom += displayQty;
             }
         });
     };
@@ -2449,14 +2491,26 @@ function populateFilterDropdown() {
     dropdownFilter.value = activeFilterText;
 }
 
-if (dropdownFilter) dropdownFilter.addEventListener('change', (e) => { activeFilterText = e.target.value; refreshAllTables(); });
-if (btnFilterReset) btnFilterReset.addEventListener('click', () => { if (dropdownFilter) dropdownFilter.value = "all"; activeFilterText = "all"; refreshAllTables(); });
+if (dropdownFilter) dropdownFilter.addEventListener('change', (e) => { activeFilterText = e.target.value; refreshAllTables(); updateDashboardMetrics(); });
+if (btnFilterReset) btnFilterReset.addEventListener('click', () => { if (dropdownFilter) dropdownFilter.value = "all"; activeFilterText = "all"; refreshAllTables(); updateDashboardMetrics(); });
+
+// Filter Ecommerce/Channel
+const channelFilterDropdown = document.getElementById('channel-filter-dropdown');
+if (channelFilterDropdown) {
+    channelFilterDropdown.addEventListener('change', (e) => {
+        activeChannelFilter = e.target.value;
+        refreshAllTables();
+        updateDashboardMetrics();
+    });
+}
 
 if (btnFileReset) {
     btnFileReset.addEventListener('click', () => {
-        totalMasterFiles = 0; if (fileBadge) fileBadge.innerText = '0 File Terupload'; resetKalkulatorDataState();
-        if (dashTotalTerjual) dashTotalTerjual.innerText = '0'; 
-        if (dashSkuAktif) dashSkuAktif.innerText = '0'; 
+        totalMasterFiles = 0; if (fileBadge) fileBadge.innerText = '0 File Terupload';
+        activeChannelFilter = "all"; if (channelFilterDropdown) channelFilterDropdown.value = "all";
+        resetKalkulatorDataState();
+        if (dashTotalTerjual) dashTotalTerjual.innerText = '0';
+        if (dashSkuAktif) dashSkuAktif.innerText = '0';
         if (dashFileCount) dashFileCount.innerText = '0';
     });
 }
@@ -2465,7 +2519,7 @@ if (btnFileReset) {
 if (btnCopyQty) {
     btnCopyQty.addEventListener('click', () => {
         const cat = document.querySelector('.sub-tab.active').getAttribute('data-category');
-        let txt = ""; Object.keys(globalDataKategori[cat]).sort().forEach(k => { if (activeFilterText === "all" || globalDataKategori[cat][k].nama === activeFilterText) txt += `${globalDataKategori[cat][k].qty}\n`; });
+        let txt = ""; Object.keys(globalDataKategori[cat]).sort().forEach(k => { if (activeFilterText === "all" || globalDataKategori[cat][k].nama === activeFilterText) txt += `${getQtyForDisplay(k, globalDataKategori[cat][k].qty)}\n`; });
         navigator.clipboard.writeText(txt).then(() => updateStatusMessage('Qty copied.'));
     });
 }
