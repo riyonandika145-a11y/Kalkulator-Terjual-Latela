@@ -2452,9 +2452,12 @@ function updateDashboardMetrics() {
     };
     hitung(globalDataKategori.utama, 'utama'); hitung(globalDataKategori.aksesoris, 'aksesoris'); hitung(globalDataKategori.gradeb, 'gradeb'); hitung(globalDataKategori.random, 'random');
 
-    if (dashTotalTerjual) dashTotalTerjual.innerText = (qtyUtama + qtyAksesoris + qtyGradeB + qtyRandom).toLocaleString('id-ID');
-    if (dashSkuAktif) dashSkuAktif.innerText = skuAktifCount; 
+    const grandTotal = qtyUtama + qtyAksesoris + qtyGradeB + qtyRandom;
+    if (dashTotalTerjual) dashTotalTerjual.innerText = grandTotal.toLocaleString('id-ID');
+    if (dashSkuAktif) dashSkuAktif.innerText = skuAktifCount;
     if (dashFileCount) dashFileCount.innerText = totalMasterFiles;
+
+    updateEcommerceTable();
 
     if (salesChartInstance) { salesChartInstance.data.datasets[0].data = [qtyUtama, qtyAksesoris, qtyGradeB, qtyRandom]; salesChartInstance.update(); }
     if (topProductsChartInstance) {
@@ -2463,6 +2466,46 @@ function updateDashboardMetrics() {
         topProductsChartInstance.data.datasets[0].data = sorted.length ? sorted.map(i => i.qty) : [0];
         topProductsChartInstance.update();
     }
+}
+
+function updateEcommerceTable() {
+    const tbody = document.getElementById('dash-ecommerce-tbody');
+    const totalEl = document.getElementById('dash-ecommerce-total');
+    if (!tbody) return;
+
+    // Hitung total qty per channel dari globalDataChannelQty
+    const channelTotals = {};
+    Object.values(ECOMMERCE_MAP).forEach(name => channelTotals[name] = 0);
+    let noChannelTotal = 0;
+
+    Object.entries(globalDataChannelQty).forEach(([sku, channels]) => {
+        Object.entries(channels).forEach(([ch, qty]) => {
+            if (ch === '_none') {
+                noChannelTotal += qty;
+            } else if (ECOMMERCE_MAP[ch]) {
+                channelTotals[ECOMMERCE_MAP[ch]] += qty;
+            }
+        });
+    });
+
+    // Hitung grand total untuk persentase
+    const grandTotal = Object.values(channelTotals).reduce((a, b) => a + b, 0) + noChannelTotal;
+
+    // Render tabel — urutkan dari terbesar
+    const rows = Object.entries(channelTotals).sort((a, b) => b[1] - a[1]);
+    tbody.innerHTML = '';
+    rows.forEach(([name, qty]) => {
+        const pct = grandTotal > 0 ? ((qty / grandTotal) * 100).toFixed(1) : '0.0';
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid var(--border-color, #f1f5f9)';
+        tr.innerHTML = `
+            <td style="padding:8px 12px;">${name}</td>
+            <td style="text-align:right; padding:8px 12px; font-weight:600;">${qty.toLocaleString('id-ID')}</td>
+            <td style="text-align:right; padding:8px 12px; color:var(--text-muted);">${pct}%</td>`;
+        tbody.appendChild(tr);
+    });
+
+    if (totalEl) totalEl.innerText = grandTotal.toLocaleString('id-ID');
 }
 
 function populateDashboardDropdown() {
