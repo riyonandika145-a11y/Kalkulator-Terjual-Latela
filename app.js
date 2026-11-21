@@ -2022,15 +2022,14 @@ function processMultipleFiles(fileList) {
     });
 
     if (skippedFiles.length > 0 && newFiles.length === 0) {
-        updateStatusMessage(`⚠️ File sudah pernah diupload: ${skippedFiles.join(', ')}`);
+        showDuplicateModal(skippedFiles, 0);
         if (fileInput) fileInput.value = "";
         return;
     }
     if (skippedFiles.length > 0) {
-        updateStatusMessage(`⚠️ Melewati ${skippedFiles.length} file duplikat, memproses ${newFiles.length} file baru...`);
-    } else {
-        updateStatusMessage(`Memproses ${newFiles.length} file...`);
+        showDuplicateModal(skippedFiles, newFiles.length);
     }
+    updateStatusMessage(`Memproses ${newFiles.length} file...`);
 
     let processedCount = 0;
     let successCount = 0;
@@ -3000,6 +2999,36 @@ if (btnAddManual) {
     });
 }
 function updateStatusMessage(msg) { if (statusBar) statusBar.innerText = msg; }
+
+function showDuplicateModal(skippedFiles, newFilesCount) {
+    // Hapus modal lama kalau ada
+    const existing = document.getElementById('duplicate-modal');
+    if (existing) existing.remove();
+
+    const isAllDuplicate = newFilesCount === 0;
+    const msg = isAllDuplicate
+        ? `File berikut sudah pernah diupload dan dilewati:`
+        : `File berikut sudah pernah diupload dan dilewati (${newFilesCount} file baru tetap diproses):`;
+
+    const modal = document.createElement('div');
+    modal.id = 'duplicate-modal';
+    modal.style.cssText = `position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);`;
+    modal.innerHTML = `
+        <div style="background:#ffffff;border-radius:16px;padding:28px 32px;max-width:420px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,0.18);">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                <span style="font-size:22px;">⚠️</span>
+                <span style="font-weight:700;font-size:16px;color:#1e293b;">File Duplikat</span>
+            </div>
+            <p style="color:#475569;font-size:14px;margin-bottom:12px;">${msg}</p>
+            <ul style="margin:0 0 20px 18px;padding:0;color:#e11d48;font-size:13px;line-height:1.8;">
+                ${skippedFiles.map(f => `<li>${f}</li>`).join('')}
+            </ul>
+            <button id="btn-close-duplicate-modal" style="width:100%;padding:10px;background:#ec4899;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">OK, Mengerti</button>
+        </div>`;
+    document.body.appendChild(modal);
+    document.getElementById('btn-close-duplicate-modal').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+}
 
 // =========================================================================
 // MENU RETUR
