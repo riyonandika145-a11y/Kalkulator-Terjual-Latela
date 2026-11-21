@@ -139,6 +139,7 @@ let globalDataKategori = { utama: {}, aksesoris: {}, gradeb: {}, random: {} };
 // globalDataChannelQty[sku][channelCode] = qty — untuk filter per ecommerce
 let globalDataChannelQty = {};
 let totalMasterFiles = 0;
+let uploadedFileNames = new Set(); // track nama file yang sudah diupload
 let activeFilterText = "all";
 let activeChannelFilter = "all"; // filter ecommerce: "all" atau kode huruf (A-I)
 
@@ -2009,23 +2010,45 @@ function processMultipleFiles(fileList) {
     const files = Array.from(fileList || []);
     if (files.length === 0) return;
 
-    updateStatusMessage(`Memproses ${files.length} file...`);
+    // Pisahkan file baru vs duplikat
+    const newFiles = [];
+    const skippedFiles = [];
+    files.forEach(f => {
+        if (uploadedFileNames.has(f.name)) {
+            skippedFiles.push(f.name);
+        } else {
+            newFiles.push(f);
+        }
+    });
+
+    if (skippedFiles.length > 0 && newFiles.length === 0) {
+        updateStatusMessage(`⚠️ File sudah pernah diupload: ${skippedFiles.join(', ')}`);
+        if (fileInput) fileInput.value = "";
+        return;
+    }
+    if (skippedFiles.length > 0) {
+        updateStatusMessage(`⚠️ Melewati ${skippedFiles.length} file duplikat, memproses ${newFiles.length} file baru...`);
+    } else {
+        updateStatusMessage(`Memproses ${newFiles.length} file...`);
+    }
 
     let processedCount = 0;
     let successCount = 0;
 
     const processNext = (index) => {
-        if (index >= files.length) {
+        if (index >= newFiles.length) {
             refreshAllTables();
             updateDashboardMetrics();
-            updateStatusMessage(`Selesai: ${successCount} dari ${files.length} file berhasil diproses.`);
-            if (fileInput) fileInput.value = ""; 
+            const skipInfo = skippedFiles.length > 0 ? ` (${skippedFiles.length} file duplikat dilewati)` : '';
+            updateStatusMessage(`Selesai: ${successCount} dari ${newFiles.length} file berhasil diproses.${skipInfo}`);
+            if (fileInput) fileInput.value = "";
             return;
         }
-        const file = files[index];
+        const file = newFiles[index];
         readSingleExcelFile(file,
             (jsonData) => {
-                ekstrakDanHitungPenjualan(jsonData, false); 
+                ekstrakDanHitungPenjualan(jsonData, false);
+                uploadedFileNames.add(file.name); // catat nama file
                 successCount++;
                 processedCount++;
                 processNext(index + 1);
@@ -2565,6 +2588,7 @@ if (channelFilterDropdown) {
 if (btnFileReset) {
     btnFileReset.addEventListener('click', () => {
         totalMasterFiles = 0; if (fileBadge) fileBadge.innerText = '0 File Terupload';
+        uploadedFileNames.clear(); // reset daftar file yang sudah diupload
         activeChannelFilter = "all"; if (channelFilterDropdown) channelFilterDropdown.value = "all";
         resetKalkulatorDataState();
         if (dashTotalTerjual) dashTotalTerjual.innerText = '0';
