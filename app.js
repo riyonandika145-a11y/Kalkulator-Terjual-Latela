@@ -2473,23 +2473,34 @@ function updateEcommerceTable() {
     const totalEl = document.getElementById('dash-ecommerce-total');
     if (!tbody) return;
 
-    // Hitung total qty per channel dari globalDataChannelQty
+    // Ambil filter produk dashboard yang aktif
+    const targetProduct = dashFilterDropdown ? dashFilterDropdown.value : "all";
+
+    // Kumpulkan SKU yang lolos filter produk
+    const skuLolos = new Set();
+    ['utama', 'aksesoris', 'gradeb', 'random'].forEach(kat => {
+        Object.entries(globalDataKategori[kat] || {}).forEach(([sku, item]) => {
+            if (targetProduct === "all" || item.nama.trim().toUpperCase() === targetProduct) {
+                skuLolos.add(sku);
+            }
+        });
+    });
+
+    // Hitung total qty per channel, hanya dari SKU yang lolos filter
     const channelTotals = {};
     Object.values(ECOMMERCE_MAP).forEach(name => channelTotals[name] = 0);
-    let noChannelTotal = 0;
 
-    Object.entries(globalDataChannelQty).forEach(([sku, channels]) => {
+    skuLolos.forEach(sku => {
+        const channels = globalDataChannelQty[sku] || {};
         Object.entries(channels).forEach(([ch, qty]) => {
-            if (ch === '_none') {
-                noChannelTotal += qty;
-            } else if (ECOMMERCE_MAP[ch]) {
+            if (ECOMMERCE_MAP[ch]) {
                 channelTotals[ECOMMERCE_MAP[ch]] += qty;
             }
         });
     });
 
     // Hitung grand total untuk persentase
-    const grandTotal = Object.values(channelTotals).reduce((a, b) => a + b, 0) + noChannelTotal;
+    const grandTotal = Object.values(channelTotals).reduce((a, b) => a + b, 0);
 
     // Render tabel — urutkan dari terbesar
     const rows = Object.entries(channelTotals).sort((a, b) => b[1] - a[1]);
