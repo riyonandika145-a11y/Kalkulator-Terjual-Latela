@@ -2128,7 +2128,11 @@ function getQtyForDisplay(sku, totalQty) {
 function renderSingleTable(dataKategori, tbodyElement) {
     if (!tbodyElement) return;
     tbodyElement.innerHTML = '';
-    Object.keys(dataKategori).forEach(sku => {
+    // Pakai urutan masterSkuOrder (urutan asli spreadsheet), filter hanya SKU di kategori ini
+    const orderedKeys = masterSkuOrder.length > 0
+        ? masterSkuOrder.filter(sku => dataKategori[sku] !== undefined)
+        : Object.keys(dataKategori);
+    orderedKeys.forEach(sku => {
         if (activeFilterText !== "all" && dataKategori[sku].nama !== activeFilterText) return;
         const displayQty = getQtyForDisplay(sku, dataKategori[sku].qty);
         const tr = document.createElement('tr');
