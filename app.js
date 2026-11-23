@@ -2484,6 +2484,7 @@ function updateDashboardMetrics() {
     if (dashFileCount) dashFileCount.innerText = totalMasterFiles;
 
     updateEcommerceTable();
+    updateProdukTable();
 
     if (salesChartInstance) { salesChartInstance.data.datasets[0].data = [qtyUtama, qtyAksesoris, qtyGradeB, qtyRandom]; salesChartInstance.update(); }
     if (topProductsChartInstance) {
@@ -2537,6 +2538,81 @@ function updateEcommerceTable() {
         tr.style.borderBottom = '1px solid var(--border-color, #f1f5f9)';
         tr.innerHTML = `
             <td style="padding:8px 12px;">${name}</td>
+            <td style="text-align:right; padding:8px 12px; font-weight:600;">${qty.toLocaleString('id-ID')}</td>
+            <td style="text-align:right; padding:8px 12px; color:var(--text-muted);">${pct}%</td>`;
+        tbody.appendChild(tr);
+    });
+
+    if (totalEl) totalEl.innerText = grandTotal.toLocaleString('id-ID');
+}
+
+const PRODUK_ORDER = [
+    "ARABIAN SHAWL","AROMATIC PLAIN SQUARE","BELLA SQUARE","BERGO INSTANT SPORT",
+    "CIPUT TALI","MANSET BAJU BALON","MANSET BAJU RAYON","MANSET LEHER BALON",
+    "MANSET LEHER RAYON","MANSET TANGAN","MANSET TANGAN RAYON","MUKENA","POLLY PARIS",
+    "NEO PARIS WANGI","PARIS JADUL NECI","NEO PARIS","PARIS JAPAN",
+    "PASHMINA JERSEY, MATT","PASHMINA OVAL BIASA","PASHMINA RAYON COOLTECH",
+    "PASHMINA RAYON STANDARD","PASHMINA VISCOSE","PASHMINA ZAIRA OVAL INSTANT",
+    "SCRUNCHIE PREMIUM","SCRUNCHIE STANDARD","SCRUNCHIE MINI","STD PLAIN SQUARE PREMIUM",
+    "SYAR'I","SYAR'I WANGI 130X130 CM","SYAR'I WANGI 150 X 150 CM","ZAHIRA BANDANA OVAL",
+    "ZAYNA KHIBAN CERUTY","PARIS ULTRAFINE","PARIS JADUL 4 SISI | JAHIT TEPI BARU",
+    "PLAIN PARIS","BERGO RUBY","PARIS SWISS","BERGO SPORT TALI S","BERGO SPORT TALI M",
+    "BERGO SPORT TALI L","NEO PARIS SHIMER","PARIS JADUL JAHIT TEPI","PASHMINA COOLTECH",
+    "AL-QUR'AN","JARUM PENTUL","ONE SET","PARFUM CANDY BERRY","PARFUM LATELA BLOSSOM",
+    "PARFUM LATELA SUGAR FRESH","PECI","PIN MAGNET","SARUNG","STRAP HP","TASBIH DIGITAL",
+    "TASBIH KAYU","SPR001, HIJAB-MOTIF","SPR002, HIJAB-MOTIF","SPR003, HIJAB-MOTIF",
+    "SPR004, HIJAB-MOTIF","SPR005, HIJAB-MOTIF","SPR006, HIJAB-MOTIF","SPR007, HIJAB-MOTIF",
+    "SPR008, HIJAB-MOTIF","SPR009, HIJAB-MOTIF","SPR-10, HIJAB-MOTIF","SPR-11, HIJAB-MOTIF",
+    "SPR-12, HIJAB-MOTIF","SPR-13, HIJAB-MOTIF","ANTING KERUDUNG","KACAMATA","EMAS",
+    "B-AROMATIC PLAIN SQUARE","B-PASHMINA VISCOSE"
+];
+
+function updateProdukTable() {
+    const tbody = document.getElementById('dash-produk-tbody');
+    const totalEl = document.getElementById('dash-produk-total');
+    if (!tbody) return;
+
+    const targetProduct = dashFilterDropdown ? dashFilterDropdown.value : "all";
+
+    // Hitung qty per nama produk dari semua kategori
+    const produkTotals = {};
+    ['utama', 'aksesoris', 'gradeb', 'random'].forEach(kat => {
+        Object.entries(globalDataKategori[kat] || {}).forEach(([sku, item]) => {
+            const namaNorm = item.nama.trim().toUpperCase();
+            if (targetProduct === "all" || item.nama.trim().toUpperCase() === targetProduct) {
+                const displayQty = getQtyForDisplay(sku, item.qty);
+                produkTotals[namaNorm] = (produkTotals[namaNorm] || 0) + displayQty;
+            }
+        });
+    });
+
+    const grandTotal = Object.values(produkTotals).reduce((a, b) => a + b, 0);
+
+    // Urutkan: ikuti PRODUK_ORDER dulu, sisanya append di bawah
+    const ordered = [];
+    const added = new Set();
+    PRODUK_ORDER.forEach(name => {
+        if (produkTotals[name] !== undefined) {
+            ordered.push([name, produkTotals[name]]);
+            added.add(name);
+        }
+    });
+    // Produk yang tidak ada di PRODUK_ORDER, urutkan alfabetis
+    Object.entries(produkTotals)
+        .filter(([name]) => !added.has(name))
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .forEach(entry => ordered.push(entry));
+
+    tbody.innerHTML = '';
+    ordered.forEach(([name, qty]) => {
+        if (qty === 0 && targetProduct === "all") return; // sembunyikan yg 0 saat filter all
+        const pct = grandTotal > 0 ? ((qty / grandTotal) * 100).toFixed(1) : '0.0';
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid var(--border-color, #f1f5f9)';
+        // Tampilkan nama dengan kapitalisasi asli (Title Case dari PRODUK_ORDER)
+        const displayName = name.charAt(0) + name.slice(1).toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+        tr.innerHTML = `
+            <td style="padding:8px 12px;">${displayName}</td>
             <td style="text-align:right; padding:8px 12px; font-weight:600;">${qty.toLocaleString('id-ID')}</td>
             <td style="text-align:right; padding:8px 12px; color:var(--text-muted);">${pct}%</td>`;
         tbody.appendChild(tr);
